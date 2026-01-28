@@ -8,4 +8,4 @@ It's a gift wishlist Android app! We are developing it as part of the course HBV
 - Room (SQLite)
 
 ## Project members
-Helga Björg Helgadóttir (helgsie) - hbh54@hi.is
+Helga (helgsie) - hbh54@hi.is
