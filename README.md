@@ -13,3 +13,5 @@ Helga Björg Helgadóttir (helgsie) - hbh54@hi.is
 Eygló Ástþórsdóttir (klingsterina) - eya19@hi.is
 
 Dagmar Ýr Eyþórsdóttir (daggimaar) - dye2@hi.is
+
+Ana Margarida Delgado Costa (anamargariida) - amd16@hi.is
