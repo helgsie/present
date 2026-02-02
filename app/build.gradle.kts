@@ -11,12 +11,15 @@ android {
 
     defaultConfig {
         applicationId = "is.hi.present"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "SUPABASE_URL", "\"${properties["SUPABASE_URL"]}\"")
+        buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"${properties["SUPABASE_PUBLISHABLE_KEY"]}\"")
     }
 
     buildTypes {
@@ -34,6 +37,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -53,4 +57,11 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    implementation(platform(libs.bom))
+    implementation(libs.supabase.kt)
+    implementation(libs.auth.kt)
+    implementation(libs.postgrest.kt)
+    implementation(libs.storage.kt)
+    implementation(libs.ktor.client.okhttp)
 }
