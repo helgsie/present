@@ -18,6 +18,17 @@ fun WishlistsScreen(
     vm: WishlistsViewModel = viewModel()
 ) {
     val state = vm.uiState.collectAsState().value
+    if (state.needsAuth) {
+        // navController.navigate("login")
+        // for now
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Not logged in, this will direct to the login page.")
+        }
+        return
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("My wishlists") }) }

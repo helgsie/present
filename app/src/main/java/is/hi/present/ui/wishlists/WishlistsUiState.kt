@@ -14,7 +14,8 @@ data class WishlistUi(
 data class WishlistsUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val wishlists: List<WishlistUi> = emptyList()
+    val wishlists: List<WishlistUi> = emptyList(),
+    val needsAuth: Boolean = false
 ) {
     val isEmpty: Boolean get() = !isLoading && errorMessage == null && wishlists.isEmpty()
 }

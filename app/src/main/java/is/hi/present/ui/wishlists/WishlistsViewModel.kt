@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import devSignInAsWishlistUser
 import io.github.jan.supabase.auth.auth
 import `is`.hi.present.data.repository.WishlistsRepository
 import `is`.hi.present.data.supabase.SupabaseClientProvider
@@ -16,7 +17,6 @@ import kotlinx.coroutines.launch
 class WishlistsViewModel(
     private val repo: WishlistsRepository = WishlistsRepository()
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(WishlistsUiState(isLoading = true))
     val uiState: StateFlow<WishlistsUiState> = _uiState
 
@@ -30,10 +30,19 @@ class WishlistsViewModel(
         try {
             // commented out is for testing owner id of the wishlist
             //val client = SupabaseClientProvider.client
-            ensureAuthenticated()
+            //if (!requireAuthenticated()) {
+              //  _uiState.value = WishlistsUiState(
+                //    isLoading = false,
+                  //  errorMessage = "Please sign in to view wishlists.",
+                    //needsAuth = true
+               // )
+              //  return@launch
+          //  }
 
             //val uid = client.auth.currentUserOrNull()?.id
             //android.util.Log.d("AUTH", "uid=$uid")
+            //bara notað fyrir Dev purpose
+            devSignInAsWishlistUser()
 
             val wishlists = repo.getWishlists()
                 .sortedByDescending { it.createdAt ?: "" }
@@ -42,7 +51,7 @@ class WishlistsViewModel(
                         id = w.id,
                         title = w.title,
                         description = w.description,
-                        icon = iconForTitle(w.title)
+                        icon = Icons.Default.Favorite
                     )
                 }
 
@@ -58,16 +67,9 @@ class WishlistsViewModel(
         }
     }
 
-    private suspend fun ensureAuthenticated() {
+    private fun requireAuthenticated(): Boolean {
         val client = SupabaseClientProvider.client
-        if (client.auth.currentUserOrNull() == null) {
-            client.auth.signInAnonymously()
-        }
+        return client.auth.currentUserOrNull() != null
     }
 
-    private fun iconForTitle(title: String) = when {
-        title.contains("birthday", ignoreCase = true) -> Icons.Default.CardGiftcard
-        title.contains("shop", ignoreCase = true) -> Icons.Default.ShoppingBag
-        else -> Icons.Default.Favorite
-    }
 }

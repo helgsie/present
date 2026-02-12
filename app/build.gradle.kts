@@ -34,7 +34,8 @@ android {
             "String",
             "SUPABASE_PUBLISHABLE_KEY",
             "\"${localProperties.getProperty("SUPABASE_PUBLISHABLE_KEY")}\""
-        )    }
+        )
+    }
 
     buildTypes {
         release {
