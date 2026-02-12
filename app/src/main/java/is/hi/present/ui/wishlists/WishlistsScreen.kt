@@ -66,6 +66,9 @@ fun WishlistsScreen(
                         text = "You have no wishlists yet.",
                         modifier = Modifier.align(Alignment.Center)
                     )
+                    Button(onClick = { navController.navigate(Routes.CREATE_WISHLIST) }) {
+                        Text("Create a wishlist")
+                    }
                 }
 
                 else -> {
@@ -78,10 +81,10 @@ fun WishlistsScreen(
                             WishlistCard(w)
                         }
                     }
+                    Button(onClick = { navController.navigate(Routes.CREATE_WISHLIST) }) {
+                        Text("Create a wishlist")
+                    }
                 }
-            }
-            Button(onClick = { navController.navigate(Routes.CREATE_WISHLIST) }) {
-                Text("Create a wishlist")
             }
         }
     }
