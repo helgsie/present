@@ -67,9 +67,23 @@ class WishlistsViewModel(
         }
     }
 
+    fun createWishlist(title: String, description: String? = null) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+        try {
+            repo.createWishlist(title, description)
+            loadWishlists()
+
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = e.message ?: "Failed to create wishlist"
+            )
+        }
+    }
+
     private fun requireAuthenticated(): Boolean {
         val client = SupabaseClientProvider.client
         return client.auth.currentUserOrNull() != null
     }
-
 }

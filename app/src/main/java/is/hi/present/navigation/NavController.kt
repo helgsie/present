@@ -1,22 +1,16 @@
-package `is`.hi.present
+package `is`.hi.present.navigation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.rememberNavController
-import `is`.hi.present.navigation.AppNavGraph
-import `is`.hi.present.ui.theme.PresentTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            PresentTheme {
-                val navController = rememberNavController()
-                AppNavGraph(navController = navController)
-            }
+            val navController = rememberNavController()
+            AppNavGraph(navController = navController)
         }
     }
 }

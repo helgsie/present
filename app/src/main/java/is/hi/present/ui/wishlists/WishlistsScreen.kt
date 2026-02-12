@@ -10,10 +10,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import `is`.hi.present.navigation.Routes
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishlistsScreen(
+    navController: NavHostController,
     modifier: Modifier = Modifier,
     vm: WishlistsViewModel = viewModel()
 ) {
@@ -75,6 +79,9 @@ fun WishlistsScreen(
                         }
                     }
                 }
+            }
+            Button(onClick = { navController.navigate(Routes.CREATE_WISHLIST) }) {
+                Text("Create a wishlist")
             }
         }
     }
