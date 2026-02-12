@@ -15,7 +15,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import `is`.hi.present.navigation.Routes
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishlistsScreen(
