@@ -1,4 +1,6 @@
 package `is`.hi.present.navigation
 
-class Routes {
+object Routes {
+    const val WISHLISTS = "wishlists"
+    const val CREATE_WISHLIST = "create_wishlist"
 }

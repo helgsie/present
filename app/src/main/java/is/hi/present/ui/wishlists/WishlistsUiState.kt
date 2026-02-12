@@ -1,14 +1,12 @@
 package `is`.hi.present.ui.wishlists
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.ui.graphics.vector.ImageVector
+import `is`.hi.present.ui.Enums.WishlistIcon
 
 data class WishlistUi(
     val id: String,
     val title: String,
     val description: String? = null,
-    val icon: ImageVector = Icons.Filled.Favorite
+    val iconKey: String = WishlistIcon.FAVORITE.key
 )
 
 data class WishlistsUiState(
