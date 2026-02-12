@@ -7,6 +7,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import `is`.hi.present.data.supabase.SupabaseClientProvider
 import `is`.hi.present.domain.model.Wishlist
+import `is`.hi.present.ui.Enums.WishlistIcon
 
 class WishlistsRepository {
     suspend fun getWishlists(): List<Wishlist> {
@@ -18,7 +19,7 @@ class WishlistsRepository {
             .decodeList()
     }
 
-    suspend fun createWishlist(title: String, description: String? = null) {
+    suspend fun createWishlist(title: String, description: String? = null, icon: WishlistIcon) {
         val client = SupabaseClientProvider.client
 
         val userId = client.auth.currentUserOrNull()?.id
@@ -28,7 +29,8 @@ class WishlistsRepository {
             WishlistInsert(
                 title = title,
                 description = description,
-                owner_id = userId
+                owner_id = userId,
+                iconKey = icon.key
             )
         )
     }

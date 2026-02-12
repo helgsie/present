@@ -1,15 +1,12 @@
 package `is`.hi.present.ui.wishlists
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CardGiftcard
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import devSignInAsWishlistUser
 import io.github.jan.supabase.auth.auth
 import `is`.hi.present.data.repository.WishlistsRepository
 import `is`.hi.present.data.supabase.SupabaseClientProvider
+import `is`.hi.present.ui.Enums.WishlistIcon
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -51,7 +48,7 @@ class WishlistsViewModel(
                         id = w.id,
                         title = w.title,
                         description = w.description,
-                        icon = Icons.Default.Favorite
+                        iconKey = w.iconKey
                     )
                 }
 
@@ -70,12 +67,13 @@ class WishlistsViewModel(
     fun createWishlist(
         title: String,
         description: String? = null,
-        onDone: (() -> Unit)? = null
+        onDone: (() -> Unit)? = null,
+        icon: WishlistIcon
     ) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
         try {
             devSignInAsWishlistUser()
-            repo.createWishlist(title, description)
+            repo.createWishlist(title, description, icon)
             loadWishlists()
             onDone?.invoke()
         } catch (e: Exception) {

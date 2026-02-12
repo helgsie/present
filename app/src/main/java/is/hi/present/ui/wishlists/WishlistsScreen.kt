@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import `is`.hi.present.navigation.Routes
+import `is`.hi.present.ui.Enums.WishlistIcon
+import `is`.hi.present.ui.Enums.toImageVector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,7 +106,8 @@ private fun WishlistCard(w: WishlistUi) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(imageVector = w.icon, contentDescription = null)
+            val icon = WishlistIcon.fromKey(w.iconKey).toImageVector()
+            Icon(icon, contentDescription = null)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(w.title, style = MaterialTheme.typography.titleMedium)

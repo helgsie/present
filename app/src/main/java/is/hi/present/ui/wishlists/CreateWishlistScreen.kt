@@ -12,6 +12,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import `is`.hi.present.navigation.Routes
+import `is`.hi.present.ui.Enums.WishlistIcon
+import `is`.hi.present.ui.components.IconPickerButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,10 +66,19 @@ fun CreateWishlistScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            var selectedIcon by rememberSaveable { mutableStateOf(WishlistIcon.FAVORITE) }
+
+            IconPickerButton(
+                selectedIcon = selectedIcon,
+                onSelected = { selectedIcon = it },
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Button(onClick = {
                 vm.createWishlist(
                     title = trimmedTitle,
                     description = trimmedDescription,
+                    icon = selectedIcon,
                     onDone = { navController.popBackStack() }
                 )
             },
