@@ -67,13 +67,17 @@ class WishlistsViewModel(
         }
     }
 
-    fun createWishlist(title: String, description: String? = null) = viewModelScope.launch {
+    fun createWishlist(
+        title: String,
+        description: String? = null,
+        onDone: (() -> Unit)? = null
+    ) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-
         try {
+            devSignInAsWishlistUser()
             repo.createWishlist(title, description)
             loadWishlists()
-
+            onDone?.invoke()
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
@@ -81,6 +85,7 @@ class WishlistsViewModel(
             )
         }
     }
+
 
     private fun requireAuthenticated(): Boolean {
         val client = SupabaseClientProvider.client

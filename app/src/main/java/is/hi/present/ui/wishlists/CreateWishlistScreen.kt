@@ -5,17 +5,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import `is`.hi.present.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateWishlistScreen(
-    navController: NavController,
-    vm: WishlistsViewModel = viewModel()
+    navController: NavHostController
 ) {
+    val currentEntry by navController.currentBackStackEntryAsState()
+    val parentEntry = remember(currentEntry) {
+        navController.getBackStackEntry(Routes.WISHLISTS)
+    }
+    val vm: WishlistsViewModel = viewModel(parentEntry)
+
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
@@ -52,17 +59,15 @@ fun CreateWishlistScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Button(
-                onClick = {
-                    vm.createWishlist(
-                        title = title.trim(),
-                        description = description.trim().ifBlank { null }
-                    )
-                    navController.popBackStack()
-                },
-                enabled = title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+
+            Button(onClick = {
+                vm.createWishlist(
+                    title = title.trim(),
+                    description = description.trim().ifBlank { null },
+                    onDone = { navController.popBackStack() }
+                )
+            })
+            {
                 Text("Create")
             }
         }
