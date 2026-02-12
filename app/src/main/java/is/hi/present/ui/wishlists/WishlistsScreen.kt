@@ -3,6 +3,8 @@ package `is`.hi.present.ui.wishlists
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -35,7 +37,14 @@ fun WishlistsScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("My wishlists") }) }
+        topBar = { TopAppBar(title = { Text("My wishlists") }) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { navController.navigate(Routes.CREATE_WISHLIST) }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Create wishlist")
+            }
+        }
     ) { padding ->
         Box(
             modifier = modifier
@@ -80,9 +89,6 @@ fun WishlistsScreen(
                         items(state.wishlists, key = { it.id }) { w ->
                             WishlistCard(w)
                         }
-                    }
-                    Button(onClick = { navController.navigate(Routes.CREATE_WISHLIST) }) {
-                        Text("Create a wishlist")
                     }
                 }
             }
