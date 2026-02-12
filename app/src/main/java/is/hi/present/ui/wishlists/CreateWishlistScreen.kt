@@ -24,9 +24,13 @@ fun CreateWishlistScreen(
     }
     val vm: WishlistsViewModel = viewModel(parentEntry)
 
+    val state by vm.uiState.collectAsState()
     var title by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
 
+    val trimmedTitle = title.trim()
+    val trimmedDescription = description.trim().ifBlank { null }
+    val canSubmit = trimmedTitle.isNotBlank() && !state.isLoading
     Scaffold(
         topBar = {
             TopAppBar(
@@ -60,15 +64,22 @@ fun CreateWishlistScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-
             Button(onClick = {
                 vm.createWishlist(
-                    title = title.trim(),
-                    description = description.trim().ifBlank { null },
+                    title = trimmedTitle,
+                    description = trimmedDescription,
                     onDone = { navController.popBackStack() }
                 )
-            })
-            {
+            },
+                enabled = canSubmit,
+            ) {
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(10.dp))
+                }
                 Text("Create")
             }
         }
