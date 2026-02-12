@@ -88,7 +88,7 @@ fun WishlistsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(state.wishlists, key = { it.id }) { w ->
-                            WishlistCard(w)
+                            WishlistCard(w = w, onClick = { navController.navigate(Routes.wishlistDetail(w.id)) })
                         }
                     }
                 }
@@ -98,8 +98,8 @@ fun WishlistsScreen(
 }
 
 @Composable
-private fun WishlistCard(w: WishlistUi) {
-    ElevatedCard {
+private fun WishlistCard(w: WishlistUi, onClick: () -> Unit) {
+    ElevatedCard(onClick = onClick) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

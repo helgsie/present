@@ -19,6 +19,16 @@ class WishlistsRepository {
             .decodeList()
     }
 
+    suspend fun getWishlistById(wishlistId: String): Wishlist {
+        val client = SupabaseClientProvider.client
+
+        return client.postgrest["wishlists"]
+            .select {
+                filter { eq("id", wishlistId) }
+            }
+            .decodeSingle()
+    }
+
     suspend fun createWishlist(title: String, description: String? = null, icon: WishlistIcon) {
         val client = SupabaseClientProvider.client
 
