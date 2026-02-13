@@ -2,7 +2,6 @@ package `is`.hi.present.ui.wishlists
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import devSignInAsWishlistUser
 import io.github.jan.supabase.auth.auth
 import `is`.hi.present.data.repository.WishlistsRepository
 import `is`.hi.present.data.supabase.SupabaseClientProvider
@@ -39,7 +38,6 @@ class WishlistsViewModel(
             //val uid = client.auth.currentUserOrNull()?.id
             //android.util.Log.d("AUTH", "uid=$uid")
             //bara notað fyrir Dev purpose
-            devSignInAsWishlistUser()
 
             val wishlists = repo.getWishlists()
                 .sortedByDescending { it.createdAt ?: "" }
@@ -72,7 +70,6 @@ class WishlistsViewModel(
     ) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
         try {
-            devSignInAsWishlistUser()
             repo.createWishlist(title, description, icon)
             loadWishlists()
             onDone?.invoke()
