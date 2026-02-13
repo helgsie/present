@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import `is`.hi.present.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +38,15 @@ fun WishlistDetailScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Create wishlist")
+            }
         }
+
     ) { padding ->
         Box(
             modifier = Modifier
@@ -56,12 +66,23 @@ fun WishlistDetailScreen(
                 }
 
                 state.isEmpty -> {
-                    Text(
-                        text = "You have no wishlist Items yet.",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                    Button(onClick = { }) {
-                        Text("Create a Item")
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                    ) {
+                        if (!state.description.isNullOrBlank()) {
+                            Text(
+                                text = state.description,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = "You have no wishlist Items yet.",)
                     }
                 }
 
@@ -74,7 +95,7 @@ fun WishlistDetailScreen(
                         if (!state.description.isNullOrBlank()) {
                             item {
                                 Text(
-                                    text = state.description!!,
+                                    text = state.description,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
