@@ -1,4 +1,4 @@
-package `is`.hi.present.utils
+package `is`.hi.present.util
 
 import android.content.Context
 import androidx.core.content.edit

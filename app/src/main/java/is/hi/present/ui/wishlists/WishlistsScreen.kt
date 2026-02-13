@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -22,7 +24,8 @@ import `is`.hi.present.ui.Enums.toImageVector
 fun WishlistsScreen(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    vm: WishlistsViewModel = viewModel()
+    vm: WishlistsViewModel = viewModel(),
+    onLogout: (() -> Unit)? = null
 ) {
     val state = vm.uiState.collectAsState().value
     if (state.needsAuth) {
@@ -38,7 +41,19 @@ fun WishlistsScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("My wishlists") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("My wishlists") },
+                actions = {
+                    if (onLogout != null){
+                        IconButton(onClick = {onLogout()}) {
+                            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+                        }
+                    }
+                }
+            )
+        },
+
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate(Routes.CREATE_WISHLIST) }
