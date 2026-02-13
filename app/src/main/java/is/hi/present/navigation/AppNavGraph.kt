@@ -2,10 +2,12 @@ package `is`.hi.present.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.currentComposer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -16,6 +18,7 @@ import androidx.navigation.navArgument
 import `is`.hi.present.ui.auth.AuthScreen
 import `is`.hi.present.ui.auth.AuthViewModel
 import `is`.hi.present.ui.components.LoadingComponent
+import `is`.hi.present.ui.wishlistdetail.CreateItemScreen
 import `is`.hi.present.ui.wishlistdetail.WishlistDetailScreen
 import `is`.hi.present.ui.wishlists.WishlistsScreen
 import `is`.hi.present.ui.wishlists.CreateWishlistScreen
@@ -82,6 +85,10 @@ fun AppNavGraph(
                     navController = navController,
                     wishlistId = wishlistId
                 )
+            }
+
+            composable(Routes.CREATE_WISHLIST_ITEM) {
+                CreateItemScreen(navController = navController)
             }
         }
     }

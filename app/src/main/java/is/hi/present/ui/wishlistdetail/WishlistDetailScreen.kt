@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import `is`.hi.present.navigation.Routes
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -42,7 +43,7 @@ fun WishlistDetailScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { }
+                onClick = {navController.navigate(Routes.createWishlistItem(wishlistId)) }
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Create wishlist")
             }
