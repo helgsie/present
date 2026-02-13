@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `is`.hi.present.data.repository.AuthRepository
-import `is`.hi.present.utils.SharedPreferenceHelper
+import `is`.hi.present.util.SharedPreferenceHelper
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
