@@ -2,30 +2,43 @@ package `is`.hi.present.ui.wishlistdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class WishlistDetailViewModel(
-    private val repo: WishlistsRepository = WishlistsRepository()
+    private val repo: WishlistsRepository = WishlistsRepository(),
+    private val itemRepo: WishlistItemRepository = WishlistItemRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WishlistDetailUiState())
     val uiState: StateFlow<WishlistDetailUiState> = _uiState
 
-    fun load(wishlistId: String) = viewModelScope.launch {
-        _uiState.value = WishlistDetailUiState(isLoading = true)
+    fun loadAll(wishlistId: String) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
         try {
             val w = repo.getWishlistById(wishlistId)
-            _uiState.value = WishlistDetailUiState(
+            val items = itemRepo.getWishlistItems(wishlistId).map {
+                WishlistItemUi(
+                    id = it.id,
+                    title = it.title,
+                    description = it.description,
+                    price = it.price
+                )
+            }
+
+            _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 title = w.title,
-                description = w.description
+                description = w.description,
+                item = items,
+                errorMessage = null
             )
         } catch (e: Exception) {
-            _uiState.value = WishlistDetailUiState(
+            _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 errorMessage = e.message ?: "Failed to load wishlist"
             )
