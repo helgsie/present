@@ -2,6 +2,7 @@ package `is`.hi.present.ui.wishlists
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.jan.supabase.auth.auth
 import `is`.hi.present.data.repository.WishlistsRepository
 import `is`.hi.present.ui.Enums.WishlistIcon
 import kotlinx.coroutines.flow.MutableStateFlow
