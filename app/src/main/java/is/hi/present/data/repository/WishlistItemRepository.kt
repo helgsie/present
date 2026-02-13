@@ -11,6 +11,7 @@ class WishlistItemRepository {
             .from("wishlist_items")
             .select {
                 filter { eq("wishlist_id", wishlistId) }
+                order("sort_order", order = Order.ASCENDING)
                 order("created_at", order = Order.DESCENDING)
             }
             .decodeList()
