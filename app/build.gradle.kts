@@ -1,9 +1,5 @@
 import java.util.Properties
 
-val localProperties = Properties().apply {
-    load(rootProject.file("local.properties").inputStream())
-}
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -16,6 +12,13 @@ android {
         version = release(36)
     }
 
+    val localProperties = Properties().apply {
+        load(rootDir.resolve("local.properties").inputStream())
+    }
+
+    val url = localProperties.getProperty("SUPABASE_URL") ?: ""
+    val key = localProperties.getProperty("SUPABASE_PUBLISHABLE_KEY") ?: ""
+
     defaultConfig {
         applicationId = "is.hi.present"
         minSdk = 26
@@ -25,16 +28,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField(
-            "String",
-            "SUPABASE_URL",
-            "\"${localProperties.getProperty("SUPABASE_URL")}\""
-        )
-        buildConfigField(
-            "String",
-            "SUPABASE_PUBLISHABLE_KEY",
-            "\"${localProperties.getProperty("SUPABASE_PUBLISHABLE_KEY")}\""
-        )
+        buildConfigField("String", "SUPABASE_URL", "\"${url}\"")
+        buildConfigField("String", "SUPABASE_PUBLISHABLE_KEY", "\"${key}\"")
     }
 
     buildTypes {
@@ -64,8 +59,8 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
