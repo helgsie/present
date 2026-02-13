@@ -10,5 +10,6 @@ data class WishlistItem (
     val title: String,
     val description: String? = null,
     val url: String? = null,
+    val price: Double? = null,
     @SerialName("created_at") val createdAt: String? = null
 )

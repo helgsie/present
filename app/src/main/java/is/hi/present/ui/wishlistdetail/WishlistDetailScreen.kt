@@ -13,7 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import `is`.hi.present.navigation.Routes
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,7 +26,7 @@ fun WishlistDetailScreen(
     val state = vm.uiState.collectAsState().value
 
     LaunchedEffect(wishlistId) {
-        vm.loadAll(wishlistId) // <-- important
+        vm.loadAll(wishlistId)
     }
 
     Scaffold(
@@ -119,6 +120,12 @@ fun WishlistDetailScreen(
 
 @Composable
 private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
+    val iskFormatter = remember {
+        NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
+            maximumFractionDigits = 0
+            minimumFractionDigits = 0
+        }
+    }
     ElevatedCard(onClick = onClick) {
         Row(
             modifier = Modifier
@@ -132,6 +139,13 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
                     Spacer(Modifier.height(4.dp))
                     Text(w.description, style = MaterialTheme.typography.bodyMedium)
                 }
+            }
+            w.price?.let { price ->
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = iskFormatter.format(price),
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
     }

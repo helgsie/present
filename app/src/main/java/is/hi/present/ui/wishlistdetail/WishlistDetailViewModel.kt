@@ -21,11 +21,12 @@ class WishlistDetailViewModel(
 
         try {
             val w = repo.getWishlistById(wishlistId)
-            val items = itemRepo.getWishlistItems(wishlistId).map { it ->
+            val items = itemRepo.getWishlistItems(wishlistId).map {
                 WishlistItemUi(
                     id = it.id,
                     title = it.title,
-                    description = it.description
+                    description = it.description,
+                    price = it.price
                 )
             }
 

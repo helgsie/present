@@ -3,7 +3,8 @@ package `is`.hi.present.ui.wishlistdetail
 data class WishlistItemUi(
     val id: String,
     val title: String,
-    val description: String? = null
+    val description: String? = null,
+    val price: Double? = null
 )
 data class WishlistDetailUiState(
     val isLoading: Boolean = true,
