@@ -44,4 +44,50 @@ class WishlistDetailViewModel(
             )
         }
     }
+
+    fun createWishlistItem(
+        wishlistId: String,
+        title: String,
+        description: String? = null,
+        url: String? = null,
+        price: Double? = null
+    ) = viewModelScope.launch {
+        if (title.isBlank()) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Title má ekki vera tómt")
+            return@launch
+        }
+
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+        try {
+            itemRepo.createWishlistItem(
+                wishlistId = wishlistId,
+                title = title.trim(),
+                description = description?.trim()?.takeIf { it.isNotBlank() },
+                url = url?.trim()?.takeIf { it.isNotBlank() },
+                price = price
+            )
+
+            val items = itemRepo.getWishlistItems(wishlistId).map { item ->
+                WishlistItemUi(
+                    id = item.id,
+                    title = item.title,
+                    description = item.description,
+                    price = item.price
+                )
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                item = items,
+                errorMessage = null
+            )
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = e.message ?: "Tókst ekki að búa til item"
+            )
+        }
+    }
+
 }
