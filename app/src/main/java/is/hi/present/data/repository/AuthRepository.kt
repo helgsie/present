@@ -1,4 +1,5 @@
 package `is`.hi.present.data.repository
+
 import `is`.hi.present.data.supabase.SupabaseClientProvider
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
