@@ -1,4 +1,3 @@
-import `is`.hi.present.ui.Enums.WishlistIcon
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

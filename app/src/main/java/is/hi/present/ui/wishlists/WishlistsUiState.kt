@@ -1,6 +1,6 @@
 package `is`.hi.present.ui.wishlists
 
-import `is`.hi.present.ui.Enums.WishlistIcon
+import `is`.hi.present.ui.components.WishlistIcon
 
 data class WishlistUi(
     val id: String,

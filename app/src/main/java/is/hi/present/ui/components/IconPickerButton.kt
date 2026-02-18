@@ -8,8 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
-import `is`.hi.present.ui.Enums.WishlistIcon
-import `is`.hi.present.ui.Enums.toImageVector
 
 @Composable
 fun IconPickerButton(

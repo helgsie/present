@@ -12,25 +12,25 @@ import kotlinx.coroutines.launch
 class AuthViewModel(
     private val repository: AuthRepository = AuthRepository()
 ) : ViewModel(){
-    private val _authState = mutableStateOf<AuthState>(AuthState.Idle)
-    val authState: State<AuthState> = _authState
+    private val _authUiState = mutableStateOf<AuthUiState>(AuthUiState.Idle)
+    val authUiState: State<AuthUiState> = _authUiState
     fun signUp(
         context: Context,
         userEmail: String,
         userPassword: String,
     ) {
         if (userEmail.isBlank() || userPassword.isBlank()) {
-            _authState.value = AuthState.Error("Email and password cannot be empty")
+            _authUiState.value = AuthUiState.Error("Email and password cannot be empty")
             return
         }
         viewModelScope.launch {
-            _authState.value = AuthState.Loading
+            _authUiState.value = AuthUiState.Loading
             try{
                 repository.signUp(userEmail, userPassword)
                 saveToken(context)
-                _authState.value = AuthState.Success("Registered user successfully")
+                _authUiState.value = AuthUiState.Success("Registered user successfully")
             } catch (e: Exception){
-                _authState.value = AuthState.Error("Error: ${e.message}")
+                _authUiState.value = AuthUiState.Error("Error: ${e.message}")
 
             }
         }
@@ -52,17 +52,17 @@ class AuthViewModel(
         userPassword: String
     ){
         if (userEmail.isBlank() || userPassword.isBlank()) {
-            _authState.value = AuthState.Error("Email and password cannot be empty")
+            _authUiState.value = AuthUiState.Error("Email and password cannot be empty")
             return
         }
         viewModelScope.launch {
-            _authState.value = AuthState.Loading
+            _authUiState.value = AuthUiState.Loading
             try {
                 repository.signIn(userEmail, userPassword)
                 saveToken(context)
-                _authState.value = AuthState.Success("Signed in successfully")
+                _authUiState.value = AuthUiState.Success("Signed in successfully")
             } catch (e: Exception){
-                _authState.value = AuthState.Error("Error: ${e.message}")
+                _authUiState.value = AuthUiState.Error("Error: ${e.message}")
             }
         }
     }
@@ -73,14 +73,14 @@ class AuthViewModel(
     ){
         val sharedPref = SharedPreferenceHelper(context)
         viewModelScope.launch {
-            _authState.value = AuthState.Loading
+            _authUiState.value = AuthUiState.Loading
             try {
                 repository.signOut()
                 sharedPref.clearPreferences()
-                _authState.value = AuthState.Idle
+                _authUiState.value = AuthUiState.Idle
                 onComplete()
             } catch (e: Exception){
-                _authState.value = AuthState.Error("Error: ${e.message}")
+                _authUiState.value = AuthUiState.Error("Error: ${e.message}")
             }
         }
     }
@@ -91,15 +91,15 @@ class AuthViewModel(
             try {
                 val token = getToken(context)
                 if(token.isNullOrEmpty()){
-                    _authState.value = AuthState.Error("User is not logged in")
+                    _authUiState.value = AuthUiState.Error("User is not logged in")
                 } else {
                     repository.retrieveUser()
                     repository.refreshCurrentSession()
                     saveToken(context)
-                    _authState.value = AuthState.Success("User is already logged in")
+                    _authUiState.value = AuthUiState.Success("User is already logged in")
                 }
             } catch (e: Exception){
-                _authState.value = AuthState.Error("Error: ${e.message}")
+                _authUiState.value = AuthUiState.Error("Error: ${e.message}")
             }
         }
     }

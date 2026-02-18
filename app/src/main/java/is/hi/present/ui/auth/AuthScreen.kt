@@ -30,7 +30,7 @@ fun AuthScreen(
     onSuccess: () -> Unit
 ){
     val context = LocalContext.current
-    val authState by viewModel.authState
+    val authState by viewModel.authUiState
 
     var userEmail by remember { mutableStateOf("") }
     var userPassword by remember { mutableStateOf("") }
@@ -108,21 +108,21 @@ fun AuthScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         when(val state = authState){
-            is AuthState.Idle -> {
+            is AuthUiState.Idle -> {
                 Text(
                     text = "Please sign in or sign up",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            is AuthState.Loading -> {
+            is AuthUiState.Loading -> {
                     LoadingComponent()
             }
-            is AuthState.Success -> {
+            is AuthUiState.Success -> {
                 LaunchedEffect(Unit) {
                     onSuccess()
                 }
             }
-            is AuthState.Error -> {
+            is AuthUiState.Error -> {
                 Text(
                     text = state.message,
                     color = MaterialTheme.colorScheme.error,
