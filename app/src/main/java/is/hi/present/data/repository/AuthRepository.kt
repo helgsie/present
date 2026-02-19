@@ -5,7 +5,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.postgrest.postgrest
-import `is`.hi.present.domain.model.UserProfile
+import `is`.hi.present.domain.model.Profile
 import io.ktor.client.*
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.request.*
@@ -57,12 +57,12 @@ class AuthRepository {
     suspend fun refreshCurrentSession() {
         client.auth.refreshCurrentSession()
     }
-    suspend fun getProfile(userId: String): UserProfile? {
+    suspend fun getProfile(userId: String): Profile? {
         val result = client.postgrest["profiles"]
             .select {
                 filter { eq("id", userId) }
             }
-            .decodeList<UserProfile>()
+            .decodeList<Profile>()
 
         return result.firstOrNull()
     }

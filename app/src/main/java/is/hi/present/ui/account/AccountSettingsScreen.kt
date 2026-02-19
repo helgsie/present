@@ -30,7 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import `is`.hi.present.navigation.Routes
-import `is`.hi.present.ui.auth.AuthState
+import `is`.hi.present.ui.auth.AuthUiState
 import `is`.hi.present.ui.auth.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,7 +41,7 @@ fun AccountSettingsScreen(
 ) {
     val context = LocalContext.current
     var showConfirm by remember { mutableStateOf(false) }
-    val authState by viewModel.authState
+    val authState by viewModel.authUiState
 
 
     Scaffold(
@@ -66,12 +66,12 @@ fun AccountSettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.Top
         ) {
-            if (authState is AuthState.Loading) {
+            if (authState is AuthUiState.Loading) {
                 Text("Deleting account...")
             }
-            if (authState is AuthState.Error) {
+            if (authState is AuthUiState.Error) {
                 Text(
-                    (authState as AuthState.Error).message,
+                    (authState as AuthUiState.Error).message,
                     color = MaterialTheme.colorScheme.error
                 )
             }
