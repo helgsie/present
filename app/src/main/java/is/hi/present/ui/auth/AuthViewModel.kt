@@ -123,7 +123,7 @@ class AuthViewModel(
             try {
                 repository.deleteAccount()
                 sharedPref.clearPreferences()
-                _authUiState.value = AuthUiState.Success("Account deleted successfully")
+                _authUiState.value = AuthUiState.Idle
                 onComplete()
             } catch (e: Exception) {
                 _authUiState.value = AuthUiState.Error("Failed to delete account: ${e.message}")

@@ -34,9 +34,13 @@ fun AuthScreen(
 
     var userEmail by remember { mutableStateOf("") }
     var userPassword by remember { mutableStateOf("") }
+    val hasCheckedLogin = remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        viewModel.isUserLoggedIn(context)
+    LaunchedEffect(hasCheckedLogin.value) {
+        if (!hasCheckedLogin.value) {
+            viewModel.isUserLoggedIn(context)
+            hasCheckedLogin.value = true
+        }
     }
 
     Column(
@@ -118,7 +122,7 @@ fun AuthScreen(
                     LoadingComponent()
             }
             is AuthUiState.Success -> {
-                LaunchedEffect(Unit) {
+                LaunchedEffect(state) {
                     onSuccess()
                 }
             }

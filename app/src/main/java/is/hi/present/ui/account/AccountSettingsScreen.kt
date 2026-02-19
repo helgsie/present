@@ -122,7 +122,8 @@ fun AccountSettingsScreen(
                                 showConfirm = false
                                 viewModel.deleteAccount(context) {
                                     navController.navigate(Routes.AUTH) {
-                                        popUpTo(0) { inclusive = true }
+                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                        launchSingleTop = true
                                     }
                                 }
                             }

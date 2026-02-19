@@ -81,12 +81,14 @@ class AuthRepository {
         val user = client.auth.currentUserOrNull() ?: throw Exception("No user logged in")
         val userId = user.id
 
+        client.auth.signOut()
+
         deleteAuthUser(userId)
 
         client.postgrest["wishlists"].delete { filter { eq("owner_id", userId) } }
         client.postgrest["profiles"].delete { filter { eq("id", userId) } }
 
-        client.auth.signOut()
+
     }
 
 }
