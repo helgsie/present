@@ -14,31 +14,28 @@ class AuthViewModel(
 ) : ViewModel(){
     private val _authState = mutableStateOf<AuthState>(AuthState.Idle)
     val authState: State<AuthState> = _authState
-    fun signUp(
-        context: Context,
-        userEmail: String,
-        userPassword: String,
-    ) {
-        if (userEmail.isBlank() || userPassword.isBlank()) {
+    fun signUp(context: Context, email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Email and password cannot be empty")
             return
         }
+
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            try{
-                repository.signUp(userEmail, userPassword)
+            try {
+                repository.signUp(email, password)
                 saveToken(context)
                 _authState.value = AuthState.Success("Registered user successfully")
-            } catch (e: Exception){
-                _authState.value = AuthState.Error("Error: ${e.message}")
-
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error("Sign up failed: ${e.message}")
             }
         }
     }
+
     private fun saveToken(context: Context){
-            val accessToken = repository.getAccessToken()
-            val sharedPref = SharedPreferenceHelper(context)
-            sharedPref.saveStringData("accessToken",accessToken)
+        val accessToken = repository.getAccessToken()
+        val sharedPref = SharedPreferenceHelper(context)
+        sharedPref.saveStringData("accessToken",accessToken)
     }
 
     fun getToken(context: Context): String? {
@@ -46,31 +43,35 @@ class AuthViewModel(
         return sharedPref.getStringData("accessToken")
     }
 
-    fun signIn(
-        context: Context,
-        userEmail: String,
-        userPassword: String
-    ){
-        if (userEmail.isBlank() || userPassword.isBlank()) {
+    fun signIn(context: Context, email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Email and password cannot be empty")
             return
         }
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                repository.signIn(userEmail, userPassword)
+                repository.signIn(email, password)
+                val user = repository.retrieveUser()
+
+                if (user == null) {
+
+                    _authState.value = AuthState.Error("User not found. Please sign up.")
+                    return@launch
+                }
+
+                repository.getProfile(user.id)
+
                 saveToken(context)
                 _authState.value = AuthState.Success("Signed in successfully")
-            } catch (e: Exception){
-                _authState.value = AuthState.Error("Error: ${e.message}")
+
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error("Sign in failed: ${e.message}")
             }
         }
     }
 
-    fun signOut(
-        context: Context,
-        onComplete: () -> Unit
-    ){
+    fun signOut(context: Context, onComplete: () -> Unit) {
         val sharedPref = SharedPreferenceHelper(context)
         viewModelScope.launch {
             _authState.value = AuthState.Loading
@@ -79,33 +80,55 @@ class AuthViewModel(
                 sharedPref.clearPreferences()
                 _authState.value = AuthState.Idle
                 onComplete()
-            } catch (e: Exception){
-                _authState.value = AuthState.Error("Error: ${e.message}")
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error("Failed to sign out: ${e.message}")
             }
         }
     }
-    fun isUserLoggedIn(
-        context: Context
-    ){
+
+    fun isUserLoggedIn(context: Context) {
         viewModelScope.launch {
             try {
-                val token = getToken(context)
-                if(token.isNullOrEmpty()){
+                val token = SharedPreferenceHelper(context).getStringData("accessToken")
+                if (token.isNullOrEmpty()) {
                     _authState.value = AuthState.Error("User is not logged in")
-                } else {
-                    repository.retrieveUser()
-                    repository.refreshCurrentSession()
-                    saveToken(context)
-                    _authState.value = AuthState.Success("User is already logged in")
+                    return@launch
                 }
-            } catch (e: Exception){
-                _authState.value = AuthState.Error("Error: ${e.message}")
+
+                repository.refreshCurrentSession()
+                val user = repository.retrieveUser()
+
+                if (user == null) {
+                    _authState.value = AuthState.Error("User not found. Please sign up.")
+                    return@launch
+                }
+
+                saveToken(context)
+                _authState.value = AuthState.Success("User is already logged in")
+
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error("Error checking login: ${e.message}")
             }
         }
     }
 
     suspend fun refreshSession() {
         repository.refreshCurrentSession()
+    }
+
+    fun deleteAccount(context: Context, onComplete: () -> Unit) {
+        val sharedPref = SharedPreferenceHelper(context)
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            try {
+                repository.deleteAccount()
+                sharedPref.clearPreferences()
+                _authState.value = AuthState.Success("Account deleted successfully")
+                onComplete()
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error("Failed to delete account: ${e.message}")
+            }
+        }
     }
 
 }

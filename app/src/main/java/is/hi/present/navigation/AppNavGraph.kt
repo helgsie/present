@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import `is`.hi.present.ui.account.AccountSettingsScreen
 import `is`.hi.present.ui.auth.AuthScreen
 import `is`.hi.present.ui.auth.AuthViewModel
 import `is`.hi.present.ui.components.LoadingComponent
@@ -89,6 +90,12 @@ fun AppNavGraph(
 
             composable(Routes.CREATE_WISHLIST_ITEM) {
                 CreateItemScreen(navController = navController)
+            }
+            composable(Routes.ACCOUNT_SETTINGS) {
+                AccountSettingsScreen(
+                    viewModel = authViewModel,
+                    navController = navController
+                )
             }
         }
     }
