@@ -34,9 +34,13 @@ fun AuthScreen(
 
     var userEmail by remember { mutableStateOf("") }
     var userPassword by remember { mutableStateOf("") }
+    val hasCheckedLogin = remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        viewModel.isUserLoggedIn(context)
+    LaunchedEffect(hasCheckedLogin.value) {
+        if (!hasCheckedLogin.value) {
+            viewModel.isUserLoggedIn(context)
+            hasCheckedLogin.value = true
+        }
     }
 
     Column(
@@ -117,8 +121,20 @@ fun AuthScreen(
             is AuthUiState.Loading -> {
                     LoadingComponent()
             }
+            is AuthUiState.DeleteLoading -> {
+                Text(
+                    text = "Deleting account...",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            is AuthUiState.SignOutLoading -> {
+                Text(
+                    text = "Signing out...",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
             is AuthUiState.Success -> {
-                LaunchedEffect(Unit) {
+                LaunchedEffect(state) {
                     onSuccess()
                 }
             }

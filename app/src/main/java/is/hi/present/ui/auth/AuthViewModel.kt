@@ -14,31 +14,28 @@ class AuthViewModel(
 ) : ViewModel(){
     private val _authUiState = mutableStateOf<AuthUiState>(AuthUiState.Idle)
     val authUiState: State<AuthUiState> = _authUiState
-    fun signUp(
-        context: Context,
-        userEmail: String,
-        userPassword: String,
-    ) {
-        if (userEmail.isBlank() || userPassword.isBlank()) {
+    fun signUp(context: Context, email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
             _authUiState.value = AuthUiState.Error("Email and password cannot be empty")
             return
         }
+
         viewModelScope.launch {
             _authUiState.value = AuthUiState.Loading
-            try{
-                repository.signUp(userEmail, userPassword)
+            try {
+                repository.signUp(email, password)
                 saveToken(context)
                 _authUiState.value = AuthUiState.Success("Registered user successfully")
-            } catch (e: Exception){
-                _authUiState.value = AuthUiState.Error("Error: ${e.message}")
-
+            } catch (e: Exception) {
+                _authUiState.value = AuthUiState.Error("Sign up failed: ${e.message}")
             }
         }
     }
+
     private fun saveToken(context: Context){
-            val accessToken = repository.getAccessToken()
-            val sharedPref = SharedPreferenceHelper(context)
-            sharedPref.saveStringData("accessToken",accessToken)
+        val accessToken = repository.getAccessToken()
+        val sharedPref = SharedPreferenceHelper(context)
+        sharedPref.saveStringData("accessToken",accessToken)
     }
 
     fun getToken(context: Context): String? {
@@ -46,71 +43,105 @@ class AuthViewModel(
         return sharedPref.getStringData("accessToken")
     }
 
-    fun signIn(
-        context: Context,
-        userEmail: String,
-        userPassword: String
-    ){
-        if (userEmail.isBlank() || userPassword.isBlank()) {
+    fun signIn(context: Context, email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
             _authUiState.value = AuthUiState.Error("Email and password cannot be empty")
             return
         }
         viewModelScope.launch {
             _authUiState.value = AuthUiState.Loading
             try {
-                repository.signIn(userEmail, userPassword)
+                repository.signIn(email, password)
+                val user = repository.retrieveUser()
+
+                if (user == null) {
+
+                    _authUiState.value = AuthUiState.Error("User not found. Please sign up.")
+                    return@launch
+                }
+
+                repository.getProfile(user.id)
+
                 saveToken(context)
                 _authUiState.value = AuthUiState.Success("Signed in successfully")
-            } catch (e: Exception){
-                _authUiState.value = AuthUiState.Error("Error: ${e.message}")
+
+            } catch (e: Exception) {
+                _authUiState.value = AuthUiState.Error("Sign in failed: ${e.message}")
             }
         }
     }
 
-    fun signOut(
-        context: Context,
-        onComplete: () -> Unit
-    ){
+    fun signOut(context: Context, onComplete: () -> Unit) {
         val sharedPref = SharedPreferenceHelper(context)
         viewModelScope.launch {
-            _authUiState.value = AuthUiState.Loading
+            _authUiState.value = AuthUiState.SignOutLoading
             try {
                 repository.signOut()
                 sharedPref.clearPreferences()
                 _authUiState.value = AuthUiState.Idle
                 onComplete()
-            } catch (e: Exception){
-                _authUiState.value = AuthUiState.Error("Error: ${e.message}")
+            } catch (e: Exception) {
+                _authUiState.value = AuthUiState.Error("Failed to sign out: ${e.message}")
             }
         }
     }
 
+ 
     fun resetAuthState() {
         _authUiState.value = AuthUiState.Idle
     }
 
+  //Þori ekki alveg að taka út allt það sem fer að næsta //. Það er ekki í notkun hjá SignUp/signIn screen en samt.
     fun isUserLoggedIn(
         context: Context
     ){
+
+    fun isUserLoggedIn(context: Context) {
+
         viewModelScope.launch {
             try {
-                val token = getToken(context)
-                if(token.isNullOrEmpty()){
-                    _authUiState.value = AuthUiState.Error("User is not logged in")
-                } else {
-                    repository.retrieveUser()
-                    repository.refreshCurrentSession()
-                    saveToken(context)
-                    _authUiState.value = AuthUiState.Success("User is already logged in")
+                val token = SharedPreferenceHelper(context).getStringData("accessToken")
+                if (token.isNullOrEmpty()) {
+                    _authUiState.value = AuthUiState.Idle
+                    return@launch
                 }
-            } catch (e: Exception){
-                _authUiState.value = AuthUiState.Error("Error: ${e.message}")
+
+                repository.refreshCurrentSession()
+                val user = repository.retrieveUser()
+
+                if (user == null) {
+                    _authUiState.value = AuthUiState.Error("User not found. Please sign up.")
+                    return@launch
+                }
+
+                saveToken(context)
+                _authUiState.value = AuthUiState.Success("User is already logged in")
+
+            } catch (e: Exception) {
+                _authUiState.value = AuthUiState.Error("Error checking login: ${e.message}")
             }
         }
     }
 
     suspend fun refreshSession() {
         repository.refreshCurrentSession()
+    }
+    
+   //
+
+    fun deleteAccount(context: Context, onComplete: () -> Unit) {
+        val sharedPref = SharedPreferenceHelper(context)
+        viewModelScope.launch {
+            _authUiState.value = AuthUiState.DeleteLoading
+            try {
+                repository.deleteAccount()
+                sharedPref.clearPreferences()
+                _authUiState.value = AuthUiState.Idle
+                onComplete()
+            } catch (e: Exception) {
+                _authUiState.value = AuthUiState.Error("Failed to delete account: ${e.message}")
+            }
+        }
     }
 
 }
