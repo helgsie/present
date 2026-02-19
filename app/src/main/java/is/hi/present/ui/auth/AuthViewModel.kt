@@ -84,6 +84,11 @@ class AuthViewModel(
             }
         }
     }
+
+    fun resetAuthState() {
+        _authUiState.value = AuthUiState.Idle
+    }
+
     fun isUserLoggedIn(
         context: Context
     ){

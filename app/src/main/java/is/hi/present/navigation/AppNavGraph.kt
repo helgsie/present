@@ -15,7 +15,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import `is`.hi.present.ui.auth.AuthScreen
+import `is`.hi.present.ui.auth.SignInScreen
+import `is`.hi.present.ui.auth.SignUpScreen
 import `is`.hi.present.ui.auth.AuthViewModel
 import `is`.hi.present.ui.components.LoadingComponent
 import `is`.hi.present.ui.wishlistdetail.CreateItemScreen
@@ -32,11 +33,11 @@ fun AppNavGraph(
     val context = LocalContext.current
 
     var isCheckingAuth by remember { mutableStateOf(true) }
-    var startDestination by remember { mutableStateOf(Routes.AUTH) }
+    var startDestination by remember { mutableStateOf(Routes.SIGN_IN) }
 
     LaunchedEffect(Unit) {
         val token = authViewModel.getToken(context)
-        startDestination = if (!token.isNullOrEmpty()) Routes.WISHLISTS else Routes.AUTH
+        startDestination = if (!token.isNullOrEmpty()) Routes.WISHLISTS else Routes.SIGN_IN
         isCheckingAuth = false
     }
 
@@ -49,12 +50,25 @@ fun AppNavGraph(
         ) {
 
             // AUTH SCREEN
-            composable(Routes.AUTH) {
-                AuthScreen(
+            composable(Routes.SIGN_IN) {
+                SignInScreen(
                     viewModel = authViewModel,
+                    onGoToSignUp = { navController.navigate(Routes.SIGN_UP) },
                     onSuccess = {
                         navController.navigate(Routes.WISHLISTS) {
-                            popUpTo(Routes.AUTH) { inclusive = true }
+                            popUpTo(Routes.SIGN_IN) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Routes.SIGN_UP) {
+                SignUpScreen(
+                    viewModel = authViewModel,
+                    onGoToSignIn = { navController.popBackStack() },
+                    onSuccess = {
+                        navController.navigate(Routes.WISHLISTS) {
+                            popUpTo(Routes.SIGN_IN) { inclusive = true }
                         }
                     }
                 )
@@ -65,7 +79,7 @@ fun AppNavGraph(
                     navController = navController,
                     onLogout = {
                         authViewModel.signOut(context) {
-                            navController.navigate(Routes.AUTH) {
+                            navController.navigate(Routes.SIGN_IN) {
                                 popUpTo(Routes.WISHLISTS) { inclusive = true }
                             }
                         }
