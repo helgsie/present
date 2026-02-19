@@ -1,4 +1,4 @@
-package `is`.hi.present.ui.auth
+/*package `is`.hi.present.ui.auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -147,4 +147,4 @@ fun AuthScreen(
             }
         }
     }
-}
+}*/

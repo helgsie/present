@@ -86,7 +86,18 @@ class AuthViewModel(
         }
     }
 
+ 
+    fun resetAuthState() {
+        _authUiState.value = AuthUiState.Idle
+    }
+
+  //Þori ekki alveg að taka út allt það sem fer að næsta //. Það er ekki í notkun hjá SignUp/signIn screen en samt.
+    fun isUserLoggedIn(
+        context: Context
+    ){
+
     fun isUserLoggedIn(context: Context) {
+
         viewModelScope.launch {
             try {
                 val token = SharedPreferenceHelper(context).getStringData("accessToken")
@@ -115,6 +126,8 @@ class AuthViewModel(
     suspend fun refreshSession() {
         repository.refreshCurrentSession()
     }
+    
+   //
 
     fun deleteAccount(context: Context, onComplete: () -> Unit) {
         val sharedPref = SharedPreferenceHelper(context)
