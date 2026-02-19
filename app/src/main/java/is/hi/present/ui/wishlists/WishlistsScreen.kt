@@ -7,7 +7,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -17,8 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import `is`.hi.present.navigation.Routes
-import `is`.hi.present.ui.Enums.WishlistIcon
-import `is`.hi.present.ui.Enums.toImageVector
+import `is`.hi.present.ui.components.WishlistIcon
+import `is`.hi.present.ui.components.toImageVector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

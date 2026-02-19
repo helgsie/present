@@ -12,7 +12,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import `is`.hi.present.navigation.Routes
-import `is`.hi.present.ui.Enums.WishlistIcon
+import `is`.hi.present.ui.components.WishlistIcon
 import `is`.hi.present.ui.components.IconPickerButton
 
 @OptIn(ExperimentalMaterial3Api::class)

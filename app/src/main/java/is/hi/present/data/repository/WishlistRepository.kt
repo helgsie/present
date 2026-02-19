@@ -7,7 +7,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import `is`.hi.present.data.supabase.SupabaseClientProvider
 import `is`.hi.present.domain.model.Wishlist
-import `is`.hi.present.ui.Enums.WishlistIcon
+import `is`.hi.present.ui.components.WishlistIcon
 
 class WishlistsRepository {
     suspend fun getWishlists(): List<Wishlist> {

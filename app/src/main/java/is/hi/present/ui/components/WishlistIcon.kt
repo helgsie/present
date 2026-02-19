@@ -1,4 +1,4 @@
-package `is`.hi.present.ui.Enums
+package `is`.hi.present.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
