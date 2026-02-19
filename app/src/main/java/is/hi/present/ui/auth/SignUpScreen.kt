@@ -126,6 +126,18 @@ fun SignUpScreen(
             when (authState) {
                 is AuthUiState.Idle -> Text("")
                 is AuthUiState.Loading -> LoadingComponent()
+                is AuthUiState.DeleteLoading -> {
+                    Text(
+                        text = "Deleting account...",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                is AuthUiState.SignOutLoading -> {
+                    Text(
+                        text = "Signing out...",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
                 is AuthUiState.Success -> LaunchedEffect(Unit) { onSuccess() }
                 is AuthUiState.Error -> {}
             }

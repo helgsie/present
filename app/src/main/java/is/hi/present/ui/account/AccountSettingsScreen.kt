@@ -83,7 +83,7 @@ fun AccountSettingsScreen(
             Button(
                 onClick = {
                     viewModel.signOut(context) {
-                        navController.navigate(Routes.AUTH) {
+                        navController.navigate(Routes.SIGN_IN) {
                             popUpTo(Routes.WISHLISTS) { inclusive = true }
                         }
                     }
@@ -123,7 +123,7 @@ fun AccountSettingsScreen(
                             onClick = {
                                 showConfirm = false
                                 viewModel.deleteAccount(context) {
-                                    navController.navigate(Routes.AUTH) {
+                                    navController.navigate(Routes.SIGN_IN) {
                                         popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                         launchSingleTop = true
                                     }

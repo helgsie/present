@@ -91,44 +91,6 @@ class AuthViewModel(
         _authUiState.value = AuthUiState.Idle
     }
 
-  //Þori ekki alveg að taka út allt það sem fer að næsta //. Það er ekki í notkun hjá SignUp/signIn screen en samt.
-    fun isUserLoggedIn(
-        context: Context
-    ){
-
-    fun isUserLoggedIn(context: Context) {
-
-        viewModelScope.launch {
-            try {
-                val token = SharedPreferenceHelper(context).getStringData("accessToken")
-                if (token.isNullOrEmpty()) {
-                    _authUiState.value = AuthUiState.Idle
-                    return@launch
-                }
-
-                repository.refreshCurrentSession()
-                val user = repository.retrieveUser()
-
-                if (user == null) {
-                    _authUiState.value = AuthUiState.Error("User not found. Please sign up.")
-                    return@launch
-                }
-
-                saveToken(context)
-                _authUiState.value = AuthUiState.Success("User is already logged in")
-
-            } catch (e: Exception) {
-                _authUiState.value = AuthUiState.Error("Error checking login: ${e.message}")
-            }
-        }
-    }
-
-    suspend fun refreshSession() {
-        repository.refreshCurrentSession()
-    }
-    
-   //
-
     fun deleteAccount(context: Context, onComplete: () -> Unit) {
         val sharedPref = SharedPreferenceHelper(context)
         viewModelScope.launch {
@@ -143,5 +105,4 @@ class AuthViewModel(
             }
         }
     }
-
 }
