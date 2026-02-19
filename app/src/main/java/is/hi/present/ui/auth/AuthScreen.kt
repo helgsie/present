@@ -121,6 +121,18 @@ fun AuthScreen(
             is AuthUiState.Loading -> {
                     LoadingComponent()
             }
+            is AuthUiState.DeleteLoading -> {
+                Text(
+                    text = "Deleting account...",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            is AuthUiState.SignOutLoading -> {
+                Text(
+                    text = "Signing out...",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
             is AuthUiState.Success -> {
                 LaunchedEffect(state) {
                     onSuccess()

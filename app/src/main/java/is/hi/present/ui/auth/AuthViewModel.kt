@@ -74,7 +74,7 @@ class AuthViewModel(
     fun signOut(context: Context, onComplete: () -> Unit) {
         val sharedPref = SharedPreferenceHelper(context)
         viewModelScope.launch {
-            _authUiState.value = AuthUiState.Loading
+            _authUiState.value = AuthUiState.SignOutLoading
             try {
                 repository.signOut()
                 sharedPref.clearPreferences()
@@ -91,7 +91,7 @@ class AuthViewModel(
             try {
                 val token = SharedPreferenceHelper(context).getStringData("accessToken")
                 if (token.isNullOrEmpty()) {
-                    _authUiState.value = AuthUiState.Error("User is not logged in")
+                    _authUiState.value = AuthUiState.Idle
                     return@launch
                 }
 
@@ -119,7 +119,7 @@ class AuthViewModel(
     fun deleteAccount(context: Context, onComplete: () -> Unit) {
         val sharedPref = SharedPreferenceHelper(context)
         viewModelScope.launch {
-            _authUiState.value = AuthUiState.Loading
+            _authUiState.value = AuthUiState.DeleteLoading
             try {
                 repository.deleteAccount()
                 sharedPref.clearPreferences()

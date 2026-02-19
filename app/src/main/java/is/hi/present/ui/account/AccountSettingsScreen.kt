@@ -66,8 +66,10 @@ fun AccountSettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.Top
         ) {
-            if (authState is AuthUiState.Loading) {
+            if (authState is AuthUiState.DeleteLoading) {
                 Text("Deleting account...")
+            } else if (authState is AuthUiState.SignOutLoading) {
+                Text("Signing out...")
             }
             if (authState is AuthUiState.Error) {
                 Text(
