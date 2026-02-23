@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -13,24 +12,23 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import `is`.hi.present.navigation.Routes
 import `is`.hi.present.ui.components.WishlistIcon
 import `is`.hi.present.ui.components.toImageVector
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishlistsScreen(
-    navController: NavHostController,
     modifier: Modifier = Modifier,
-    vm: WishlistsViewModel = viewModel(),
-    onLogout: (() -> Unit)? = null
+    vm: WishlistsViewModel,
+    onLogout: () -> Unit,
+    onAccountSettings: () -> Unit,
+    onCreateWishlist: () -> Unit,
+    onOpenWishlist: (wishlistId: String) -> Unit,
 ) {
     val state = vm.uiState.collectAsState().value
+
     if (state.needsAuth) {
-        // navController.navigate("login")
-        // for now
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -45,22 +43,17 @@ fun WishlistsScreen(
             TopAppBar(
                 title = { Text("My wishlists") },
                 actions = {
-                    IconButton(
-                        onClick = { navController.navigate(Routes.ACCOUNT_SETTINGS) }
-                    ) {
-                        Icon(
-                            Icons.Filled.AccountCircle,
-                            contentDescription = "Account Settings"
-                        )
+                    IconButton(onClick = onAccountSettings) {
+                        Icon(Icons.Filled.AccountCircle, contentDescription = "Account Settings")
+                    }
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
                     }
                 }
             )
         },
-
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate(Routes.CREATE_WISHLIST) }
-            ) {
+            FloatingActionButton(onClick = onCreateWishlist) {
                 Icon(Icons.Default.Add, contentDescription = "Create wishlist")
             }
         }
@@ -103,7 +96,10 @@ fun WishlistsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(state.wishlists, key = { it.id }) { w ->
-                            WishlistCard(w = w, onClick = { navController.navigate(Routes.wishlistDetail(w.id)) })
+                            WishlistCard(
+                                w = w,
+                                onClick = { onOpenWishlist(w.id) }
+                            )
                         }
                     }
                 }

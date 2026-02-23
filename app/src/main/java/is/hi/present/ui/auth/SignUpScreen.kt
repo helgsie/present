@@ -29,10 +29,14 @@ fun SignUpScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(authState) {
-        if (authState is AuthUiState.Error) {
-            val raw = (authState as AuthUiState.Error).message
-            snackbarHostState.showSnackbar(AuthErrorMessage(raw))
-            viewModel.resetAuthState()
+        when (authState) {
+            is AuthUiState.Error -> {
+                val raw = (authState as AuthUiState.Error).message
+                snackbarHostState.showSnackbar(AuthErrorMessage(raw))
+                viewModel.resetAuthState()
+            }
+            is AuthUiState.Success -> onSuccess()
+            else -> Unit
         }
     }
 

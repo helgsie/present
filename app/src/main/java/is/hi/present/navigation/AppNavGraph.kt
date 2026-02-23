@@ -1,118 +1,119 @@
 package `is`.hi.present.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.currentComposer
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
+import `is`.hi.present.ui.account.AccountSettingsScreen
+import `is`.hi.present.ui.auth.AuthViewModel
 import `is`.hi.present.ui.auth.SignInScreen
 import `is`.hi.present.ui.auth.SignUpScreen
-
-import `is`.hi.present.ui.account.AccountSettingsScreen
-
-import `is`.hi.present.ui.auth.AuthViewModel
 import `is`.hi.present.ui.components.LoadingComponent
 import `is`.hi.present.ui.wishlistdetail.CreateItemScreen
 import `is`.hi.present.ui.wishlistdetail.WishlistDetailScreen
-import `is`.hi.present.ui.wishlists.WishlistsScreen
 import `is`.hi.present.ui.wishlists.CreateWishlistScreen
+import `is`.hi.present.ui.wishlists.WishlistsScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import `is`.hi.present.ui.wishlists.WishlistsViewModel
 
 @Composable
-fun AppNavGraph(
+fun AppNavGraphNav3(
     authViewModel: AuthViewModel = AuthViewModel(),
-    navController: NavHostController = rememberNavController()
-)
-{
+) {
     val context = LocalContext.current
 
     var isCheckingAuth by remember { mutableStateOf(true) }
-    var startDestination by remember { mutableStateOf(Routes.SIGN_IN) }
+    var startDestination by remember { mutableStateOf<AppRoute>(AppRoute.SignIn) }
 
     LaunchedEffect(Unit) {
         val token = authViewModel.getToken(context)
-        startDestination = if (!token.isNullOrEmpty()) Routes.WISHLISTS else Routes.SIGN_IN
+        startDestination = if (!token.isNullOrEmpty()) AppRoute.Wishlists else AppRoute.SignIn
         isCheckingAuth = false
     }
 
     if (isCheckingAuth) {
         LoadingComponent()
-    } else {
-        NavHost(
-            navController = navController,
-            startDestination = startDestination
-        ) {
+        return
+    }
 
-            // AUTH SCREEN
-            composable(Routes.SIGN_IN) {
+    val backStack = rememberNavBackStack(startDestination)
+    val wishlistsVm: WishlistsViewModel = viewModel()
+
+    fun resetTo(route: AppRoute) {
+        backStack.clear()
+        backStack.add(route)
+    }
+
+    NavDisplay(
+        backStack = backStack,
+        onBack = { backStack.removeLastOrNull() },
+        entryProvider = entryProvider {
+
+            entry<AppRoute.SignIn> {
                 SignInScreen(
                     viewModel = authViewModel,
-                    onGoToSignUp = { navController.navigate(Routes.SIGN_UP) },
-                    onSuccess = {
-                        navController.navigate(Routes.WISHLISTS) {
-                            popUpTo(Routes.SIGN_IN) { inclusive = true }
-                        }
-                    }
+                    onGoToSignUp = { backStack.add(AppRoute.SignUp) },
+                    onSuccess = { resetTo(AppRoute.Wishlists) }
                 )
             }
 
-            composable(Routes.SIGN_UP) {
+            entry<AppRoute.SignUp> {
                 SignUpScreen(
                     viewModel = authViewModel,
-                    onGoToSignIn = { navController.popBackStack() },
-                    onSuccess = {
-                        navController.navigate(Routes.WISHLISTS) {
-                            popUpTo(Routes.SIGN_IN) { inclusive = true }
-                        }
-                    }
+                    onGoToSignIn = { backStack.removeLastOrNull() },
+                    onSuccess = { resetTo(AppRoute.Wishlists) }
                 )
             }
-            // WISHLISTS SCREEN
-            composable(Routes.WISHLISTS) {
+
+            entry<AppRoute.Wishlists> {
                 WishlistsScreen(
-                    navController = navController,
+                    vm = wishlistsVm,
                     onLogout = {
                         authViewModel.signOut(context) {
-                            navController.navigate(Routes.SIGN_IN) {
-                                popUpTo(Routes.WISHLISTS) { inclusive = true }
-                            }
+                            resetTo(AppRoute.SignIn)
                         }
+                    },
+                    onCreateWishlist = { backStack.add(AppRoute.CreateWishlist) },
+                    onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
+                    onAccountSettings = { backStack.add(AppRoute.AccountSettings) }
+                )
+            }
+
+            entry<AppRoute.CreateWishlist> {
+                CreateWishlistScreen(
+                    vm = wishlistsVm,
+                    onBack = { backStack.removeLastOrNull() },
+                    onDone = { backStack.removeLastOrNull() }
+                )
+            }
+
+            entry<AppRoute.WishlistDetail> { key ->
+                WishlistDetailScreen(
+                    wishlistId = key.wishlistId,
+                    onBack = { backStack.removeLastOrNull() },
+                    onCreateItem = { wishlistId ->
+                        backStack.add(AppRoute.CreateWishlistItem(wishlistId))
                     }
                 )
             }
 
-            composable(Routes.CREATE_WISHLIST) {
-                CreateWishlistScreen(navController = navController)
-            }
-
-            composable(Routes.WISHLIST_DETAIL,
-                arguments = listOf(navArgument("wishlistId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val wishlistId = backStackEntry.arguments?.getString("wishlistId") ?: return@composable
-                WishlistDetailScreen(
-                    navController = navController,
-                    wishlistId = wishlistId
+            entry<AppRoute.CreateWishlistItem> { key ->
+                CreateItemScreen(
+                    wishlistId = key.wishlistId,
+                    onBack = { backStack.removeLastOrNull() },
+                    onDone = { backStack.removeLastOrNull() }
                 )
             }
 
-            composable(Routes.CREATE_WISHLIST_ITEM) {
-                CreateItemScreen(navController = navController)
-            }
-            composable(Routes.ACCOUNT_SETTINGS) {
+            entry<AppRoute.AccountSettings> {
                 AccountSettingsScreen(
                     viewModel = authViewModel,
-                    navController = navController
+                    onBack = { backStack.removeLastOrNull() },
+                    onSignedOut = { resetTo(AppRoute.SignIn) },
+                    onAccountDeleted = { resetTo(AppRoute.SignIn) }
                 )
             }
         }
-    }
+    )
 }
