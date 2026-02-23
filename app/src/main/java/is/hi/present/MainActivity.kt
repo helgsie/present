@@ -4,8 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.navigation.compose.rememberNavController
-import `is`.hi.present.navigation.AppNavGraph
+import `is`.hi.present.navigation.AppNavGraphNav3
 import `is`.hi.present.ui.theme.PresentTheme
 
 class MainActivity : ComponentActivity() {
@@ -14,8 +13,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PresentTheme {
-                val navController = rememberNavController()
-                AppNavGraph(navController = navController)
+                AppNavGraphNav3()
             }
         }
     }

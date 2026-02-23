@@ -28,8 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import `is`.hi.present.navigation.Routes
 import `is`.hi.present.ui.auth.AuthUiState
 import `is`.hi.present.ui.auth.AuthViewModel
 
@@ -37,19 +35,20 @@ import `is`.hi.present.ui.auth.AuthViewModel
 @Composable
 fun AccountSettingsScreen(
     viewModel: AuthViewModel,
-    navController: NavHostController
+    onBack: () -> Unit,
+    onSignedOut: () -> Unit,
+    onAccountDeleted: () -> Unit,
 ) {
     val context = LocalContext.current
     var showConfirm by remember { mutableStateOf(false) }
     val authState by viewModel.authUiState
-
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Account Settings") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -66,16 +65,14 @@ fun AccountSettingsScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.Top
         ) {
-            if (authState is AuthUiState.DeleteLoading) {
-                Text("Deleting account...")
-            } else if (authState is AuthUiState.SignOutLoading) {
-                Text("Signing out...")
-            }
-            if (authState is AuthUiState.Error) {
-                Text(
+            when (authState) {
+                is AuthUiState.DeleteLoading -> Text("Deleting account...")
+                is AuthUiState.SignOutLoading -> Text("Signing out...")
+                is AuthUiState.Error -> Text(
                     (authState as AuthUiState.Error).message,
                     color = MaterialTheme.colorScheme.error
                 )
+                else -> Unit
             }
 
             Spacer(Modifier.height(32.dp))
@@ -83,9 +80,7 @@ fun AccountSettingsScreen(
             Button(
                 onClick = {
                     viewModel.signOut(context) {
-                        navController.navigate(Routes.SIGN_IN) {
-                            popUpTo(Routes.WISHLISTS) { inclusive = true }
-                        }
+                        onSignedOut()
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -99,9 +94,7 @@ fun AccountSettingsScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error
                 ),
-                onClick = {
-                    showConfirm = true
-                },
+                onClick = { showConfirm = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -110,7 +103,6 @@ fun AccountSettingsScreen(
                 )
             }
 
-            // 👇 Confirmation Dialog
             if (showConfirm) {
                 AlertDialog(
                     onDismissRequest = { showConfirm = false },
@@ -123,10 +115,7 @@ fun AccountSettingsScreen(
                             onClick = {
                                 showConfirm = false
                                 viewModel.deleteAccount(context) {
-                                    navController.navigate(Routes.SIGN_IN) {
-                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                        launchSingleTop = true
-                                    }
+                                    onAccountDeleted()
                                 }
                             }
                         ) {
@@ -134,9 +123,7 @@ fun AccountSettingsScreen(
                         }
                     },
                     dismissButton = {
-                        TextButton(
-                            onClick = { showConfirm = false }
-                        ) {
+                        TextButton(onClick = { showConfirm = false }) {
                             Text("Cancel")
                         }
                     }

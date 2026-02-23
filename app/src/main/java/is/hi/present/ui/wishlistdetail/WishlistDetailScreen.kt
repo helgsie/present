@@ -12,16 +12,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import `is`.hi.present.navigation.Routes
 import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishlistDetailScreen(
-    navController: NavHostController,
     wishlistId: String,
+    onBack: () -> Unit,
+    onCreateItem: (wishlistId: String) -> Unit,
     vm: WishlistDetailViewModel = viewModel()
 ) {
     val state = vm.uiState.collectAsState().value
@@ -35,20 +34,17 @@ fun WishlistDetailScreen(
             TopAppBar(
                 title = { Text(state.title.ifBlank { "Wishlist" }) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {navController.navigate(Routes.createWishlistItem(wishlistId)) }
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Create wishlist")
+            FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
+                Icon(Icons.Default.Add, contentDescription = "Create wishlist item")
             }
         }
-
     ) { padding ->
         Box(
             modifier = Modifier
@@ -59,6 +55,7 @@ fun WishlistDetailScreen(
                 state.isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
+
                 state.errorMessage != null -> {
                     Text(
                         text = state.errorMessage,
@@ -84,7 +81,7 @@ fun WishlistDetailScreen(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "You have no wishlist Items yet.",)
+                        Text(text = "You have no wishlist Items yet.")
                     }
                 }
 
@@ -109,7 +106,7 @@ fun WishlistDetailScreen(
                         ) { w ->
                             WishlistItemCard(
                                 w = w,
-                                onClick = { /* nav to item detail */ }
+                                onClick = { /* later: onOpenItem(w.id) */ }
                             )
                         }
                     }

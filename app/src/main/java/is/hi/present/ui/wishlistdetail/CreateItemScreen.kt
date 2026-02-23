@@ -9,22 +9,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
-import `is`.hi.present.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateItemScreen(
-    navController: NavHostController
+    wishlistId: String,
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+    vm: WishlistDetailViewModel = viewModel()
 ) {
-    val currentEntry by navController.currentBackStackEntryAsState()
-    val wishlistId = currentEntry?.arguments?.getString("wishlistId") ?: ""
-    val parentEntry = remember(currentEntry) {
-        navController.getBackStackEntry(Routes.WISHLISTS)
-    }
-    val vm: WishlistDetailViewModel = viewModel(parentEntry)
-
     val state by vm.uiState.collectAsState()
 
     var title by rememberSaveable { mutableStateOf("") }
@@ -41,14 +34,14 @@ fun CreateItemScreen(
         .replace(",", ".")
         .toDoubleOrNull()
 
-    val canSubmit = trimmedTitle.isNotBlank()
+    val canSubmit = trimmedTitle.isNotBlank() && !state.isLoading
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Create item") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -62,11 +55,8 @@ fun CreateItemScreen(
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (state.errorMessage != null) {
-                Text(
-                    text = state.errorMessage!!,
-                    color = MaterialTheme.colorScheme.error
-                )
+            state.errorMessage?.let {
+                Text(text = it, color = MaterialTheme.colorScheme.error)
             }
 
             OutlinedTextField(
@@ -108,7 +98,7 @@ fun CreateItemScreen(
                         url = trimmedUrl,
                         price = parsedPrice
                     )
-                    navController.popBackStack()
+                    onDone()
                 },
             ) {
                 if (state.isLoading) {
