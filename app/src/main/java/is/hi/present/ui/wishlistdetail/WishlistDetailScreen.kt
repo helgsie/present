@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
@@ -57,7 +56,7 @@ fun WishlistDetailScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {}) {
+                TextButton(onClick = { shareCode = null }) {
                     Text("OK")
                 }
             },

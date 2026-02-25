@@ -25,7 +25,8 @@ class AddSharedWishlistViewModel(
         _uiState.value = AddSharedWishlistUiState(isLoading = true)
 
         try {
-            val wishlistId = repo.joinByToken(code.trim())
+            val cleanedCode = code.filterNot { it.isWhitespace() }
+            val wishlistId = repo.joinByToken(cleanedCode)
             _uiState.value = AddSharedWishlistUiState(
                 isLoading = false,
                 joinedWishlistId = wishlistId

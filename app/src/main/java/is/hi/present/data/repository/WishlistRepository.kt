@@ -84,7 +84,9 @@ class WishlistsRepository {
         if (shares.isEmpty()) return emptyList()
 
         return shares.mapNotNull { share ->
-            runCatching { getWishlistById(share.wishlistId) }.getOrNull()
+            runCatching { getWishlistById(share.wishlistId) }
+                .onFailure { it.printStackTrace() }
+                .getOrNull()
         }
     }
 

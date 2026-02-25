@@ -10,10 +10,14 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import `is`.hi.present.ui.components.WishlistCard
 
@@ -31,6 +35,21 @@ fun SharedWishlistScreen(
 ) {
     val state = vm.uiState.collectAsState().value
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                vm.loadSharedWishlists()
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -41,7 +60,7 @@ fun SharedWishlistScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onOpenWishlists) {
+                    TextButton(onClick = onOpenWishlists) {
                         Text("Wishlist")
                     }
                     IconButton(onClick = onAccountSettings) {

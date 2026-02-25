@@ -43,7 +43,7 @@ fun WishlistsScreen(
             TopAppBar(
                 title = { Text("My wishlists") },
                 actions = {
-                    IconButton(onClick = onOpenSharedWishlists) {
+                    TextButton(onClick = onOpenSharedWishlists) {
                         Text("Shared")
                     }
                     IconButton(onClick = onAccountSettings) {
