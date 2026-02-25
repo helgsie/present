@@ -21,6 +21,13 @@ class AddSharedWishlistViewModel(
         )
     }
 
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(
+            error = null
+        )
+    }
+
+
     fun joinByToken(code: String) = viewModelScope.launch {
         if (code.isBlank()) {
             _uiState.value = _uiState.value.copy(
@@ -39,9 +46,23 @@ class AddSharedWishlistViewModel(
             )
         } catch (e: Exception) {
             e.printStackTrace()
+
+            val raw = e.message.orEmpty()
+
+            val friendlyMessage = when {
+                raw.contains("Owner cannot join own wishlist", ignoreCase = true) ->
+                    "Owner cannot join own wishlist"
+
+                raw.contains("Invalid link", ignoreCase = true) ->
+                    "Invalid invite code"
+
+                else ->
+                    "Could not join wishlist"
+            }
+
             _uiState.value = AddSharedWishlistUiState(
                 isLoading = false,
-                error = e.message ?: "Join failed"
+                error = friendlyMessage
             )
         }
     }
