@@ -3,17 +3,23 @@ package `is`.hi.present.ui.wishlistdetail
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.content.ClipData
+import android.content.ClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
 import java.util.Locale
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,9 +30,49 @@ fun WishlistDetailScreen(
     vm: WishlistDetailViewModel = viewModel()
 ) {
     val state = vm.uiState.collectAsState().value
-
     LaunchedEffect(wishlistId) {
         vm.loadAll(wishlistId)
+    }
+    val context = LocalContext.current
+    var shareCode by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        vm.effects.collectLatest { effect ->
+            when (effect) {
+                is WishlistDetailEffect.ShowShareCode -> {
+                    shareCode = effect.code
+                }
+            }
+        }
+    }
+
+    shareCode?.let { code ->
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Invite code") },
+            text = {
+                SelectionContainer {
+                    Text(code)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { shareCode = null }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        val clipboardManager = context.getSystemService(ClipboardManager::class.java)
+                        clipboardManager?.setPrimaryClip(
+                            ClipData.newPlainText("invite_code", code)
+                        )
+                    }
+                ) {
+                    Text("Copy")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -36,6 +82,14 @@ fun WishlistDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { vm.onShareClicked(wishlistId) },
+                        enabled = !state.isLoading
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = "Share wishlist")
                     }
                 }
             )

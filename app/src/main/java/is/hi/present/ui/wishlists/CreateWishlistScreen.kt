@@ -8,13 +8,14 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import `is`.hi.present.ui.components.IconPickerButton
 import `is`.hi.present.ui.components.WishlistIcon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateWishlistScreen(
-    vm: WishlistsViewModel,
+    vm: WishlistsViewModel = viewModel(),
     onBack: () -> Unit,
     onDone: () -> Unit,
 ) {

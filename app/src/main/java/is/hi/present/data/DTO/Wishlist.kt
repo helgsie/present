@@ -8,3 +8,20 @@ data class WishlistInsert(
     val owner_id: String,
     @SerialName("icon_key") val iconKey: String
 )
+
+@Serializable
+data class CreateShareLinkArgs(
+    @SerialName("p_wishlist_id") val wishlistId: String
+)
+
+@Serializable
+data class JoinByTokenArgs(
+    @SerialName("p_token") val token: String
+)
+
+@Serializable
+data class WishlistShareRow(
+    @SerialName("wishlist_id") val wishlistId: String,
+    @SerialName("shared_with") val sharedWith: String,
+    val role: String? = null
+)
