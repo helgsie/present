@@ -57,6 +57,10 @@ class AuthRepository {
     suspend fun refreshCurrentSession() {
         client.auth.refreshCurrentSession()
     }
+
+    fun getCurrentUserId(): String? {
+        return SupabaseClientProvider.client.auth.currentUserOrNull()?.id
+    }
     suspend fun getProfile(userId: String): Profile? {
         val result = client.postgrest["profiles"]
             .select {
