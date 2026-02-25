@@ -9,9 +9,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
+import `is`.hi.present.data.repository.AuthRepository
 
 class WishlistDetailViewModel(
     private val repo: WishlistsRepository = WishlistsRepository(),
+    private val repoAuth: AuthRepository = AuthRepository(),
     private val itemRepo: WishlistItemRepository = WishlistItemRepository()
 ) : ViewModel() {
     private val _effects = Channel<WishlistDetailEffect>(Channel.BUFFERED)
@@ -25,6 +27,8 @@ class WishlistDetailViewModel(
 
         try {
             val w = repo.getWishlistById(wishlistId)
+            val currentUserId = repoAuth.getCurrentUserId()
+
             val items = itemRepo.getWishlistItems(wishlistId).map {
                 WishlistItemUi(
                     id = it.id,
@@ -39,6 +43,7 @@ class WishlistDetailViewModel(
                 title = w.title,
                 description = w.description,
                 item = items,
+                isOwner = (w.ownerId == currentUserId),
                 errorMessage = null
             )
         } catch (e: Exception) {
