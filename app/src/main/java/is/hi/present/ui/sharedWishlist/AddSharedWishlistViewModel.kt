@@ -14,6 +14,13 @@ class AddSharedWishlistViewModel(
     private val _uiState = MutableStateFlow(AddSharedWishlistUiState())
     val uiState: StateFlow<AddSharedWishlistUiState> = _uiState
 
+    fun clearJoinedState() {
+        _uiState.value = _uiState.value.copy(
+            joinedWishlistId = null,
+            error = null
+        )
+    }
+
     fun joinByToken(code: String) = viewModelScope.launch {
         if (code.isBlank()) {
             _uiState.value = _uiState.value.copy(
@@ -25,8 +32,7 @@ class AddSharedWishlistViewModel(
         _uiState.value = AddSharedWishlistUiState(isLoading = true)
 
         try {
-            val cleanedCode = code.filterNot { it.isWhitespace() }
-            val wishlistId = repo.joinByToken(cleanedCode)
+            val wishlistId = repo.joinByToken(code)
             _uiState.value = AddSharedWishlistUiState(
                 isLoading = false,
                 joinedWishlistId = wishlistId

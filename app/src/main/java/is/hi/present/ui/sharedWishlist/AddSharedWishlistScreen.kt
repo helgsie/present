@@ -20,7 +20,10 @@ fun AddSharedWishlistScreen(
     var code by remember { mutableStateOf("") }
 
     LaunchedEffect(state.joinedWishlistId) {
-        state.joinedWishlistId?.let(onJoined)
+        state.joinedWishlistId?.let { wishlistId ->
+            onJoined(wishlistId)
+            vm.clearJoinedState()
+        }
     }
 
     Scaffold(

@@ -19,20 +19,22 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SharedWishlistScreen(
     modifier: Modifier = Modifier,
-    onBack: () -> Unit,
     onAddSharedWishlist: () -> Unit,
-    onOpenWishlists: () -> Unit,
     onAccountSettings: () -> Unit,
     onLogout: () -> Unit,
     onOpenWishlist: (wishlistId: String) -> Unit,
-    vm: SharedWishlistViewModel = viewModel()
-) {
+    vm: SharedWishlistViewModel = viewModel(),
+    onSelectWishlists: () -> Unit,
+    selectedSegmentIndex: Int = 0,
+    onOpenSharedWishlists: () -> Unit,
+    ) {
     val state = vm.uiState.collectAsState().value
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -54,15 +56,7 @@ fun SharedWishlistScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Shared wishlists") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 actions = {
-                    TextButton(onClick = onOpenWishlists) {
-                        Text("Wishlist")
-                    }
                     IconButton(onClick = onAccountSettings) {
                         Icon(Icons.Filled.AccountCircle, contentDescription = "Account Settings")
                     }
@@ -78,50 +72,69 @@ fun SharedWishlistScreen(
             }
         }
     ) { padding ->
-        Box(
+        Column(
             modifier = modifier
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            when {
-                state.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
+            Segments(
+                selectedIndex = selectedSegmentIndex,
+                onSelectedChange = { index ->
+                    when (index) {
+                        0 -> onSelectWishlists()
+                        1 -> onOpenSharedWishlists()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Box(
+                modifier = modifier
+                    .padding(padding)
+                    .fillMaxSize()
+            ) {
+                when {
+                    state.isLoading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
 
-                state.errorMessage != null -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = state.errorMessage,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Button(onClick = { vm.loadSharedWishlists() }) {
-                            Text("Retry")
+                    state.errorMessage != null -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = state.errorMessage,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Button(onClick = { vm.loadSharedWishlists() }) {
+                                Text("Retry")
+                            }
                         }
                     }
-                }
 
-                state.isEmpty -> {
-                    Text(
-                        text = "You have no shared wishlists yet.",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+                    state.isEmpty -> {
+                        Text(
+                            text = "You have no shared wishlists yet.",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
 
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(state.wishlists, key = { it.id }) { w ->
-                            WishlistCard(
-                                w = w,
-                                onClick = { onOpenWishlist(w.id) }
-                            )
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(state.wishlists, key = { it.id }) { w ->
+                                WishlistCard(
+                                    w = w,
+                                    onClick = { onOpenWishlist(w.id) }
+                                )
+                            }
                         }
                     }
                 }

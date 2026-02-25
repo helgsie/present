@@ -100,8 +100,10 @@ fun AppNavGraphNav3(
                     onCreateWishlist = { backStack.add(AppRoute.CreateWishlist) },
                     onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
                     onAccountSettings = { backStack.add(AppRoute.AccountSettings) },
-                    onOpenSharedWishlists = { backStack.add(AppRoute.SharedWishlists) }
-                )
+                    onOpenSharedWishlists = { backStack.add(AppRoute.SharedWishlists) },
+                    onSelectWishlists = { },
+                    selectedSegmentIndex = 0,
+                    )
             }
 
             entry<AppRoute.CreateWishlist> {
@@ -151,26 +153,24 @@ fun AppNavGraphNav3(
 
             entry<AppRoute.SharedWishlists> {
                 SharedWishlistScreen(
-                    onBack = { backStack.removeLastOrNull() },
                     onAddSharedWishlist = { backStack.add(AppRoute.AddSharedWishlist) },
                     onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
-                    onOpenWishlists = { backStack.add(AppRoute.Wishlists)},
+                    onSelectWishlists = { backStack.add(AppRoute.Wishlists) },
                     onLogout = {
                         authViewModel.signOut(context) {
                             resetTo(AppRoute.SignIn)
                         }
                     },
-                    onAccountSettings = {backStack.add(AppRoute.AccountSettings)}
+                    onAccountSettings = {backStack.add(AppRoute.AccountSettings)},
+                    selectedSegmentIndex = 1,
+                    onOpenSharedWishlists = { }
                 )
             }
 
             entry<AppRoute.AddSharedWishlist> {
                 AddSharedWishlistScreen(
                     onBack = { backStack.removeLastOrNull() },
-                    onJoined = { wishlistId ->
-                        backStack.removeLastOrNull()
-                        backStack.add(AppRoute.WishlistDetail(wishlistId))
-                    }
+                    onJoined = { backStack.removeLastOrNull() }
                 )
             }
         }
