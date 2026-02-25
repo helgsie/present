@@ -16,9 +16,13 @@ import java.net.URLEncoder
 
 class WishlistsRepository {
     suspend fun getWishlists(): List<Wishlist> {
-        return SupabaseClientProvider.client
+        val client = SupabaseClientProvider.client
+        val userId = client.auth.currentUserOrNull()?.id ?: error("Not signed in")
+
+        return client
             .from("wishlists")
             .select {
+                filter { eq("owner_id", userId) }
                 order("created_at", order = Order.DESCENDING)
             }
             .decodeList()
