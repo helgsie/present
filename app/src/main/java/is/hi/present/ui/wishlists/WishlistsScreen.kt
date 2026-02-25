@@ -13,6 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
 
@@ -20,7 +22,7 @@ import `is`.hi.present.ui.components.WishlistCard
 @Composable
 fun WishlistsScreen(
     modifier: Modifier = Modifier,
-    vm: WishlistsViewModel,
+    vm: WishlistsViewModel = viewModel(),
     onLogout: () -> Unit,
     onAccountSettings: () -> Unit,
     onCreateWishlist: () -> Unit,
@@ -29,6 +31,9 @@ fun WishlistsScreen(
     onSelectWishlists: () -> Unit,
     selectedSegmentIndex: Int = 0,
     ) {
+    LaunchedEffect(Unit) {
+        vm.loadWishlists()
+    }
     val state = vm.uiState.collectAsState().value
 
     if (state.needsAuth) {

@@ -51,7 +51,6 @@ fun AppNavGraphNav3(
     }
 
     val backStack = rememberNavBackStack(startDestination)
-    val wishlistsVm: WishlistsViewModel = viewModel()
 
     fun resetTo(route: AppRoute) {
         backStack.clear()
@@ -91,7 +90,6 @@ fun AppNavGraphNav3(
 
             entry<AppRoute.Wishlists> {
                 WishlistsScreen(
-                    vm = wishlistsVm,
                     onLogout = {
                         authViewModel.signOut(context) {
                             resetTo(AppRoute.SignIn)
@@ -108,7 +106,6 @@ fun AppNavGraphNav3(
 
             entry<AppRoute.CreateWishlist> {
                 CreateWishlistScreen(
-                    vm = wishlistsVm,
                     onBack = { backStack.removeLastOrNull() },
                     onDone = { backStack.removeLastOrNull() }
                 )
