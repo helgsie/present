@@ -7,11 +7,15 @@ import `is`.hi.present.data.repository.WishlistsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 
 class WishlistDetailViewModel(
     private val repo: WishlistsRepository = WishlistsRepository(),
     private val itemRepo: WishlistItemRepository = WishlistItemRepository()
 ) : ViewModel() {
+    private val _effects = Channel<WishlistDetailEffect>(Channel.BUFFERED)
+    val effects = _effects.receiveAsFlow()
 
     private val _uiState = MutableStateFlow(WishlistDetailUiState())
     val uiState: StateFlow<WishlistDetailUiState> = _uiState
@@ -90,4 +94,14 @@ class WishlistDetailViewModel(
         }
     }
 
+    fun onShareClicked(wishlistId: String) = viewModelScope.launch {
+        try {
+            val code = repo.createShareCode(wishlistId)
+            _effects.send(WishlistDetailEffect.ShowShareCode(code))
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = e.message ?: "Tókst ekki að búa til invite code"
+            )
+        }
+    }
 }

@@ -15,20 +15,33 @@ import `is`.hi.present.ui.wishlistdetail.WishlistDetailScreen
 import `is`.hi.present.ui.wishlists.CreateWishlistScreen
 import `is`.hi.present.ui.wishlists.WishlistsScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
+import `is`.hi.present.ui.sharedWishlist.AddSharedWishlistScreen
+import `is`.hi.present.ui.sharedWishlist.SharedWishlistScreen
+import `is`.hi.present.ui.wishlists.CreateTokenScreen
 import `is`.hi.present.ui.wishlists.WishlistsViewModel
 
 @Composable
 fun AppNavGraphNav3(
     authViewModel: AuthViewModel = AuthViewModel(),
+    startJoinToken: String? = null,
 ) {
     val context = LocalContext.current
 
     var isCheckingAuth by remember { mutableStateOf(true) }
+    var pendingJoinToken by remember { mutableStateOf(startJoinToken) }
     var startDestination by remember { mutableStateOf<AppRoute>(AppRoute.SignIn) }
 
     LaunchedEffect(Unit) {
         val token = authViewModel.getToken(context)
-        startDestination = if (!token.isNullOrEmpty()) AppRoute.Wishlists else AppRoute.SignIn
+        val loggedIn = !token.isNullOrEmpty()
+
+        startDestination = when {
+            loggedIn && !pendingJoinToken.isNullOrBlank() ->
+                AppRoute.JoinWishlist(pendingJoinToken!!)
+
+            loggedIn -> AppRoute.Wishlists
+            else -> AppRoute.SignIn
+        }
         isCheckingAuth = false
     }
 
@@ -54,7 +67,12 @@ fun AppNavGraphNav3(
                 SignInScreen(
                     viewModel = authViewModel,
                     onGoToSignUp = { backStack.add(AppRoute.SignUp) },
-                    onSuccess = { resetTo(AppRoute.Wishlists) }
+                    onSuccess = {
+                        val next = pendingJoinToken?.let { AppRoute.JoinWishlist(it) }
+                            ?: AppRoute.Wishlists
+                        pendingJoinToken = null
+                        resetTo(next)
+                    }
                 )
             }
 
@@ -62,7 +80,12 @@ fun AppNavGraphNav3(
                 SignUpScreen(
                     viewModel = authViewModel,
                     onGoToSignIn = { backStack.removeLastOrNull() },
-                    onSuccess = { resetTo(AppRoute.Wishlists) }
+                    onSuccess = {
+                        val next = pendingJoinToken?.let { AppRoute.JoinWishlist(it) }
+                            ?: AppRoute.Wishlists
+                        pendingJoinToken = null
+                        resetTo(next)
+                    }
                 )
             }
 
@@ -76,7 +99,8 @@ fun AppNavGraphNav3(
                     },
                     onCreateWishlist = { backStack.add(AppRoute.CreateWishlist) },
                     onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
-                    onAccountSettings = { backStack.add(AppRoute.AccountSettings) }
+                    onAccountSettings = { backStack.add(AppRoute.AccountSettings) },
+                    onOpenSharedWishlists = { backStack.add(AppRoute.SharedWishlists) }
                 )
             }
 
@@ -112,6 +136,41 @@ fun AppNavGraphNav3(
                     onBack = { backStack.removeLastOrNull() },
                     onSignedOut = { resetTo(AppRoute.SignIn) },
                     onAccountDeleted = { resetTo(AppRoute.SignIn) }
+                )
+            }
+
+            entry<AppRoute.JoinWishlist> { key ->
+                CreateTokenScreen(
+                    token = key.token,
+                    onJoined = { wishlistId ->
+                        backStack.removeLastOrNull()
+                        backStack.add(AppRoute.WishlistDetail(wishlistId))
+                    }
+                )
+            }
+
+            entry<AppRoute.SharedWishlists> {
+                SharedWishlistScreen(
+                    onBack = { backStack.removeLastOrNull() },
+                    onAddSharedWishlist = { backStack.add(AppRoute.AddSharedWishlist) },
+                    onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
+                    onOpenWishlists = { backStack.add(AppRoute.Wishlists)},
+                    onLogout = {
+                        authViewModel.signOut(context) {
+                            resetTo(AppRoute.SignIn)
+                        }
+                    },
+                    onAccountSettings = {backStack.add(AppRoute.AccountSettings)}
+                )
+            }
+
+            entry<AppRoute.AddSharedWishlist> {
+                AddSharedWishlistScreen(
+                    onBack = { backStack.removeLastOrNull() },
+                    onJoined = { wishlistId ->
+                        backStack.removeLastOrNull()
+                        backStack.add(AppRoute.WishlistDetail(wishlistId))
+                    }
                 )
             }
         }
