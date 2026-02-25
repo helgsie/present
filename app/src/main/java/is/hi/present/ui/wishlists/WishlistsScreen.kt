@@ -46,9 +46,6 @@ fun WishlistsScreen(
             TopAppBar(
                 title = { Text("My wishlists") },
                 actions = {
-                    /*TextButton(onClick = onOpenSharedWishlists) {
-                        Text("Shared")
-                    }*/
                     IconButton(onClick = onAccountSettings) {
                         Icon(Icons.Filled.AccountCircle, contentDescription = "Account Settings")
                     }
