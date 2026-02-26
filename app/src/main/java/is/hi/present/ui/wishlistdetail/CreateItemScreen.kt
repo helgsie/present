@@ -24,6 +24,7 @@ fun CreateItemScreen(
     var description by rememberSaveable { mutableStateOf("") }
     var url by rememberSaveable { mutableStateOf("") }
     var priceText by rememberSaveable { mutableStateOf("") }
+    var selectedImageUri by rememberSaveable { mutableStateOf<String?>(null) }
 
     val trimmedTitle = title.trim()
     val trimmedDescription = description.trim().ifBlank { null }
@@ -96,7 +97,8 @@ fun CreateItemScreen(
                         title = trimmedTitle,
                         description = trimmedDescription,
                         url = trimmedUrl,
-                        price = parsedPrice
+                        price = parsedPrice,
+                        imagePath = selectedImageUri
                     )
                     onDone()
                 },

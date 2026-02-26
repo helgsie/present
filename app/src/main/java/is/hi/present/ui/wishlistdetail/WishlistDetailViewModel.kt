@@ -34,7 +34,8 @@ class WishlistDetailViewModel(
                     id = it.id,
                     title = it.title,
                     description = it.description,
-                    price = it.price
+                    price = it.price,
+                    imagePath = it.imagePath
                 )
             }
 
@@ -59,7 +60,8 @@ class WishlistDetailViewModel(
         title: String,
         description: String? = null,
         url: String? = null,
-        price: Double? = null
+        price: Double? = null,
+        imagePath: String? = null
     ) = viewModelScope.launch {
         if (title.isBlank()) {
             _uiState.value = _uiState.value.copy(errorMessage = "Title má ekki vera tómt")
@@ -74,7 +76,8 @@ class WishlistDetailViewModel(
                 title = title.trim(),
                 description = description?.trim()?.takeIf { it.isNotBlank() },
                 url = url?.trim()?.takeIf { it.isNotBlank() },
-                price = price
+                price = price,
+                imagePath = imagePath
             )
 
             val items = itemRepo.getWishlistItems(wishlistId).map { item ->
@@ -82,7 +85,8 @@ class WishlistDetailViewModel(
                     id = item.id,
                     title = item.title,
                     description = item.description,
-                    price = item.price
+                    price = item.price,
+                    imagePath = item.imagePath
                 )
             }
 

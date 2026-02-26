@@ -4,7 +4,8 @@ data class WishlistItemUi(
     val id: String,
     val title: String,
     val description: String? = null,
-    val price: Double? = null
+    val price: Double? = null,
+    val imagePath: String? = null
 )
 data class WishlistDetailUiState(
     val isLoading: Boolean = true,
