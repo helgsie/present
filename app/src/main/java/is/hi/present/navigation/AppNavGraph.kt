@@ -1,7 +1,6 @@
 package `is`.hi.present.navigation
 
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
@@ -49,7 +48,6 @@ fun AppNavGraphNav3(
     }
 
     val backStack = rememberNavBackStack(startDestination)
-    val wishlistsVm: WishlistsViewModel = viewModel()
 
     fun resetTo(route: AppRoute) {
         backStack.clear()
@@ -89,7 +87,6 @@ fun AppNavGraphNav3(
 
             entry<AppRoute.Wishlists> {
                 WishlistsScreen(
-                    vm = wishlistsVm,
                     onLogout = {
                         authViewModel.signOut {
                             resetTo(AppRoute.SignIn)
@@ -106,7 +103,6 @@ fun AppNavGraphNav3(
 
             entry<AppRoute.CreateWishlist> {
                 CreateWishlistScreen(
-                    vm = wishlistsVm,
                     onBack = { backStack.removeLastOrNull() },
                     onDone = { backStack.removeLastOrNull() }
                 )
@@ -116,8 +112,9 @@ fun AppNavGraphNav3(
                 WishlistDetailScreen(
                     wishlistId = key.wishlistId,
                     onBack = { backStack.removeLastOrNull() },
-                    onCreateItem = { id -> backStack.add(AppRoute.CreateWishlistItem(id)) },
-                    wishlistsVm = wishlistsVm
+                    onCreateItem = { wishlistId ->
+                        backStack.add(AppRoute.CreateWishlistItem(wishlistId))
+                    }
                 )
             }
 
