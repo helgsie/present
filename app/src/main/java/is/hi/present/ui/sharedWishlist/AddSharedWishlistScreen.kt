@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import `is`.hi.present.ui.components.ErrorMessage
 
@@ -16,7 +17,7 @@ import `is`.hi.present.ui.components.ErrorMessage
 fun AddSharedWishlistScreen(
     onBack: () -> Unit,
     onJoined: (wishlistId: String) -> Unit,
-    vm: AddSharedWishlistViewModel = viewModel()
+    vm: AddSharedWishlistViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsState()
     var code by remember { mutableStateOf("") }

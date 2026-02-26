@@ -1,20 +1,26 @@
 package `is`.hi.present.ui.auth
 
-import android.content.Context
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `is`.hi.present.data.repository.AuthRepository
 import `is`.hi.present.util.SharedPreferenceHelper
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class AuthViewModel(
-    private val repository: AuthRepository = AuthRepository()
-) : ViewModel(){
-    private val _authUiState = mutableStateOf<AuthUiState>(AuthUiState.Idle)
-    val authUiState: State<AuthUiState> = _authUiState
-    fun signUp(context: Context, email: String, password: String) {
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    private val repository: AuthRepository,
+    private val sharedPref: SharedPreferenceHelper
+) : ViewModel() {
+
+    private val _authUiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
+    val authUiState: StateFlow<AuthUiState> = _authUiState.asStateFlow()
+
+    fun signUp(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
             _authUiState.value = AuthUiState.Error("Email and password cannot be empty")
             return
@@ -24,7 +30,7 @@ class AuthViewModel(
             _authUiState.value = AuthUiState.Loading
             try {
                 repository.signUp(email, password)
-                saveToken(context)
+                saveToken()
                 _authUiState.value = AuthUiState.Success("Registered user successfully")
             } catch (e: Exception) {
                 _authUiState.value = AuthUiState.Error("Sign up failed: ${e.message}")
@@ -32,18 +38,16 @@ class AuthViewModel(
         }
     }
 
-    private fun saveToken(context: Context){
+    private fun saveToken() {
         val accessToken = repository.getAccessToken()
-        val sharedPref = SharedPreferenceHelper(context)
-        sharedPref.saveStringData("accessToken",accessToken)
+        if (!accessToken.isNullOrBlank()) {
+            sharedPref.saveStringData("accessToken", accessToken)
+        }
     }
 
-    fun getToken(context: Context): String? {
-        val sharedPref = SharedPreferenceHelper(context)
-        return sharedPref.getStringData("accessToken")
-    }
+    fun getToken(): String? = sharedPref.getStringData("accessToken")
 
-    fun signIn(context: Context, email: String, password: String) {
+    fun signIn(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
             _authUiState.value = AuthUiState.Error("Email and password cannot be empty")
             return
@@ -55,14 +59,13 @@ class AuthViewModel(
                 val user = repository.retrieveUser()
 
                 if (user == null) {
-
                     _authUiState.value = AuthUiState.Error("User not found. Please sign up.")
                     return@launch
                 }
 
                 repository.getProfile(user.id)
 
-                saveToken(context)
+                saveToken()
                 _authUiState.value = AuthUiState.Success("Signed in successfully")
 
             } catch (e: Exception) {
@@ -71,8 +74,7 @@ class AuthViewModel(
         }
     }
 
-    fun signOut(context: Context, onComplete: () -> Unit) {
-        val sharedPref = SharedPreferenceHelper(context)
+    fun signOut(onComplete: () -> Unit) {
         viewModelScope.launch {
             _authUiState.value = AuthUiState.SignOutLoading
             try {
@@ -86,13 +88,11 @@ class AuthViewModel(
         }
     }
 
- 
     fun resetAuthState() {
         _authUiState.value = AuthUiState.Idle
     }
 
-    fun deleteAccount(context: Context, onComplete: () -> Unit) {
-        val sharedPref = SharedPreferenceHelper(context)
+    fun deleteAccount(onComplete: () -> Unit) {
         viewModelScope.launch {
             _authUiState.value = AuthUiState.DeleteLoading
             try {
