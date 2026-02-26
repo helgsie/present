@@ -5,21 +5,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import `is`.hi.present.ui.components.LoadingComponent
 
 @Composable
 fun SignUpScreen(
-    viewModel: AuthViewModel,
+    viewModel: AuthViewModel = hiltViewModel(),
     onGoToSignIn: () -> Unit,
     onSuccess: () -> Unit
 ) {
-    val context = LocalContext.current
-    val authState by viewModel.authUiState
+    val authState by viewModel.authUiState.collectAsState()
     val scope = rememberCoroutineScope()
 
     var userEmail by remember { mutableStateOf("") }
@@ -99,7 +99,6 @@ fun SignUpScreen(
                     }
 
                     viewModel.signUp(
-                        context,
                         userEmail.trim(),
                         userPassword
                     )

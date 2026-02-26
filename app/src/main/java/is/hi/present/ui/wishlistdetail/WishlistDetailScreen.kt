@@ -3,24 +3,27 @@ package `is`.hi.present.ui.wishlistdetail
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.content.ClipData
+import android.content.ClipboardManager
+import androidx.compose.foundation.Image
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import `is`.hi.present.R
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import `is`.hi.present.ui.components.IconPickerButton
-import `is`.hi.present.ui.components.WishlistIcon
-import `is`.hi.present.ui.components.toImageVector
-import `is`.hi.present.ui.wishlists.WishlistsViewModel
 import java.text.NumberFormat
 import java.util.Locale
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,46 +31,50 @@ fun WishlistDetailScreen(
     wishlistId: String,
     onBack: () -> Unit,
     onCreateItem: (wishlistId: String) -> Unit,
-    wishlistsVm: WishlistsViewModel,
-    detailVm: WishlistDetailViewModel = viewModel()
+    vm: WishlistDetailViewModel = hiltViewModel()
 ) {
-    val state = detailVm.uiState.collectAsState().value
-    val listState = wishlistsVm.uiState.collectAsState().value
-
-    var isEditing by rememberSaveable { mutableStateOf(false) }
-    var title by rememberSaveable { mutableStateOf("") }
-    var description by rememberSaveable { mutableStateOf("") }
-    var iconKey by rememberSaveable { mutableStateOf("favorite") }
-    var confirmDelete by remember { mutableStateOf(false) }
-
+    val state = vm.uiState.collectAsState().value
     LaunchedEffect(wishlistId) {
-        detailVm.loadAll(wishlistId)
+        vm.loadAll(wishlistId)
     }
+    val context = LocalContext.current
+    var shareCode by remember { mutableStateOf<String?>(null) }
 
-
-    LaunchedEffect(isEditing, state.id) {
-        if (isEditing && state.id != null) {
-            title = state.title
-            description = state.description.orEmpty()
-            iconKey = state.iconKey
+    LaunchedEffect(Unit) {
+        vm.effects.collectLatest { effect ->
+            when (effect) {
+                is WishlistDetailEffect.ShowShareCode -> {
+                    shareCode = effect.code
+                }
+            }
         }
     }
 
-    if (confirmDelete) {
+    shareCode?.let { code ->
         AlertDialog(
-            onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete Wishlist?") },
-            text = { Text("This wishlist and all its items will be permanently removed.") },
+            onDismissRequest = {},
+            title = { Text("Invite code") },
+            text = {
+                SelectionContainer {
+                    Text(code)
+                }
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    confirmDelete = false
-                    wishlistsVm.deleteWishlist(wishlistId) {
-                        onBack()
-                    }
-                }) { Text("Delete") }
+                TextButton(onClick = { shareCode = null }) {
+                    Text("OK")
+                }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                TextButton(
+                    onClick = {
+                        val clipboardManager = context.getSystemService(ClipboardManager::class.java)
+                        clipboardManager?.setPrimaryClip(
+                            ClipData.newPlainText("invite_code", code)
+                        )
+                    }
+                ) {
+                    Text("Copy")
+                }
             }
         )
     }
@@ -75,57 +82,20 @@ fun WishlistDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        val iconVector = WishlistIcon.fromKey(
-                            if (isEditing) iconKey else state.iconKey
-                        ).toImageVector()
-                        Icon(imageVector = iconVector, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(state.title.ifBlank { "Wishlist" })
-                    }
-                },
+                title = { Text(state.title.ifBlank { "Wishlist" }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    if (!isEditing) {
+                    if (state.isOwner) {
                         IconButton(
-                            enabled = !state.isLoading,
-                            onClick = { isEditing = true }
+                            onClick = { vm.onShareClicked(wishlistId) },
+                            enabled = !state.isLoading
                         ) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit wishlist")
+                            Icon(Icons.Default.Share, contentDescription = "Share wishlist")
                         }
-
-                        IconButton(
-                            enabled = !state.isLoading,
-                            onClick = { confirmDelete = true }
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete wishlist")
-                        }
-                    } else {
-                        TextButton(
-                            enabled = !listState.isLoading,
-                            onClick = { isEditing = false }
-                        ) { Text("Cancel") }
-
-                        TextButton(
-                            enabled = title.trim().isNotBlank() && !listState.isLoading,
-                            onClick = {
-                                wishlistsVm.updateWishlist(
-                                    wishlistId = wishlistId,
-                                    title = title.trim(),
-                                    description = description.trim().ifBlank { null },
-                                    icon = WishlistIcon.fromKey(iconKey),
-                                    onDone = {
-                                        isEditing = false
-                                        detailVm.loadAll(wishlistId)
-                                    }
-                                )
-                            }
-                        ) { Text("Save") }
                     }
                 }
             )
@@ -141,16 +111,6 @@ fun WishlistDetailScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            if (listState.errorMessage != null) {
-                Text(
-                    text = listState.errorMessage!!,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(16.dp)
-                )
-            }
-
             when {
                 state.isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -168,36 +128,20 @@ fun WishlistDetailScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(16.dp)
                     ) {
-                        if (isEditing) {
-                            OutlinedTextField(
-                                value = title,
-                                onValueChange = { title = it },
-                                label = { Text("Title") },
-                                modifier = Modifier.fillMaxWidth()
+                        if (!state.description.isNullOrBlank()) {
+                            Text(
+                                text = state.description,
+                                style = MaterialTheme.typography.bodyMedium
                             )
-                            OutlinedTextField(
-                                value = description,
-                                onValueChange = { description = it },
-                                label = { Text("Description (optional)") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            IconPickerButton(
-                                selectedIcon = WishlistIcon.fromKey(iconKey),
-                                onSelected = { iconKey = it.key },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        } else if (!state.description.isNullOrBlank()) {
-                            Text(state.description, style = MaterialTheme.typography.bodyMedium)
                         }
-
-                        Spacer(Modifier.height(16.dp))
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("This wishlist doesn’t have any items yet.")
-                        }
+                    }
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(text = "You have no wishlist Items yet.")
                     }
                 }
 
@@ -207,38 +151,23 @@ fun WishlistDetailScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        item {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                if (isEditing) {
-                                    OutlinedTextField(
-                                        value = title,
-                                        onValueChange = { title = it },
-                                        label = { Text("Title") },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    OutlinedTextField(
-                                        value = description,
-                                        onValueChange = { description = it },
-                                        label = { Text("Description (optional)") },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-
-                                    IconPickerButton(
-                                        selectedIcon = WishlistIcon.fromKey(iconKey),
-                                        onSelected = { iconKey = it.key },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                } else if (!state.description.isNullOrBlank()) {
-                                    Text(
-                                        state.description,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
+                        if (!state.description.isNullOrBlank()) {
+                            item {
+                                Text(
+                                    text = state.description,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
                         }
 
-                        items(state.item, key = { it.id }) { w ->
-                            WishlistItemCard(w = w, onClick = { })
+                        items(
+                            items = state.item,
+                            key = { it.id }
+                        ) { w ->
+                            WishlistItemCard(
+                                w = w,
+                                onClick = { /* later: onOpenItem(w.id) */ }
+                            )
                         }
                     }
                 }
@@ -255,7 +184,6 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
             minimumFractionDigits = 0
         }
     }
-
     ElevatedCard(onClick = onClick) {
         Row(
             modifier = Modifier
@@ -263,16 +191,27 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Image(
+                painter = painterResource(R.drawable.ic_item_placeholder),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(64.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+
             Column(Modifier.weight(1f)) {
-                Text(w.title, style = MaterialTheme.typography.titleMedium)
-                if (!w.description.isNullOrBlank()) {
+                Text(w.name, style = MaterialTheme.typography.titleMedium)
+                if (!w.notes.isNullOrBlank()) {
                     Spacer(Modifier.height(4.dp))
-                    Text(w.description, style = MaterialTheme.typography.bodyMedium)
+                    Text(w.notes, style = MaterialTheme.typography.bodyMedium)
                 }
             }
             w.price?.let { price ->
                 Spacer(Modifier.width(12.dp))
-                Text(iskFormatter.format(price), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = iskFormatter.format(price),
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
     }

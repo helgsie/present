@@ -7,9 +7,10 @@ import kotlinx.serialization.Serializable
 data class WishlistItem (
     val id: String,
     @SerialName("wishlist_id") val wishlistId: String,
-    val title: String,
-    val description: String? = null,
+    val name: String,
+    val notes: String? = null,
     val url: String? = null,
     val price: Double? = null,
+    @SerialName("image_path") val imagePath: String? = null,
     @SerialName("created_at") val createdAt: String? = null
 )
