@@ -2,8 +2,8 @@ package `is`.hi.present.ui.wishlistdetail
 
 data class WishlistItemUi(
     val id: String,
-    val title: String,
-    val description: String? = null,
+    val name: String,
+    val notes: String? = null,
     val price: Double? = null
 )
 data class WishlistDetailUiState(

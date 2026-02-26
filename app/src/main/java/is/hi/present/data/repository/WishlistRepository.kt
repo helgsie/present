@@ -4,22 +4,26 @@ import CreateShareLinkArgs
 import JoinByTokenArgs
 import WishlistInsert
 import WishlistShareRow
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
-import `is`.hi.present.data.supabase.SupabaseClientProvider
 import `is`.hi.present.domain.model.Wishlist
 import `is`.hi.present.ui.components.WishlistIcon
 import io.github.jan.supabase.postgrest.rpc
+import `is`.hi.present.data.local.dao.WishlistDao
+import javax.inject.Inject
 import java.net.URLEncoder
 
-class WishlistsRepository {
+class WishlistsRepository @Inject constructor(
+    private val wishlistDao: WishlistDao,
+    private val supabase: SupabaseClient
+){
     suspend fun getWishlists(): List<Wishlist> {
-        val client = SupabaseClientProvider.client
-        val userId = client.auth.currentUserOrNull()?.id ?: error("Not signed in")
+        val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not signed in")
 
-        return client
+        return supabase
             .from("wishlists")
             .select {
                 filter { eq("owner_id", userId) }
@@ -29,9 +33,7 @@ class WishlistsRepository {
     }
 
     suspend fun getWishlistById(wishlistId: String): Wishlist {
-        val client = SupabaseClientProvider.client
-
-        return client.postgrest["wishlists"]
+        return supabase.postgrest["wishlists"]
             .select {
                 filter { eq("id", wishlistId) }
             }
@@ -39,12 +41,10 @@ class WishlistsRepository {
     }
 
     suspend fun createWishlist(title: String, description: String? = null, icon: WishlistIcon) {
-        val client = SupabaseClientProvider.client
-
-        val userId = client.auth.currentUserOrNull()?.id
+        val userId = supabase.auth.currentUserOrNull()?.id
             ?: error("Not signed in")
 
-        client.postgrest["wishlists"].insert(
+        supabase.postgrest["wishlists"].insert(
             WishlistInsert(
                 title = title,
                 description = description,
@@ -56,9 +56,7 @@ class WishlistsRepository {
 
     // Hægt að vinna með þetta þegar vitað er hvernig url virkar á milli browser og app
     /*suspend fun createShareLink(wishlistId: String): String {
-        val client = SupabaseClientProvider.client
-
-        val token: String = client.postgrest
+        val token: String = supabase.postgrest
             .rpc(function = "create_share_link", parameters = CreateShareLinkArgs(wishlistId))
             .decodeAs()
 
@@ -67,18 +65,15 @@ class WishlistsRepository {
     }*/
 
     suspend fun createShareCode(wishlistId: String): String {
-        val client = SupabaseClientProvider.client
-
-        return client.postgrest
+        return supabase.postgrest
             .rpc("create_share_link", CreateShareLinkArgs(wishlistId))
             .decodeAs()
     }
 
     suspend fun getSharedWishlists(): List<Wishlist> {
-        val client = SupabaseClientProvider.client
-        val userId = client.auth.currentUserOrNull()?.id ?: error("Not signed in")
+        val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not signed in")
 
-        val shares: List<WishlistShareRow> = client
+        val shares: List<WishlistShareRow> = supabase
             .from("wishlist_shares")
             .select {
                 filter { eq("shared_with", userId) }
@@ -95,9 +90,7 @@ class WishlistsRepository {
     }
 
     suspend fun joinByToken(token: String): String {
-        val client = SupabaseClientProvider.client
-
-        val wishlistId: String = client.postgrest
+        val wishlistId: String = supabase.postgrest
             .rpc(function = "join_by_token", parameters = JoinByTokenArgs(token))
             .decodeAs()
 

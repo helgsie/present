@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -16,17 +17,17 @@ fun CreateItemScreen(
     wishlistId: String,
     onBack: () -> Unit,
     onDone: () -> Unit,
-    vm: WishlistDetailViewModel = viewModel()
+    vm: WishlistDetailViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsState()
 
-    var title by rememberSaveable { mutableStateOf("") }
-    var description by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var notes by rememberSaveable { mutableStateOf("") }
     var url by rememberSaveable { mutableStateOf("") }
     var priceText by rememberSaveable { mutableStateOf("") }
 
-    val trimmedTitle = title.trim()
-    val trimmedDescription = description.trim().ifBlank { null }
+    val trimmedName = name.trim()
+    val trimmedNotes = notes.trim().ifBlank { null }
     val trimmedUrl = url.trim().ifBlank { null }
 
     val parsedPrice: Double? = priceText
@@ -34,7 +35,7 @@ fun CreateItemScreen(
         .replace(",", ".")
         .toDoubleOrNull()
 
-    val canSubmit = trimmedTitle.isNotBlank() && !state.isLoading
+    val canSubmit = trimmedName.isNotBlank() && !state.isLoading
 
     Scaffold(
         topBar = {
@@ -60,15 +61,15 @@ fun CreateItemScreen(
             }
 
             OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
+                value = name,
+                onValueChange = { name = it },
                 label = { Text("Title") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
+                value = notes,
+                onValueChange = { notes = it },
                 label = { Text("Description (optional)") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -93,8 +94,8 @@ fun CreateItemScreen(
                 onClick = {
                     vm.createWishlistItem(
                         wishlistId = wishlistId,
-                        title = trimmedTitle,
-                        description = trimmedDescription,
+                        name = trimmedName,
+                        notes = trimmedNotes,
                         url = trimmedUrl,
                         price = parsedPrice
                     )

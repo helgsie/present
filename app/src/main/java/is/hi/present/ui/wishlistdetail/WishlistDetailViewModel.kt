@@ -4,23 +4,26 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import `is`.hi.present.data.repository.AuthRepository
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class WishlistDetailViewModel(
-    private val repo: WishlistsRepository = WishlistsRepository(),
-    private val repoAuth: AuthRepository = AuthRepository(),
-    private val itemRepo: WishlistItemRepository = WishlistItemRepository()
+@HiltViewModel
+class WishlistDetailViewModel @Inject constructor(
+    private val repo: WishlistsRepository,
+    private val repoAuth: AuthRepository,
+    private val itemRepo: WishlistItemRepository
 ) : ViewModel() {
     private val _effects = Channel<WishlistDetailEffect>(Channel.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
     private val _uiState = MutableStateFlow(WishlistDetailUiState())
-    val uiState: StateFlow<WishlistDetailUiState> = _uiState
+    val uiState: StateFlow<WishlistDetailUiState> = _uiState.asStateFlow()
 
     fun loadAll(wishlistId: String) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
@@ -32,8 +35,8 @@ class WishlistDetailViewModel(
             val items = itemRepo.getWishlistItems(wishlistId).map {
                 WishlistItemUi(
                     id = it.id,
-                    title = it.title,
-                    description = it.description,
+                    name = it.name,
+                    notes = it.notes,
                     price = it.price
                 )
             }
@@ -56,13 +59,13 @@ class WishlistDetailViewModel(
 
     fun createWishlistItem(
         wishlistId: String,
-        title: String,
-        description: String? = null,
+        name: String,
+        notes: String? = null,
         url: String? = null,
         price: Double? = null
     ) = viewModelScope.launch {
-        if (title.isBlank()) {
-            _uiState.value = _uiState.value.copy(errorMessage = "Title má ekki vera tómt")
+        if (name.isBlank()) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Name má ekki vera tómt")
             return@launch
         }
 
@@ -71,8 +74,8 @@ class WishlistDetailViewModel(
         try {
             itemRepo.createWishlistItem(
                 wishlistId = wishlistId,
-                title = title.trim(),
-                description = description?.trim()?.takeIf { it.isNotBlank() },
+                name = name.trim(),
+                notes = notes?.trim()?.takeIf { it.isNotBlank() },
                 url = url?.trim()?.takeIf { it.isNotBlank() },
                 price = price
             )
@@ -80,8 +83,8 @@ class WishlistDetailViewModel(
             val items = itemRepo.getWishlistItems(wishlistId).map { item ->
                 WishlistItemUi(
                     id = item.id,
-                    title = item.title,
-                    description = item.description,
+                    name = item.name,
+                    notes = item.notes,
                     price = item.price
                 )
             }

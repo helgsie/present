@@ -5,20 +5,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.unit.dp
 import `is`.hi.present.ui.components.LoadingComponent
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
 fun SignInScreen(
-    viewModel: AuthViewModel,
+    viewModel: AuthViewModel = hiltViewModel(),
     onGoToSignUp: () -> Unit,
     onSuccess: () -> Unit
 ) {
-    val context = LocalContext.current
-    val authState by viewModel.authUiState
+    val authState by viewModel.authUiState.collectAsState()
 
     var userEmail by remember { mutableStateOf("") }
     var userPassword by remember { mutableStateOf("") }
@@ -86,7 +86,7 @@ fun SignInScreen(
             Button(
                 onClick = {
                     viewModel.resetAuthState()
-                    viewModel.signIn(context, userEmail.trim(), userPassword)
+                    viewModel.signIn(userEmail.trim(), userPassword)
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {

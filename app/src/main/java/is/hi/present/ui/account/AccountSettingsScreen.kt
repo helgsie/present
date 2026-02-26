@@ -21,27 +21,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import `is`.hi.present.ui.auth.AuthUiState
 import `is`.hi.present.ui.auth.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountSettingsScreen(
-    viewModel: AuthViewModel,
+    viewModel: AuthViewModel = hiltViewModel(),
     onBack: () -> Unit,
     onSignedOut: () -> Unit,
     onAccountDeleted: () -> Unit,
 ) {
-    val context = LocalContext.current
     var showConfirm by remember { mutableStateOf(false) }
-    val authState by viewModel.authUiState
+    val authState by viewModel.authUiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -79,7 +79,7 @@ fun AccountSettingsScreen(
 
             Button(
                 onClick = {
-                    viewModel.signOut(context) {
+                    viewModel.signOut {
                         onSignedOut()
                     }
                 },
@@ -114,7 +114,7 @@ fun AccountSettingsScreen(
                         TextButton(
                             onClick = {
                                 showConfirm = false
-                                viewModel.deleteAccount(context) {
+                                viewModel.deleteAccount {
                                     onAccountDeleted()
                                 }
                             }

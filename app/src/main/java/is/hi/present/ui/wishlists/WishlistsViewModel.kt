@@ -2,17 +2,21 @@ package `is`.hi.present.ui.wishlists
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import `is`.hi.present.data.repository.WishlistsRepository
 import `is`.hi.present.ui.components.WishlistIcon
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class WishlistsViewModel(
-    private val repo: WishlistsRepository = WishlistsRepository()
+@HiltViewModel
+class WishlistsViewModel @Inject constructor(
+    private val repo: WishlistsRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WishlistsUiState(isLoading = true))
-    val uiState: StateFlow<WishlistsUiState> = _uiState
+    val uiState: StateFlow<WishlistsUiState> = _uiState.asStateFlow()
 
     init {
         loadWishlists()

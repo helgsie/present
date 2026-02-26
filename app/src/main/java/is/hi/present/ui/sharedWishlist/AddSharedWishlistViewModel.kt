@@ -2,13 +2,16 @@ package `is`.hi.present.ui.sharedWishlist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import `is`.hi.present.data.repository.WishlistsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class AddSharedWishlistViewModel(
-    private val repo: WishlistsRepository = WishlistsRepository()
+@HiltViewModel
+class AddSharedWishlistViewModel @Inject constructor (
+    private val repo: WishlistsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddSharedWishlistUiState())

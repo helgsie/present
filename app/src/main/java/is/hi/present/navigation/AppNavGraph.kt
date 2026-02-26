@@ -1,7 +1,6 @@
 package `is`.hi.present.navigation
 
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
@@ -14,25 +13,23 @@ import `is`.hi.present.ui.wishlistdetail.CreateItemScreen
 import `is`.hi.present.ui.wishlistdetail.WishlistDetailScreen
 import `is`.hi.present.ui.wishlists.CreateWishlistScreen
 import `is`.hi.present.ui.wishlists.WishlistsScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import `is`.hi.present.ui.sharedWishlist.AddSharedWishlistScreen
 import `is`.hi.present.ui.sharedWishlist.SharedWishlistScreen
 import `is`.hi.present.ui.wishlists.CreateTokenScreen
-import `is`.hi.present.ui.wishlists.WishlistsViewModel
 
 @Composable
 fun AppNavGraphNav3(
-    authViewModel: AuthViewModel = AuthViewModel(),
     startJoinToken: String? = null,
 ) {
-    val context = LocalContext.current
+    val authViewModel: AuthViewModel = hiltViewModel()
 
     var isCheckingAuth by remember { mutableStateOf(true) }
     var pendingJoinToken by remember { mutableStateOf(startJoinToken) }
     var startDestination by remember { mutableStateOf<AppRoute>(AppRoute.SignIn) }
 
     LaunchedEffect(Unit) {
-        val token = authViewModel.getToken(context)
+        val token = authViewModel.getToken()
         val loggedIn = !token.isNullOrEmpty()
 
         startDestination = when {
@@ -91,7 +88,7 @@ fun AppNavGraphNav3(
             entry<AppRoute.Wishlists> {
                 WishlistsScreen(
                     onLogout = {
-                        authViewModel.signOut(context) {
+                        authViewModel.signOut {
                             resetTo(AppRoute.SignIn)
                         }
                     },
@@ -154,7 +151,7 @@ fun AppNavGraphNav3(
                     onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
                     onSelectWishlists = { backStack.add(AppRoute.Wishlists) },
                     onLogout = {
-                        authViewModel.signOut(context) {
+                        authViewModel.signOut {
                             resetTo(AppRoute.SignIn)
                         }
                     },
