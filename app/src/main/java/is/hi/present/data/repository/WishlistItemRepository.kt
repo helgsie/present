@@ -1,9 +1,12 @@
 package `is`.hi.present.data.repository
 
+import android.content.Context
+import android.net.Uri
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.storage.storage
 import `is`.hi.present.data.DTO.WishlistItemInsert
 import `is`.hi.present.data.local.dao.WishlistItemDao
 import `is`.hi.present.domain.model.WishlistItem
@@ -42,5 +45,19 @@ class WishlistItemRepository @Inject constructor(
                 imagePath = imagePath
             )
         )
+    }
+    suspend fun uploadItemImage(
+        context: Context,
+        wishlistId: String,
+        selectedImageUri: Uri
+    ): String {
+        val inputStream = context.contentResolver.openInputStream(selectedImageUri)
+            ?: throw IllegalArgumentException("Cannot open image stream")
+        val bytes = inputStream.readBytes()
+        val filename = "wishlist_${wishlistId}_${System.currentTimeMillis()}.jpg"
+
+        supabase.storage.from("wishlist-images").upload(filename, bytes)
+
+        return filename
     }
 }
