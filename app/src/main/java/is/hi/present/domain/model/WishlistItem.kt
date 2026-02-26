@@ -11,5 +11,6 @@ data class WishlistItem (
     val notes: String? = null,
     val url: String? = null,
     val price: Double? = null,
+    @SerialName("image_path") val imagePath: String? = null,
     @SerialName("created_at") val createdAt: String? = null
 )

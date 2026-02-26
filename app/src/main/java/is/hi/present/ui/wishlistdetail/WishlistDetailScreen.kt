@@ -14,7 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import android.content.ClipData
 import android.content.ClipboardManager
+import androidx.compose.foundation.Image
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import `is`.hi.present.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -188,6 +191,14 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Image(
+                painter = painterResource(R.drawable.ic_item_placeholder),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(64.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+
             Column(Modifier.weight(1f)) {
                 Text(w.name, style = MaterialTheme.typography.titleMedium)
                 if (!w.notes.isNullOrBlank()) {

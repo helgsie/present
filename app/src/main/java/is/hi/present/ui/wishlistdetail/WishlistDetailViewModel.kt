@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `is`.hi.present.data.repository.AuthRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +38,8 @@ class WishlistDetailViewModel @Inject constructor(
                     id = it.id,
                     name = it.name,
                     notes = it.notes,
-                    price = it.price
+                    price = it.price,
+                    imagePath = it.imagePath
                 )
             }
 
@@ -62,7 +64,8 @@ class WishlistDetailViewModel @Inject constructor(
         name: String,
         notes: String? = null,
         url: String? = null,
-        price: Double? = null
+        price: Double? = null,
+        imagePath: String? = null
     ) = viewModelScope.launch {
         if (name.isBlank()) {
             _uiState.value = _uiState.value.copy(errorMessage = "Name má ekki vera tómt")
@@ -77,7 +80,8 @@ class WishlistDetailViewModel @Inject constructor(
                 name = name.trim(),
                 notes = notes?.trim()?.takeIf { it.isNotBlank() },
                 url = url?.trim()?.takeIf { it.isNotBlank() },
-                price = price
+                price = price,
+                imagePath = imagePath
             )
 
             val items = itemRepo.getWishlistItems(wishlistId).map { item ->
@@ -85,7 +89,8 @@ class WishlistDetailViewModel @Inject constructor(
                     id = item.id,
                     name = item.name,
                     notes = item.notes,
-                    price = item.price
+                    price = item.price,
+                    imagePath = item.imagePath
                 )
             }
 
