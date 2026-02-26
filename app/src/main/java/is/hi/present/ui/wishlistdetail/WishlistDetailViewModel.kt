@@ -1,7 +1,10 @@
 package `is`.hi.present.ui.wishlistdetail
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import `is`.hi.present.BuildConfig
 import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,6 +16,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
 
 @HiltViewModel
 class WishlistDetailViewModel @Inject constructor(
@@ -39,7 +44,7 @@ class WishlistDetailViewModel @Inject constructor(
                     name = it.name,
                     notes = it.notes,
                     price = it.price,
-                    imagePath = it.imagePath
+                    imagePath = it.imagePath?.let { path -> "$STORAGE_URL$path" }
                 )
             }
 
@@ -65,7 +70,8 @@ class WishlistDetailViewModel @Inject constructor(
         notes: String? = null,
         url: String? = null,
         price: Double? = null,
-        imagePath: String? = null
+        selectedImageUri: Uri? = null,
+        context: Context
     ) = viewModelScope.launch {
         if (name.isBlank()) {
             _uiState.value = _uiState.value.copy(errorMessage = "Name má ekki vera tómt")
@@ -75,13 +81,16 @@ class WishlistDetailViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
         try {
+            val imageUrl = selectedImageUri?.let { uri ->
+                itemRepo.uploadItemImage(context, wishlistId, uri)
+            }
             itemRepo.createWishlistItem(
                 wishlistId = wishlistId,
                 name = name.trim(),
                 notes = notes?.trim()?.takeIf { it.isNotBlank() },
                 url = url?.trim()?.takeIf { it.isNotBlank() },
                 price = price,
-                imagePath = imagePath
+                imagePath = imageUrl
             )
 
             val items = itemRepo.getWishlistItems(wishlistId).map { item ->
@@ -90,7 +99,7 @@ class WishlistDetailViewModel @Inject constructor(
                     name = item.name,
                     notes = item.notes,
                     price = item.price,
-                    imagePath = item.imagePath
+                    imagePath = item.imagePath?.let { path -> "$STORAGE_URL$path" }
                 )
             }
 
