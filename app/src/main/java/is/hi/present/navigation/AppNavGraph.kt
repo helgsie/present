@@ -14,8 +14,8 @@ import `is`.hi.present.ui.wishlistdetail.CreateItemScreen
 import `is`.hi.present.ui.wishlistdetail.WishlistDetailScreen
 import `is`.hi.present.ui.wishlists.CreateWishlistScreen
 import `is`.hi.present.ui.wishlists.WishlistsScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
 import `is`.hi.present.ui.wishlists.WishlistsViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun AppNavGraphNav3(
@@ -92,9 +92,8 @@ fun AppNavGraphNav3(
                 WishlistDetailScreen(
                     wishlistId = key.wishlistId,
                     onBack = { backStack.removeLastOrNull() },
-                    onCreateItem = { wishlistId ->
-                        backStack.add(AppRoute.CreateWishlistItem(wishlistId))
-                    }
+                    onCreateItem = { id -> backStack.add(AppRoute.CreateWishlistItem(id)) },
+                    wishlistsVm = wishlistsVm
                 )
             }
 
@@ -114,6 +113,7 @@ fun AppNavGraphNav3(
                     onAccountDeleted = { resetTo(AppRoute.SignIn) }
                 )
             }
+
         }
     )
 }

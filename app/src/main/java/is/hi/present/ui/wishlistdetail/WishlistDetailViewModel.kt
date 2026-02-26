@@ -32,8 +32,10 @@ class WishlistDetailViewModel(
 
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
+                id = w.id,
                 title = w.title,
                 description = w.description,
+                iconKey = w.iconKey,
                 item = items,
                 errorMessage = null
             )
@@ -85,7 +87,7 @@ class WishlistDetailViewModel(
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                errorMessage = e.message ?: "Tókst ekki að búa til item"
+                errorMessage = e.message ?: "Ekki tókst að búa til item"
             )
         }
     }

@@ -1,6 +1,7 @@
 package `is`.hi.present.data.repository
 
 import WishlistInsert
+import androidx.compose.material3.Surface
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
@@ -43,5 +44,29 @@ class WishlistsRepository {
                 iconKey = icon.key
             )
         )
+    }
+    suspend fun updateWishlist(
+        wishlistId: String,
+        title: String,
+        description: String? = null,
+        icon: WishlistIcon
+    ){
+        val client = SupabaseClientProvider.client
+        client.postgrest["wishlists"].update(
+            {
+                set("title", title)
+                set("description", description)
+                set("icon_key", icon.key)
+            }
+        ) {
+            filter{ eq("id", wishlistId) }
+        }
+    }
+    suspend fun deleteWishlist(wishlistd: String) {
+        val client = SupabaseClientProvider.client
+
+        client.postgrest["wishlists"].delete {
+            filter { eq("id", wishlistd) }
+        }
     }
 }
