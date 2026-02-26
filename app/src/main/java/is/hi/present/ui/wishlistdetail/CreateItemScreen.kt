@@ -9,7 +9,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.rememberAsyncImagePainter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,7 +30,7 @@ fun CreateItemScreen(
     var notes by rememberSaveable { mutableStateOf("") }
     var url by rememberSaveable { mutableStateOf("") }
     var priceText by rememberSaveable { mutableStateOf("") }
-    var selectedImageUri by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedImageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
 
     val trimmedName = name.trim()
     val trimmedNotes = notes.trim().ifBlank { null }
@@ -37,6 +42,13 @@ fun CreateItemScreen(
         .toDoubleOrNull()
 
     val canSubmit = trimmedName.isNotBlank() && !state.isLoading
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -91,6 +103,23 @@ fun CreateItemScreen(
             )
 
             Button(
+                onClick = {
+                    galleryLauncher.launch("image/*")
+                }
+            ) {
+                Text("Add photo")
+            }
+            if (selectedImageUri != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(selectedImageUri.toString()),
+                    contentDescription = "Selected image",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .padding(top = 8.dp)
+                )
+            }
+
+            Button(
                 enabled = canSubmit,
                 onClick = {
                     vm.createWishlistItem(
@@ -99,7 +128,8 @@ fun CreateItemScreen(
                         notes = trimmedNotes,
                         url = trimmedUrl,
                         price = parsedPrice,
-                        imagePath = selectedImageUri
+                        selectedImageUri = selectedImageUri,
+                        context = context
                     )
                     onDone()
                 },

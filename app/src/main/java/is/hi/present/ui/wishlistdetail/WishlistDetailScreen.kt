@@ -22,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import `is`.hi.present.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.rememberAsyncImagePainter
 import androidx.lifecycle.viewmodel.compose.viewModel
 import `is`.hi.present.ui.components.IconPickerButton
 import `is`.hi.present.ui.components.WishlistIcon
@@ -325,11 +326,15 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val painter = if (!w.imagePath.isNullOrBlank()) {
+                rememberAsyncImagePainter(w.imagePath)
+            } else {
+                painterResource(R.drawable.ic_item_placeholder)
+            }
             Image(
-                painter = painterResource(R.drawable.ic_item_placeholder),
+                painter = painter,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(64.dp)
+                modifier = Modifier.size(64.dp)
             )
             Spacer(Modifier.width(12.dp))
 
