@@ -66,6 +66,10 @@ class AuthRepository @Inject constructor(
     suspend fun refreshCurrentSession() {
         supabase.auth.refreshCurrentSession()
     }
+
+    fun getCurrentUserId(): String? {
+        return SupabaseClientProvider.client.auth.currentUserOrNull()?.id
+    }
     suspend fun getProfile(userId: String): Profile? {
         val result = supabase.postgrest["profiles"]
             .select {

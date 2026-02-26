@@ -5,10 +5,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import `is`.hi.present.ui.components.ErrorMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,6 +26,12 @@ fun AddSharedWishlistScreen(
         state.joinedWishlistId?.let { wishlistId ->
             onJoined(wishlistId)
             vm.clearJoinedState()
+        }
+    }
+    LaunchedEffect(state.error) {
+        if (state.error != null) {
+            kotlinx.coroutines.delay(2500)
+            vm.clearError()
         }
     }
 
@@ -58,9 +66,12 @@ fun AddSharedWishlistScreen(
             ) {
                 Text("Join")
             }
-
-            state.error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error)
+            state.error?.let { message ->
+                ErrorMessage(
+                    message = message,
+                    modifier = Modifier
+                        .padding(top = 10.dp, end = 50.dp)
+                )
             }
         }
     }

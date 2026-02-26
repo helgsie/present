@@ -86,11 +86,13 @@ fun WishlistDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = { vm.onShareClicked(wishlistId) },
-                        enabled = !state.isLoading
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = "Share wishlist")
+                    if (state.isOwner) {
+                        IconButton(
+                            onClick = { vm.onShareClicked(wishlistId) },
+                            enabled = !state.isLoading
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = "Share wishlist")
+                        }
                     }
                 }
             )

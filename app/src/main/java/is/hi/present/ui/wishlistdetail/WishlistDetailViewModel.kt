@@ -16,6 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class WishlistDetailViewModel @Inject constructor(
     private val repo: WishlistsRepository,
+    private val repoAuth: AuthRepository,
     private val itemRepo: WishlistItemRepository
 ) : ViewModel() {
     private val _effects = Channel<WishlistDetailEffect>(Channel.BUFFERED)
@@ -29,6 +30,8 @@ class WishlistDetailViewModel @Inject constructor(
 
         try {
             val w = repo.getWishlistById(wishlistId)
+            val currentUserId = repoAuth.getCurrentUserId()
+
             val items = itemRepo.getWishlistItems(wishlistId).map {
                 WishlistItemUi(
                     id = it.id,
@@ -43,6 +46,7 @@ class WishlistDetailViewModel @Inject constructor(
                 title = w.title,
                 description = w.description,
                 item = items,
+                isOwner = (w.ownerId == currentUserId),
                 errorMessage = null
             )
         } catch (e: Exception) {
