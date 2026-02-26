@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 class WishlistsViewModel @Inject constructor(
     private val repo: WishlistsRepository
 ) : ViewModel() {
+
     private val _uiState = MutableStateFlow(WishlistsUiState(isLoading = true))
     val uiState: StateFlow<WishlistsUiState> = _uiState.asStateFlow()
 
@@ -39,10 +40,11 @@ class WishlistsViewModel @Inject constructor(
 
             _uiState.value = WishlistsUiState(
                 isLoading = false,
-                wishlists = wishlists
+                wishlists = wishlists,
+                errorMessage = null
             )
         } catch (e: Exception) {
-            _uiState.value = WishlistsUiState(
+            _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 errorMessage = e.message ?: "Failed to fetch wishlists"
             )
@@ -56,6 +58,7 @@ class WishlistsViewModel @Inject constructor(
         icon: WishlistIcon
     ) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
         try {
             repo.createWishlist(title, description, icon)
             loadWishlists()
@@ -64,6 +67,50 @@ class WishlistsViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 errorMessage = e.message ?: "Failed to create wishlist"
+            )
+        }
+    }
+
+    fun updateWishlist(
+        wishlistId: String,
+        title: String,
+        description: String?,
+        icon: WishlistIcon,
+        onDone: (() -> Unit)? = null
+    ) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+        try {
+            repo.updateWishlist(
+                wishlistId = wishlistId,
+                title = title,
+                description = description,
+                icon = icon
+            )
+            loadWishlists()
+            onDone?.invoke()
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = e.message ?: "Failed to update wishlist"
+            )
+        }
+    }
+
+    fun deleteWishlist(
+        wishlistId: String,
+        onDone: (() -> Unit)? = null
+    ) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+        try {
+            repo.deleteWishlist(wishlistId)
+            loadWishlists()
+            onDone?.invoke()
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = e.message ?: "Failed to delete wishlist"
             )
         }
     }
