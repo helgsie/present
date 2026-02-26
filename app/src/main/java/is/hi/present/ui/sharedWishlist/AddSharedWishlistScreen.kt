@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -14,7 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun AddSharedWishlistScreen(
     onBack: () -> Unit,
     onJoined: (wishlistId: String) -> Unit,
-    vm: AddSharedWishlistViewModel = viewModel()
+    vm: AddSharedWishlistViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsState()
     var code by remember { mutableStateOf("") }

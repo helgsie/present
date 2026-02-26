@@ -7,13 +7,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun CreateTokenScreen(
     token: String,
     onJoined: (wishlistId: String) -> Unit,
-    vm: CreateTokenViewModel = viewModel()
+    vm: CreateTokenViewModel = hiltViewModel()
 ) {
     val state = vm.uiState.collectAsState().value
 

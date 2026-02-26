@@ -16,6 +16,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
 import java.util.Locale
@@ -27,7 +28,7 @@ fun WishlistDetailScreen(
     wishlistId: String,
     onBack: () -> Unit,
     onCreateItem: (wishlistId: String) -> Unit,
-    vm: WishlistDetailViewModel = viewModel()
+    vm: WishlistDetailViewModel = hiltViewModel()
 ) {
     val state = vm.uiState.collectAsState().value
     LaunchedEffect(wishlistId) {
@@ -186,10 +187,10 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Text(w.title, style = MaterialTheme.typography.titleMedium)
-                if (!w.description.isNullOrBlank()) {
+                Text(w.name, style = MaterialTheme.typography.titleMedium)
+                if (!w.notes.isNullOrBlank()) {
                     Spacer(Modifier.height(4.dp))
-                    Text(w.description, style = MaterialTheme.typography.bodyMedium)
+                    Text(w.notes, style = MaterialTheme.typography.bodyMedium)
                 }
             }
             w.price?.let { price ->

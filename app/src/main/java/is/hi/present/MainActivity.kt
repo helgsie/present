@@ -8,9 +8,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import dagger.hilt.android.AndroidEntryPoint
 import `is`.hi.present.navigation.AppNavGraphNav3
 import `is`.hi.present.ui.theme.PresentTheme
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private var deepLinkToken by mutableStateOf<String?>(null)

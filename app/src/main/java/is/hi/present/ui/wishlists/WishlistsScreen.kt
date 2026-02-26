@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.runtime.LaunchedEffect
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
@@ -22,7 +23,7 @@ import `is`.hi.present.ui.components.WishlistCard
 @Composable
 fun WishlistsScreen(
     modifier: Modifier = Modifier,
-    vm: WishlistsViewModel = viewModel(),
+    vm: WishlistsViewModel = hiltViewModel(),
     onLogout: () -> Unit,
     onAccountSettings: () -> Unit,
     onCreateWishlist: () -> Unit,

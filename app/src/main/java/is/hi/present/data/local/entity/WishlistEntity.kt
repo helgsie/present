@@ -16,6 +16,5 @@ data class WishlistEntity(
     val description: String?,
     val iconKey: String,
     val createdAt: Long,
-    val updatedAt: Long,
-    val isSharedWithMe: Boolean = false
+    val updatedAt: Long
 )

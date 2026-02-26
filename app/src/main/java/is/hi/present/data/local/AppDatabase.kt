@@ -13,7 +13,7 @@ import `is`.hi.present.data.local.entity.WishlistItemEntity
         WishlistItemEntity::class
    ],
     version = 1,
-    exportSchema = true
+    exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun wishlistDao(): WishlistDao

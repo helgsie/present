@@ -29,8 +29,8 @@ data class WishlistItemEntity(
     val url: String?,
     val price: Double?,
     val imagePath: String?,
+    val category: String?,
+    val sortOrder: Int?,
     val createdAt: Long,
-    val updatedAt: Long,
-    val claimedByUserId: String?,
-    val claimedAt: Long?
+    val updatedAt: Long
 )

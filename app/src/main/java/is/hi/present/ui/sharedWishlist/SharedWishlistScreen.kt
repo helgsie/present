@@ -14,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
@@ -26,7 +27,7 @@ fun SharedWishlistScreen(
     onAccountSettings: () -> Unit,
     onLogout: () -> Unit,
     onOpenWishlist: (wishlistId: String) -> Unit,
-    vm: SharedWishlistViewModel = viewModel(),
+    vm: SharedWishlistViewModel = hiltViewModel(),
     onSelectWishlists: () -> Unit,
     selectedSegmentIndex: Int = 0,
     onOpenSharedWishlists: () -> Unit,
