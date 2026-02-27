@@ -12,6 +12,7 @@ data class WishlistDetailUiState(
     val errorMessage: String? = null,
     val title: String = "",
     val description: String? = null,
+    val iconKey: String = "favorite",
     val item: List<WishlistItemUi> = emptyList(),
     val isOwner: Boolean = false
 ) {
