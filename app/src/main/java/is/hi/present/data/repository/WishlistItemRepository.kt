@@ -1,8 +1,11 @@
 package `is`.hi.present.data.repository
 
+import ItemClaim
+import ItemClaimInsert
 import android.content.Context
 import android.net.Uri
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
@@ -10,6 +13,7 @@ import io.github.jan.supabase.storage.storage
 import `is`.hi.present.data.DTO.WishlistItemInsert
 import `is`.hi.present.data.local.dao.WishlistItemDao
 import `is`.hi.present.domain.model.WishlistItem
+import java.util.Objects.isNull
 import javax.inject.Inject
 
 class WishlistItemRepository @Inject constructor(
@@ -59,5 +63,45 @@ class WishlistItemRepository @Inject constructor(
         supabase.storage.from("wishlist-images").upload(filename, bytes)
 
         return filename
+    }
+
+    suspend fun getClaimsForItems(itemIds: List<String>): List<ItemClaim> {
+        if (itemIds.isEmpty()) return emptyList()
+
+        return supabase
+            .from("item_claims")
+            .select {
+                filter {
+                    isIn("item_id", itemIds)
+                    isNull("released_at")
+                }
+            }
+            .decodeList()
+    }
+
+    suspend fun claimItem(itemId: String) {
+        val userId = supabase.auth.currentUserOrNull()?.id
+            ?: error("not signed in")
+
+        val existing: List<ItemClaim> = supabase
+            .from("item_claims")
+            .select {
+                filter {
+                    eq("item_id", itemId)
+                    isNull("released_at")
+                }
+            }
+            .decodeList()
+
+        if (existing.isNotEmpty()) {
+            error("Item is already claimed")
+        }
+
+        supabase.postgrest["item_claims"].insert(
+            ItemClaimInsert(
+                itemId = itemId,
+                claimedBy = userId
+            )
+        )
     }
 }

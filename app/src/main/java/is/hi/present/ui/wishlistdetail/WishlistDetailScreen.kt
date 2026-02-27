@@ -172,7 +172,8 @@ fun WishlistDetailScreen(
                             WishlistItemCard(
                                 w = w,
                                 isOwner = state.isOwner,
-                                onClick = { /* later: onOpenItem(w.id) */ }
+                                onClick = {},
+                                onClaim = { vm.claimItem(wishlistId, w.id) }
                             )
                         }
                     }
@@ -183,7 +184,7 @@ fun WishlistDetailScreen(
 }
 
 @Composable
-private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, isOwner: Boolean) {
+private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: () -> Unit, isOwner: Boolean) {
     val iskFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
             maximumFractionDigits = 0
@@ -217,6 +218,7 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, isOwner: Bo
                     Text(w.notes, style = MaterialTheme.typography.bodyMedium)
                 }
             }
+            Spacer(Modifier.width(12.dp))
             w.price?.let { price ->
                 Spacer(Modifier.width(12.dp))
                 Text(
@@ -225,11 +227,35 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, isOwner: Bo
                 )
             }
             if (!isOwner) {
-                TextButton(
-                    onClick = {},
-                    Modifier.padding(16.dp).background(color = NewMint)
-                ) {
-                    Text("Claim")
+                Spacer(Modifier.width(12.dp))
+                if ( !w.isClaimed) {
+                    Button(
+                        onClick = onClaim,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NewMint,
+                            contentColor = Purple40
+                        )
+                    ) {
+                        Text("Claim")
+                    }
+                }
+                if (w.isClaimedByMe) {
+                    Button(
+                        onClick = onClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PurpleGrey80,
+                            contentColor = Black
+                        )
+                    ) {
+                        Text("Release")
+                    }
+                }
+                if (w.isClaimed && !w.isClaimedByMe) {
+                    Text(
+                        text = "Claimed",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

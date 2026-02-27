@@ -37,15 +37,37 @@ class WishlistDetailViewModel @Inject constructor(
         try {
             val w = repo.getWishlistById(wishlistId)
             val currentUserId = repoAuth.getCurrentUserId()
+            val isOwner = (w.ownerId == currentUserId)
+            val rawItems = itemRepo.getWishlistItems(wishlistId)
+            val items = if (isOwner) {
+                rawItems.map { item ->
+                    WishlistItemUi(
+                        id = item.id,
+                        name = item.name,
+                        notes = item.notes,
+                        price = item.price,
+                        imagePath = item.imagePath?.let { path -> "$STORAGE_URL$path" },
+                        isClaimed = false,
+                        isClaimedByMe = false
+                    )
+                }
+            } else {
+                val claims = itemRepo.getClaimsForItems(rawItems.map { it.id })
+                val claimByItemId = claims.associateBy { it.itemId }
 
-            val items = itemRepo.getWishlistItems(wishlistId).map {
-                WishlistItemUi(
-                    id = it.id,
-                    name = it.name,
-                    notes = it.notes,
-                    price = it.price,
-                    imagePath = it.imagePath?.let { path -> "$STORAGE_URL$path" }
-                )
+                rawItems.map { item ->
+                    val claim = claimByItemId[item.id]
+
+                    WishlistItemUi(
+                        id = item.id,
+                        name = item.name,
+                        notes = item.notes,
+                        price = item.price,
+                        imagePath = item.imagePath?.let { path -> "$STORAGE_URL$path" },
+                        isClaimed = claim != null,
+                        isClaimedByMe = claim?.claimedBy == currentUserId
+                    )
+                }
             }
 
             _uiState.value = _uiState.value.copy(
@@ -123,6 +145,17 @@ class WishlistDetailViewModel @Inject constructor(
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 errorMessage = e.message ?: "Tókst ekki að búa til invite code"
+            )
+        }
+    }
+
+    fun claimItem(wishlistId: String, itemId: String) = viewModelScope.launch {
+        try {
+            itemRepo.claimItem(itemId)
+            loadAll(wishlistId)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = e.message ?: "Could not claim item"
             )
         }
     }
