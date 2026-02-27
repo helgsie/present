@@ -1,5 +1,6 @@
 package `is`.hi.present.ui.wishlistdetail
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,11 +11,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.launch
 import androidx.compose.foundation.Image
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.rememberAsyncImagePainter
+import android.Manifest
+import android.content.Context
+import androidx.core.net.toUri
+import java.io.File
+import java.io.FileOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +41,7 @@ fun CreateItemScreen(
     var url by rememberSaveable { mutableStateOf("") }
     var priceText by rememberSaveable { mutableStateOf("") }
     var selectedImageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var selectedCameraBitmap by rememberSaveable { mutableStateOf<Bitmap?>(null) }
 
     val trimmedName = name.trim()
     val trimmedNotes = notes.trim().ifBlank { null }
@@ -49,6 +60,20 @@ fun CreateItemScreen(
         selectedImageUri = uri
     }
     val context = LocalContext.current
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        bitmap?.let { selectedCameraBitmap = it }
+    }
+
+    // Camera permission
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) cameraLauncher.launch()
+        else Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
+    }
 
     Scaffold(
         topBar = {
@@ -102,33 +127,63 @@ fun CreateItemScreen(
                 isError = priceText.isNotBlank() && parsedPrice == null,
             )
 
-            Button(
-                onClick = {
-                    galleryLauncher.launch("image/*")
+            // Buttons for images/photos
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { galleryLauncher.launch("image/*") }) {
+                    Text("Choose from gallery")
                 }
-            ) {
-                Text("Add photo")
+
+                Button(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                    Text("Take photo")
+                }
             }
-            if (selectedImageUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(selectedImageUri.toString()),
-                    contentDescription = "Selected image",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .padding(top = 8.dp)
-                )
+
+            // preview for selected image/photo that was taken
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .padding(top = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    selectedImageUri != null -> {
+                        // Show gallery image
+                        Image(
+                            painter = rememberAsyncImagePainter(selectedImageUri.toString()),
+                            contentDescription = "Selected gallery image",
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .aspectRatio(1f)
+                        )
+                    }
+                    selectedCameraBitmap != null -> {
+                        // Show camera bitmap
+                        Image(
+                            bitmap = selectedCameraBitmap!!.asImageBitmap(),
+                            contentDescription = "Captured camera image",
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .aspectRatio(1f)
+                        )
+                    }
+                }
             }
 
             Button(
                 enabled = canSubmit,
                 onClick = {
+                    val imageUriToUpload = selectedCameraBitmap?.let {
+                        saveBitmapToFile(context, it)
+                    } ?: selectedImageUri
+
                     vm.createWishlistItem(
                         wishlistId = wishlistId,
                         name = trimmedName,
                         notes = trimmedNotes,
                         url = trimmedUrl,
                         price = parsedPrice,
-                        selectedImageUri = selectedImageUri,
+                        selectedImageUri = imageUriToUpload,
                         context = context
                     )
                     onDone()
@@ -145,4 +200,16 @@ fun CreateItemScreen(
             }
         }
     }
+}
+private fun saveBitmapToFile(context: Context, bitmap: Bitmap): Uri {
+    val file = File(
+        context.cacheDir,
+        "camera_${System.currentTimeMillis()}.jpg"
+    )
+
+    FileOutputStream(file).use { out ->
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+    }
+
+    return file.toUri()
 }
