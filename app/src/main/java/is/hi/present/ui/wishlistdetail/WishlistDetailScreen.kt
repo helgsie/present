@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import `is`.hi.present.R
@@ -25,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
 import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
+import `is`.hi.present.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,6 +171,7 @@ fun WishlistDetailScreen(
                         ) { w ->
                             WishlistItemCard(
                                 w = w,
+                                isOwner = state.isOwner,
                                 onClick = { /* later: onOpenItem(w.id) */ }
                             )
                         }
@@ -180,13 +183,14 @@ fun WishlistDetailScreen(
 }
 
 @Composable
-private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
+private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, isOwner: Boolean) {
     val iskFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
             maximumFractionDigits = 0
             minimumFractionDigits = 0
         }
     }
+
     ElevatedCard(onClick = onClick) {
         Row(
             modifier = Modifier
@@ -219,6 +223,14 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
                     text = iskFormatter.format(price),
                     style = MaterialTheme.typography.titleMedium
                 )
+            }
+            if (!isOwner) {
+                TextButton(
+                    onClick = {},
+                    Modifier.padding(16.dp).background(color = NewMint)
+                ) {
+                    Text("Claim")
+                }
             }
         }
     }
