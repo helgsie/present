@@ -102,8 +102,10 @@ fun WishlistDetailScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
-                Icon(Icons.Default.Add, contentDescription = "Create wishlist item")
+            if (state.isOwner) {
+                FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
+                    Icon(Icons.Default.Add, contentDescription = "Create wishlist item")
+                }
             }
         }
     ) { padding ->
