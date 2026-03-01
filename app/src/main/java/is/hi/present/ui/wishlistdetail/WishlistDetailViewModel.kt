@@ -9,6 +9,7 @@ import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `is`.hi.present.data.repository.AuthRepository
+import `is`.hi.present.ui.components.WishlistIcon
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
 
@@ -74,6 +76,7 @@ class WishlistDetailViewModel @Inject constructor(
                 isLoading = false,
                 title = w.title,
                 description = w.description,
+                iconKey = w.iconKey ?: "favorite",
                 item = items,
                 isOwner = (w.ownerId == currentUserId),
                 errorMessage = null
@@ -133,7 +136,55 @@ class WishlistDetailViewModel @Inject constructor(
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                errorMessage = e.message ?: "Tókst ekki að búa til item"
+                errorMessage = e.message ?: "Ekki tókst að búa til item"
+            )
+        }
+    }
+
+    fun updateWishlist(
+        wishlistId: String,
+        title: String,
+        description: String?,
+        iconKey: String,
+        onDone: (() -> Unit)? = null
+    ) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+        try {
+            repo.updateWishlist(
+                wishlistId = wishlistId,
+                title = title,
+                description = description?.trim()?.takeIf { it.isNotBlank() },
+                icon = WishlistIcon.fromKey(iconKey)
+            )
+            loadAll(wishlistId)
+
+            _effects.send(WishlistDetailEffect.WishlistSaved)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = e.message ?: "Failed to update wishlist"
+            )
+        }
+    }
+
+    fun deleteWishlist(
+        wishlistId: String,
+        onDone: (() -> Unit)? = null
+    ) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+        try {
+            repo.deleteWishlist(wishlistId)
+            _uiState.value = WishlistDetailUiState(
+                isLoading = false,
+                errorMessage = null
+            )
+            _effects.send(WishlistDetailEffect.NavigateBack)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = e.message ?: "Failed to delete wishlist"
             )
         }
     }

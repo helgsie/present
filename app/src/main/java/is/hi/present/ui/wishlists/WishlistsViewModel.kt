@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 class WishlistsViewModel @Inject constructor(
     private val repo: WishlistsRepository
 ) : ViewModel() {
+
     private val _uiState = MutableStateFlow(WishlistsUiState(isLoading = true))
     val uiState: StateFlow<WishlistsUiState> = _uiState.asStateFlow()
 
@@ -39,10 +40,11 @@ class WishlistsViewModel @Inject constructor(
 
             _uiState.value = WishlistsUiState(
                 isLoading = false,
-                wishlists = wishlists
+                wishlists = wishlists,
+                errorMessage = null
             )
         } catch (e: Exception) {
-            _uiState.value = WishlistsUiState(
+            _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 errorMessage = e.message ?: "Failed to fetch wishlists"
             )
@@ -56,6 +58,7 @@ class WishlistsViewModel @Inject constructor(
         icon: WishlistIcon
     ) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
         try {
             repo.createWishlist(title, description, icon)
             loadWishlists()
