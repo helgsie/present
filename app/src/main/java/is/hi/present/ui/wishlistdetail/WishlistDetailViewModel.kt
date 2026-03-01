@@ -159,4 +159,16 @@ class WishlistDetailViewModel @Inject constructor(
             )
         }
     }
+
+    fun releaseClaim(wishlistId: String, itemId: String) = viewModelScope.launch {
+        try {
+            itemRepo.releaseClaim(itemId)
+            loadAll(wishlistId)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = e.message ?: "Could not release claim"
+            )
+        }
+    }
+
 }
