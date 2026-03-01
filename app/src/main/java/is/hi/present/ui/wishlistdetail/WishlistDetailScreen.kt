@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import `is`.hi.present.R
@@ -25,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
 import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
+import `is`.hi.present.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,8 +104,10 @@ fun WishlistDetailScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
-                Icon(Icons.Default.Add, contentDescription = "Create wishlist item")
+            if (state.isOwner) {
+                FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
+                    Icon(Icons.Default.Add, contentDescription = "Create wishlist item")
+                }
             }
         }
     ) { padding ->
@@ -167,7 +171,9 @@ fun WishlistDetailScreen(
                         ) { w ->
                             WishlistItemCard(
                                 w = w,
-                                onClick = { /* later: onOpenItem(w.id) */ }
+                                isOwner = state.isOwner,
+                                onClick = {},
+                                onClaim = { vm.claimItem(wishlistId, w.id) }
                             )
                         }
                     }
@@ -178,13 +184,14 @@ fun WishlistDetailScreen(
 }
 
 @Composable
-private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
+private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: () -> Unit, isOwner: Boolean) {
     val iskFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
             maximumFractionDigits = 0
             minimumFractionDigits = 0
         }
     }
+
     ElevatedCard(onClick = onClick) {
         Row(
             modifier = Modifier
@@ -211,12 +218,45 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
                     Text(w.notes, style = MaterialTheme.typography.bodyMedium)
                 }
             }
+            Spacer(Modifier.width(12.dp))
             w.price?.let { price ->
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = iskFormatter.format(price),
                     style = MaterialTheme.typography.titleMedium
                 )
+            }
+            if (!isOwner) {
+                Spacer(Modifier.width(12.dp))
+                if ( !w.isClaimed) {
+                    Button(
+                        onClick = onClaim,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NewMint,
+                            contentColor = Purple40
+                        )
+                    ) {
+                        Text("Claim")
+                    }
+                }
+                if (w.isClaimedByMe) {
+                    Button(
+                        onClick = onClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PurpleGrey80,
+                            contentColor = Black
+                        )
+                    ) {
+                        Text("Release")
+                    }
+                }
+                if (w.isClaimed && !w.isClaimedByMe) {
+                    Text(
+                        text = "Claimed",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
