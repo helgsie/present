@@ -70,48 +70,4 @@ class WishlistsViewModel @Inject constructor(
             )
         }
     }
-
-    fun updateWishlist(
-        wishlistId: String,
-        title: String,
-        description: String?,
-        icon: WishlistIcon,
-        onDone: (() -> Unit)? = null
-    ) = viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-
-        try {
-            repo.updateWishlist(
-                wishlistId = wishlistId,
-                title = title,
-                description = description,
-                icon = icon
-            )
-            loadWishlists()
-            onDone?.invoke()
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = e.message ?: "Failed to update wishlist"
-            )
-        }
-    }
-
-    fun deleteWishlist(
-        wishlistId: String,
-        onDone: (() -> Unit)? = null
-    ) = viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-
-        try {
-            repo.deleteWishlist(wishlistId)
-            loadWishlists()
-            onDone?.invoke()
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = e.message ?: "Failed to delete wishlist"
-            )
-        }
-    }
 }

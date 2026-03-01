@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,10 +23,11 @@ import `is`.hi.present.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
-import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
 import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.saveable.rememberSaveable
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +43,14 @@ fun WishlistDetailScreen(
     }
     val context = LocalContext.current
     var shareCode by remember { mutableStateOf<String?>(null) }
+    var confirmDelete by rememberSaveable {mutableStateOf(false) }
+
+
+    var isEditing by rememberSaveable { mutableStateOf(false) }
+    var title by rememberSaveable {mutableStateOf("") }
+    var description by rememberSaveable {mutableStateOf("") }
+    var iconKey by rememberSaveable { mutableStateOf<String?>(null) }
+
 
     LaunchedEffect(Unit) {
         vm.effects.collectLatest { effect ->
@@ -47,9 +58,12 @@ fun WishlistDetailScreen(
                 is WishlistDetailEffect.ShowShareCode -> {
                     shareCode = effect.code
                 }
+                    WishlistDetailEffect.NavigateBack -> onBack()
+                    WishlistDetailEffect.WishlistSaved -> isEditing = false
+                }
             }
         }
-    }
+
 
     shareCode?.let { code ->
         AlertDialog(
@@ -80,6 +94,26 @@ fun WishlistDetailScreen(
         )
     }
 
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete Wishlist?") },
+            text = { Text("This wishlist and along with its items will be permanently removed.") },
+            confirmButton = {
+                TextButton(
+                    enabled = !state.isLoading,
+                    onClick = {
+                        confirmDelete = false
+                        vm.deleteWishlist(wishlistId) { onBack() }
+                    }
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -96,6 +130,50 @@ fun WishlistDetailScreen(
                             enabled = !state.isLoading
                         ) {
                             Icon(Icons.Default.Share, contentDescription = "Share wishlist")
+                        }
+                    }
+
+                    if (state.isOwner) {
+                        if (!isEditing) {
+                            IconButton(
+                                enabled = !state.isLoading,
+                                onClick = {
+                                    title = state.title
+                                    description = state.description.orEmpty()
+                                    iconKey = state.iconKey
+                                    isEditing = true
+                                }
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit wishlist")
+                            }
+
+                            IconButton(
+                                enabled = !state.isLoading,
+                                onClick = { confirmDelete = true }
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete wishlist")
+                            }
+                        } else {
+                            TextButton(
+                                enabled = !state.isLoading,
+                                onClick = { isEditing = false }
+                            ) { Text("Cancel") }
+
+                            TextButton(
+                                enabled = title.trim().isNotBlank() && !state.isLoading,
+                                onClick = {
+                                    vm.updateWishlist(
+                                        wishlistId = wishlistId,
+                                        title = title.trim(),
+                                        description = description.trim().ifBlank { null },
+                                        iconKey = iconKey?: state.iconKey,
+                                        onDone = {
+                                            isEditing = false
+                                            vm.loadAll(wishlistId)
+                                        }
+                                    )
+                                }
+                            ) { Text("Save") }
                         }
                     }
                 }
@@ -131,18 +209,29 @@ fun WishlistDetailScreen(
                             .fillMaxSize()
                             .padding(16.dp)
                     ) {
-                        if (!state.description.isNullOrBlank()) {
+                        if (isEditing) {
+                            WishlistEditor(
+                                title = title,
+                                onTitleChange = { title = it },
+                                description = description,
+                                onDescriptionChange = { description = it }
+                            )
+                        } else if (!state.description.isNullOrBlank()) {
                             Text(
                                 text = state.description,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
-                    }
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(text = "You have no wishlist Items yet.")
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("You have no wishlist items yet.")
+                        }
                     }
                 }
 
@@ -152,9 +241,16 @@ fun WishlistDetailScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (!state.description.isNullOrBlank()) {
-                            item {
-                                Text(
+                        item {
+                            if (isEditing) {
+                                WishlistEditor(
+                                    title = title,
+                                    onTitleChange = { title = it },
+                                    description = description,
+                                    onDescriptionChange = { description = it }
+                                )
+                        } else if (!state.description.isNullOrBlank()) {
+                                Text (
                                     text = state.description,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
@@ -167,13 +263,38 @@ fun WishlistDetailScreen(
                         ) { w ->
                             WishlistItemCard(
                                 w = w,
-                                onClick = { /* later: onOpenItem(w.id) */ }
+                                onClick = { /* later: onOpenItem(w.id) */ },
                             )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun WishlistEditor(
+    title: String,
+    onTitleChange: (String) -> Unit,
+    description: String,
+    onDescriptionChange: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = title,
+            onValueChange = onTitleChange,
+            label = { Text("Title") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        OutlinedTextField(
+            value = description,
+            onValueChange = onDescriptionChange,
+            label = { Text("Description") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 2
+        )
     }
 }
 

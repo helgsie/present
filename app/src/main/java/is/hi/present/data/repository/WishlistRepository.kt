@@ -19,7 +19,7 @@ import java.net.URLEncoder
 class WishlistsRepository @Inject constructor(
     private val wishlistDao: WishlistDao,
     private val supabase: SupabaseClient
-){
+) {
     suspend fun getWishlists(): List<Wishlist> {
         val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not signed in")
 
@@ -96,4 +96,43 @@ class WishlistsRepository @Inject constructor(
 
         return wishlistId
     }
+
+    suspend fun deleteWishlist(wishlistId: String) {
+        val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not signed in")
+
+        supabase
+            .from("wishlists")
+            .delete {
+                filter {
+                    eq("id", wishlistId)
+                    eq("owner_id", userId)
+                }
+            }
+    }
+
+    suspend fun updateWishlist(
+        wishlistId: String,
+        title: String,
+        description: String? = null,
+        icon: WishlistIcon
+    ) {
+        val userId = supabase.auth.currentUserOrNull()?.id ?: error("not signed in")
+
+        supabase
+            .from("wishlists")
+            .update (
+                {
+                    set("title", title)
+                    set("description", description)
+                    set("icon_key", icon.key)
+            }
+        ) {
+            filter {
+                eq("id", wishlistId)
+            }
+        }
+    }
 }
+
+
+
