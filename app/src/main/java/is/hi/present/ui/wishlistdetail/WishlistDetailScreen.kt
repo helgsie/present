@@ -18,6 +18,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import `is`.hi.present.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -173,7 +174,8 @@ fun WishlistDetailScreen(
                                 w = w,
                                 isOwner = state.isOwner,
                                 onClick = {},
-                                onClaim = { vm.claimItem(wishlistId, w.id) }
+                                onClaim = { vm.claimItem(wishlistId, w.id) },
+                                onRelease = { vm.releaseClaim(wishlistId, w.id) }
                             )
                         }
                     }
@@ -184,7 +186,7 @@ fun WishlistDetailScreen(
 }
 
 @Composable
-private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: () -> Unit, isOwner: Boolean) {
+private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: () -> Unit, isOwner: Boolean, onRelease: () -> Unit) {
     val iskFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
             maximumFractionDigits = 0
@@ -212,7 +214,12 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: ()
             Spacer(Modifier.width(12.dp))
 
             Column(Modifier.weight(1f)) {
-                Text(w.name, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = w.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 if (!w.notes.isNullOrBlank()) {
                     Spacer(Modifier.height(4.dp))
                     Text(w.notes, style = MaterialTheme.typography.bodyMedium)
@@ -241,7 +248,7 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: ()
                 }
                 if (w.isClaimedByMe) {
                     Button(
-                        onClick = onClick,
+                        onClick = onRelease,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = PurpleGrey80,
                             contentColor = Black

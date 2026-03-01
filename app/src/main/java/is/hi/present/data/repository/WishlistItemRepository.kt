@@ -13,7 +13,6 @@ import io.github.jan.supabase.storage.storage
 import `is`.hi.present.data.DTO.WishlistItemInsert
 import `is`.hi.present.data.local.dao.WishlistItemDao
 import `is`.hi.present.domain.model.WishlistItem
-import java.util.Objects.isNull
 import javax.inject.Inject
 
 class WishlistItemRepository @Inject constructor(
@@ -73,7 +72,6 @@ class WishlistItemRepository @Inject constructor(
             .select {
                 filter {
                     isIn("item_id", itemIds)
-                    isNull("released_at")
                 }
             }
             .decodeList()
@@ -88,7 +86,6 @@ class WishlistItemRepository @Inject constructor(
             .select {
                 filter {
                     eq("item_id", itemId)
-                    isNull("released_at")
                 }
             }
             .decodeList()
@@ -103,5 +100,18 @@ class WishlistItemRepository @Inject constructor(
                 claimedBy = userId
             )
         )
+    }
+    suspend fun releaseClaim(itemId: String) {
+        val userId = supabase.auth.currentUserOrNull()?.id
+            ?: error("Not signed in")
+
+        supabase
+            .from("item_claims")
+            .delete {
+                filter {
+                    eq("item_id", itemId)
+                    eq("claimed_by", userId)
+                }
+            }
     }
 }
