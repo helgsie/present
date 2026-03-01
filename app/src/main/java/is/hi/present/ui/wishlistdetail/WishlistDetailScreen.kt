@@ -17,8 +17,10 @@ import androidx.compose.ui.Modifier
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import `is`.hi.present.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -27,6 +29,7 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.saveable.rememberSaveable
+import `is`.hi.present.ui.theme.*
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,8 +183,10 @@ fun WishlistDetailScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
-                Icon(Icons.Default.Add, contentDescription = "Create wishlist item")
+            if (state.isOwner) {
+                FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
+                    Icon(Icons.Default.Add, contentDescription = "Create wishlist item")
+                }
             }
         }
     ) { padding ->
@@ -264,6 +269,11 @@ fun WishlistDetailScreen(
                             WishlistItemCard(
                                 w = w,
                                 onClick = { /* later: onOpenItem(w.id) */ },
+                                isOwner = state.isOwner,
+                                onClick = {},
+                                onClaim = { vm.claimItem(wishlistId, w.id) },
+                                onRelease = { vm.releaseClaim(wishlistId, w.id) }
+
                             )
                         }
                     }
@@ -299,13 +309,15 @@ private fun WishlistEditor(
 }
 
 @Composable
-private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
+private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: () -> Unit, isOwner: Boolean, onRelease: () -> Unit) {
+
     val iskFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
             maximumFractionDigits = 0
             minimumFractionDigits = 0
         }
     }
+
     ElevatedCard(onClick = onClick) {
         Row(
             modifier = Modifier
@@ -326,18 +338,56 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
 
             Column(Modifier.weight(1f)) {
-                Text(w.name, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = w.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 if (!w.notes.isNullOrBlank()) {
                     Spacer(Modifier.height(4.dp))
                     Text(w.notes, style = MaterialTheme.typography.bodyMedium)
                 }
             }
+            Spacer(Modifier.width(12.dp))
             w.price?.let { price ->
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = iskFormatter.format(price),
                     style = MaterialTheme.typography.titleMedium
                 )
+            }
+            if (!isOwner) {
+                Spacer(Modifier.width(12.dp))
+                if ( !w.isClaimed) {
+                    Button(
+                        onClick = onClaim,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NewMint,
+                            contentColor = Purple40
+                        )
+                    ) {
+                        Text("Claim")
+                    }
+                }
+                if (w.isClaimedByMe) {
+                    Button(
+                        onClick = onRelease,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PurpleGrey80,
+                            contentColor = Black
+                        )
+                    ) {
+                        Text("Release")
+                    }
+                }
+                if (w.isClaimed && !w.isClaimedByMe) {
+                    Text(
+                        text = "Claimed",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

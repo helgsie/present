@@ -5,7 +5,9 @@ data class WishlistItemUi(
     val name: String,
     val notes: String? = null,
     val price: Double? = null,
-    val imagePath: String? = null
+    val imagePath: String? = null,
+    val isClaimed: Boolean = false,
+    val isClaimedByMe: Boolean = false
 )
 data class WishlistDetailUiState(
     val isLoading: Boolean = true,
