@@ -268,7 +268,6 @@ fun WishlistDetailScreen(
                         ) { w ->
                             WishlistItemCard(
                                 w = w,
-                                onClick = { /* later: onOpenItem(w.id) */ },
                                 isOwner = state.isOwner,
                                 onClick = {},
                                 onClaim = { vm.claimItem(wishlistId, w.id) },
