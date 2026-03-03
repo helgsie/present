@@ -38,6 +38,7 @@ fun WishlistDetailScreen(
     wishlistId: String,
     onBack: () -> Unit,
     onCreateItem: (wishlistId: String) -> Unit,
+    onOpenItem: (itemId: String) -> Unit,
     vm: WishlistDetailViewModel = hiltViewModel()
 ) {
     val state = vm.uiState.collectAsState().value
@@ -46,12 +47,11 @@ fun WishlistDetailScreen(
     }
     val context = LocalContext.current
     var shareCode by remember { mutableStateOf<String?>(null) }
-    var confirmDelete by rememberSaveable {mutableStateOf(false) }
-
-
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var isEditing by rememberSaveable { mutableStateOf(false) }
-    var title by rememberSaveable {mutableStateOf("") }
-    var description by rememberSaveable {mutableStateOf("") }
+
+    var title by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
     var iconKey by rememberSaveable { mutableStateOf<String?>(null) }
 
 
@@ -61,11 +61,12 @@ fun WishlistDetailScreen(
                 is WishlistDetailEffect.ShowShareCode -> {
                     shareCode = effect.code
                 }
-                    WishlistDetailEffect.NavigateBack -> onBack()
-                    WishlistDetailEffect.WishlistSaved -> isEditing = false
-                }
+
+                WishlistDetailEffect.NavigateBack -> onBack()
+                WishlistDetailEffect.WishlistSaved -> isEditing = false
             }
         }
+    }
 
 
     shareCode?.let { code ->
@@ -85,7 +86,8 @@ fun WishlistDetailScreen(
             dismissButton = {
                 TextButton(
                     onClick = {
-                        val clipboardManager = context.getSystemService(ClipboardManager::class.java)
+                        val clipboardManager =
+                            context.getSystemService(ClipboardManager::class.java)
                         clipboardManager?.setPrimaryClip(
                             ClipData.newPlainText("invite_code", code)
                         )
@@ -169,7 +171,7 @@ fun WishlistDetailScreen(
                                         wishlistId = wishlistId,
                                         title = title.trim(),
                                         description = description.trim().ifBlank { null },
-                                        iconKey = iconKey?: state.iconKey,
+                                        iconKey = iconKey ?: state.iconKey,
                                         onDone = {
                                             isEditing = false
                                             vm.loadAll(wishlistId)
@@ -254,8 +256,8 @@ fun WishlistDetailScreen(
                                     description = description,
                                     onDescriptionChange = { description = it }
                                 )
-                        } else if (!state.description.isNullOrBlank()) {
-                                Text (
+                            } else if (!state.description.isNullOrBlank()) {
+                                Text(
                                     text = state.description,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
@@ -268,11 +270,10 @@ fun WishlistDetailScreen(
                         ) { w ->
                             WishlistItemCard(
                                 w = w,
+                                onClick = { onOpenItem(w.id) },
                                 isOwner = state.isOwner,
-                                onClick = {},
                                 onClaim = { vm.claimItem(wishlistId, w.id) },
                                 onRelease = { vm.releaseClaim(wishlistId, w.id) }
-
                             )
                         }
                     }
@@ -281,6 +282,8 @@ fun WishlistDetailScreen(
         }
     }
 }
+
+
 
 @Composable
 private fun WishlistEditor(

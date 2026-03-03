@@ -221,5 +221,52 @@ class WishlistDetailViewModel @Inject constructor(
             )
         }
     }
+    fun deleteItem(
+        wishlistId: String,
+        itemId: String,
+        onDone: (() -> Unit)? = null
+    ) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        try {
+            itemRepo.deleteWishlistItem(itemId)
+            loadAll(wishlistId)
+            onDone?.invoke()
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = e.message ?: "Failed to delete item"
+            )
+        }
+    }
 
+    fun updateItem(
+        wishlistId: String,
+        itemId: String,
+        name: String,
+        notes: String?,
+        price: Double?,
+        onDone: (() -> Unit)? = null
+    ) = viewModelScope.launch {
+        if (name.isBlank()) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Name má ekki vera tómt")
+            return@launch
+        }
+
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        try {
+            itemRepo.updateWishlistItem(
+                itemId = itemId,
+                name = name.trim(),
+                notes = notes?.trim()?.takeIf { it.isNotBlank() },
+                price = price
+            )
+            loadAll(wishlistId)
+            onDone?.invoke()
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = e.message ?: "Failed to update item"
+            )
+        }
+    }
 }
