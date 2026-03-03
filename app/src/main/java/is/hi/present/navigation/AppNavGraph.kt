@@ -17,6 +17,7 @@ import `is`.hi.present.ui.wishlists.WishlistsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import `is`.hi.present.ui.sharedWishlist.AddSharedWishlistScreen
 import `is`.hi.present.ui.sharedWishlist.SharedWishlistScreen
+import `is`.hi.present.ui.wishlistdetail.ItemDetailScreen
 import `is`.hi.present.ui.wishlists.CreateTokenScreen
 
 @Composable
@@ -108,22 +109,34 @@ fun AppNavGraphNav3(
                     onDone = { backStack.removeLastOrNull() }
                 )
             }
-
+/// fix fix fix
             entry<AppRoute.WishlistDetail> { key ->
                 WishlistDetailScreen(
                     wishlistId = key.wishlistId,
                     onBack = { backStack.removeLastOrNull() },
                     onCreateItem = { wishlistId ->
                         backStack.add(AppRoute.CreateWishlistItem(wishlistId))
+                    },
+                    onOpenItem = {itemId ->
+                        backStack.add(AppRoute.WishlistItemDetail(key.wishlistId, itemId))
                     }
                 )
             }
+
 
             entry<AppRoute.CreateWishlistItem> { key ->
                 CreateItemScreen(
                     wishlistId = key.wishlistId,
                     onBack = { backStack.removeLastOrNull() },
                     onDone = { backStack.removeLastOrNull() }
+                )
+            }
+
+            entry<AppRoute.WishlistItemDetail> { key ->
+                ItemDetailScreen(
+                    wishlistId = key.wishlistId,
+                    itemId = key.itemId,
+                    onBack = { backStack.removeLastOrNull() }
                 )
             }
 

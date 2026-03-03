@@ -114,4 +114,39 @@ class WishlistItemRepository @Inject constructor(
                 }
             }
     }
+//--//
+    suspend fun getWishlistItemById(itemId: String): WishlistItem /* your domain model */ {
+        return supabase
+            .from("wishlist_items")
+            .select { filter { eq("id", itemId) } }
+            .decodeSingle()
+    }
+
+
+    suspend fun deleteWishlistItem(itemId: String) {
+        supabase
+            .from("wishlist_items")
+            .delete {
+                filter { eq("id", itemId) }
+            }
+    }
+
+    suspend fun updateWishlistItem(
+        itemId: String,
+        name: String,
+        notes: String?,
+        price: Double?
+    ) {
+        supabase
+            .from("wishlist_items")
+            .update(
+                {
+                    set("name", name)
+                    set("notes", notes)
+                    set("price", price)
+                }
+            ) {
+                filter { eq("id", itemId) }
+            }
+    }
 }
