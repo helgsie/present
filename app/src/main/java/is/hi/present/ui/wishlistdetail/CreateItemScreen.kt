@@ -58,13 +58,17 @@ fun CreateItemScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         selectedImageUri = uri
+        selectedCameraBitmap = null
     }
     val context = LocalContext.current
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
-        bitmap?.let { selectedCameraBitmap = it }
+        bitmap?.let {
+            selectedCameraBitmap = it
+            selectedImageUri = null
+        }
     }
 
     // Camera permission
