@@ -3,68 +3,143 @@ package `is`.hi.present.ui.wishlists
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import `is`.hi.present.data.repository.WishlistsRepository
+import `is`.hi.present.data.repository.WishlistRepository
 import `is`.hi.present.ui.components.WishlistIcon
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
 class WishlistsViewModel @Inject constructor(
-    private val repo: WishlistsRepository
+    private val repo: WishlistRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WishlistsUiState(isLoading = true))
     val uiState: StateFlow<WishlistsUiState> = _uiState.asStateFlow()
 
-    init {
-        loadWishlists()
-    }
+    private var currentOwnerId: String? = null
+    private var observeJob: Job? = null
 
-    fun loadWishlists() = viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+    fun loadWishlists(ownerId: String) {
+        val ownerChanged = currentOwnerId != ownerId
+        currentOwnerId = ownerId
 
-        try {
-            val wishlists = repo.getWishlists()
-                .sortedByDescending { it.createdAt ?: "" }
-                .map { w ->
-                    WishlistUi(
-                        id = w.id,
-                        title = w.title,
-                        description = w.description,
-                        iconKey = w.iconKey
+        if (ownerChanged) {
+            observeJob?.cancel()
+            observeJob = viewModelScope.launch {
+                repo.observeWishlists(ownerId)
+                    .map { wishlists ->
+                        wishlists
+                            .sortedByDescending { it.updatedAt }
+                            .map { w ->
+                                WishlistUi(
+                                    id = w.id,
+                                    title = w.title,
+                                    description = w.description,
+                                    iconKey = w.iconKey
+                                )
+                            }
+                    }
+                    .distinctUntilChanged()
+                    .collect { uiWishlists ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                wishlists = uiWishlists,
+                                errorMessage = null
+                            )
+                        }
+                    }
+            }
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        }
+        viewModelScope.launch {
+            val refresh = repo.refreshWishlists(ownerId)
+            refresh.onSuccess {
+                _uiState.update { it.copy(offlineBanner = null) }
+            }
+            refresh.onFailure {
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        offlineBanner = if (state.wishlists.isNotEmpty())
+                            "Ekkert netsamband. Vistuð gögn eru birt."
+                        else
+                            "Ekkert netsamband."
                     )
                 }
-
-            _uiState.value = WishlistsUiState(
-                isLoading = false,
-                wishlists = wishlists
-            )
-        } catch (e: Exception) {
-            _uiState.value = WishlistsUiState(
-                isLoading = false,
-                errorMessage = e.message ?: "Failed to fetch wishlists"
-            )
+            }
         }
     }
 
+    fun refresh(ownerId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
+
+            val result = repo.refreshWishlists(ownerId)
+
+            result.onSuccess {
+                _uiState.update {
+                    it.copy(
+                        offlineBanner = null,
+                        isRefreshing = false,
+                        isLoading = false
+                    )
+                }
+            }
+
+            result.onFailure {
+                _uiState.update { state ->
+                    state.copy(
+                        isRefreshing = false,
+                        isLoading = false,
+                        offlineBanner = if (state.wishlists.isNotEmpty())
+                            "Ekkert netsamband. Vistuð gögn eru sýnd."
+                        else
+                            "Ekkert netsamband.",
+                        offlineDialog = OfflineDialog(
+                            title = "Ekkert netsamband",
+                            message = "Vinsamlegast athugaðu netsamband og/eða reyndu aftur."
+                        )
+                    )
+                }
+            }
+
+            _uiState.update { it.copy(isRefreshing = false, isLoading = false) }
+        }
+    }
+
+    fun consumeOfflineDialog() {
+        _uiState.update { it.copy(offlineDialog = null) }
+    }
+
     fun createWishlist(
+        ownerId: String,
         title: String,
         description: String? = null,
         onDone: (() -> Unit)? = null,
         icon: WishlistIcon
     ) = viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-        try {
-            repo.createWishlist(title, description, icon)
-            loadWishlists()
-            onDone?.invoke()
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = e.message ?: "Failed to create wishlist"
-            )
-        }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+        val result = repo.createWishlist(ownerId, title, description, icon)
+        result
+            .onSuccess {
+                _uiState.update { it.copy(isLoading = false, errorMessage = null) }
+                onDone?.invoke()
+            }
+            .onFailure { e ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Tókst ekki að búa til óskalista"
+                    )
+                }
+            }
     }
 }

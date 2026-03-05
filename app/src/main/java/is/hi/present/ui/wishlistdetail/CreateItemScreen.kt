@@ -9,7 +9,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,8 +18,6 @@ fun CreateItemScreen(
     onDone: () -> Unit,
     vm: WishlistDetailViewModel = hiltViewModel()
 ) {
-    val state by vm.uiState.collectAsState()
-
     var name by rememberSaveable { mutableStateOf("") }
     var notes by rememberSaveable { mutableStateOf("") }
     var url by rememberSaveable { mutableStateOf("") }
@@ -36,7 +33,7 @@ fun CreateItemScreen(
         .replace(",", ".")
         .toDoubleOrNull()
 
-    val canSubmit = trimmedName.isNotBlank() && !state.isLoading
+    val canSubmit = trimmedName.isNotBlank()
 
     Scaffold(
         topBar = {
@@ -57,9 +54,6 @@ fun CreateItemScreen(
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            state.errorMessage?.let {
-                Text(text = it, color = MaterialTheme.colorScheme.error)
-            }
 
             OutlinedTextField(
                 value = name,
@@ -104,13 +98,6 @@ fun CreateItemScreen(
                     onDone()
                 },
             ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(Modifier.width(10.dp))
-                }
                 Text("Create")
             }
         }

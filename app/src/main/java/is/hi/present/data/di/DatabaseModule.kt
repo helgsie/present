@@ -26,7 +26,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "present.db"
         )
-            .fallbackToDestructiveMigration(false)
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
 

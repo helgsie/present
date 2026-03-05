@@ -12,14 +12,44 @@ interface WishlistItemDao {
         WHERE wishlistId = :wishlistId
         ORDER BY COALESCE(sortOrder, 2147483647), updatedAt DESC
     """)
-    fun observeItems(wishlistId: String): Flow<List<WishlistItemEntity>>
+    fun observeItemsByWishlistId(wishlistId: String): Flow<List<WishlistItemEntity>>
+
+    @Query("SELECT * FROM wishlist_items WHERE id = :itemId LIMIT 1")
+    fun observeItemById(itemId: String): Flow<WishlistItemEntity?>
+
+    @Query(
+        """
+        SELECT * FROM wishlist_items
+        WHERE wishlistId = :wishlistId
+        ORDER BY COALESCE(sortOrder, 2147483647), updatedAt DESC
+        """
+    )
+    suspend fun getItemsByWishlistId(wishlistId: String): List<WishlistItemEntity>
+
+    @Query("SELECT * FROM wishlist_items WHERE id = :itemId LIMIT 1")
+    suspend fun getItemById(itemId: String): WishlistItemEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: WishlistItemEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(items: List<WishlistItemEntity>)
 
     @Delete
     suspend fun delete(item: WishlistItemEntity)
 
     @Query("DELETE FROM wishlist_items WHERE id = :itemId")
-    suspend fun deleteById(itemId: String)
+    suspend fun deleteById(itemId: String): Int
+
+    @Query("DELETE FROM wishlist_items WHERE wishlistId = :wishlistId")
+    suspend fun deleteByWishlistId(wishlistId: String): Int
+
+    @Transaction
+    suspend fun replaceWishlistItems(wishlistId: String, items: List<WishlistItemEntity>) {
+        deleteByWishlistId(wishlistId)
+        upsertAll(items)
+    }
+
+    @Query("DELETE FROM wishlist_items")
+    suspend fun clearAll(): Int
 }

@@ -20,10 +20,10 @@ import androidx.compose.ui.res.painterResource
 import `is`.hi.present.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
-import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,14 +31,39 @@ fun WishlistDetailScreen(
     wishlistId: String,
     onBack: () -> Unit,
     onCreateItem: (wishlistId: String) -> Unit,
+    cacheToRoom: Boolean = true,
     vm: WishlistDetailViewModel = hiltViewModel()
 ) {
     val state = vm.uiState.collectAsState().value
     LaunchedEffect(wishlistId) {
-        vm.loadAll(wishlistId)
+        vm.loadAll(wishlistId, cacheToRoom = cacheToRoom)
     }
     val context = LocalContext.current
     var shareCode by remember { mutableStateOf<String?>(null) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    var lastSnackbarMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    val isOffline = remember(state.errorMessage) {
+        val msg = state.errorMessage.orEmpty()
+        msg.contains("Ekkert netsamband", ignoreCase = true) ||
+            msg.contains("offline", ignoreCase = true) ||
+            msg.contains("Unable to resolve host", ignoreCase = true) ||
+            msg.contains("Couldn't reach", ignoreCase = true)
+    }
+
+    LaunchedEffect(state.errorMessage) {
+        val msg = state.errorMessage
+        if (!msg.isNullOrBlank() && msg != lastSnackbarMessage) {
+            lastSnackbarMessage = msg
+            snackbarHostState.showSnackbar(
+                message = msg,
+                withDismissAction = true,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
 
     LaunchedEffect(Unit) {
         vm.effects.collectLatest { effect ->
@@ -91,7 +116,19 @@ fun WishlistDetailScreen(
                 actions = {
                     if (state.isOwner) {
                         IconButton(
-                            onClick = { vm.onShareClicked(wishlistId) },
+                            onClick = {
+                                if (isOffline) {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = "Deiling krefst netsambands",
+                                            withDismissAction = true,
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                } else {
+                                    vm.onShareClicked(wishlistId)
+                                }
+                            },
                             enabled = !state.isLoading
                         ) {
                             Icon(Icons.Default.Share, contentDescription = "Share wishlist")
@@ -104,69 +141,80 @@ fun WishlistDetailScreen(
             FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
                 Icon(Icons.Default.Add, contentDescription = "Create wishlist item")
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
         Box(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            when {
-                state.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                state.errorMessage != null -> {
-                    Text(
-                        text = state.errorMessage,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-
-                state.isEmpty -> {
-                    Column(
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                if (isOffline && state.item.isNotEmpty()) {
+                    Surface(
+                        tonalElevation = 1.dp,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        if (!state.description.isNullOrBlank()) {
-                            Text(
-                                text = state.description,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                    }
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(text = "You have no wishlist Items yet.")
+                        Text(
+                            text = "Ekkert netsamband. Vistuð gögn eru birt.",
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
 
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        if (!state.description.isNullOrBlank()) {
-                            item {
-                                Text(
-                                    text = state.description,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    when {
+                        state.isLoading && state.item.isEmpty() -> {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        }
+
+                        state.item.isNotEmpty() -> {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                if (!state.description.isNullOrBlank()) {
+                                    item {
+                                        Text(
+                                            text = state.description,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
+
+                                items(
+                                    items = state.item,
+                                    key = { it.id }
+                                ) { w ->
+                                    WishlistItemCard(
+                                        w = w,
+                                        onClick = { }
+                                    )
+                                }
                             }
                         }
 
-                        items(
-                            items = state.item,
-                            key = { it.id }
-                        ) { w ->
-                            WishlistItemCard(
-                                w = w,
-                                onClick = { /* later: onOpenItem(w.id) */ }
+                        state.isEmpty -> {
+                            Text(
+                                text = "Þessi listi er tómur.",
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+
+                        state.errorMessage != null -> {
+                            Text(
+                                text = state.errorMessage,
+                                modifier = Modifier.align(Alignment.Center),
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                     }
