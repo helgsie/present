@@ -201,7 +201,7 @@ fun CreateItemScreen(
         }
     }
 }
-private fun saveBitmapToFile(context: Context, bitmap: Bitmap): Uri {
+fun saveBitmapToFile(context: Context, bitmap: Bitmap): Uri {
     val file = File(
         context.cacheDir,
         "camera_${System.currentTimeMillis()}.jpg"
