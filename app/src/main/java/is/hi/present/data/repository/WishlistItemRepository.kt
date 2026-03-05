@@ -135,7 +135,8 @@ class WishlistItemRepository @Inject constructor(
         itemId: String,
         name: String,
         notes: String?,
-        price: Double?
+        price: Double?,
+        imagePath: String?
     ) {
         supabase
             .from("wishlist_items")
@@ -144,6 +145,7 @@ class WishlistItemRepository @Inject constructor(
                     set("name", name)
                     set("notes", notes)
                     set("price", price)
+                    set("image_path", imagePath)
                 }
             ) {
                 filter { eq("id", itemId) }
