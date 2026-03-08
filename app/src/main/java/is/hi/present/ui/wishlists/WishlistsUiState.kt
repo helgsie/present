@@ -15,12 +15,12 @@ data class OfflineDialog(
 )
 
 data class WishlistsUiState(
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
+    val wishlists: List<WishlistUi> = emptyList(),
     val errorMessage: String? = null,
     val offlineBanner: String? = null,
     val offlineDialog: OfflineDialog? = null,
-    val wishlists: List<WishlistUi> = emptyList(),
     val needsAuth: Boolean = false
 ) {
     val isEmpty: Boolean get() = !isLoading && errorMessage == null && wishlists.isEmpty()

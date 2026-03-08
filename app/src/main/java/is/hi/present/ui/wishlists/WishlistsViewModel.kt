@@ -19,9 +19,11 @@ import kotlinx.coroutines.launch
 class WishlistsViewModel @Inject constructor(
     private val repo: WishlistRepository
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(WishlistsUiState(isLoading = true))
+    // ---- STATE -----
+    private val _uiState = MutableStateFlow(WishlistsUiState())
     val uiState: StateFlow<WishlistsUiState> = _uiState.asStateFlow()
 
+    // ---- INTERNAL FIELDS ----
     private var currentOwnerId: String? = null
     private var observeJob: Job? = null
 
@@ -31,6 +33,7 @@ class WishlistsViewModel @Inject constructor(
 
         if (ownerChanged) {
             observeJob?.cancel()
+
             observeJob = viewModelScope.launch {
                 repo.observeWishlists(ownerId)
                     .map { wishlists ->
@@ -50,67 +53,63 @@ class WishlistsViewModel @Inject constructor(
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                wishlists = uiWishlists,
-                                errorMessage = null
+                                wishlists = uiWishlists
                             )
                         }
                     }
             }
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true) }
         }
         viewModelScope.launch {
-            val refresh = repo.refreshWishlists(ownerId)
-            refresh.onSuccess {
-                _uiState.update { it.copy(offlineBanner = null) }
-            }
-            refresh.onFailure {
-                _uiState.update { state ->
-                    state.copy(
-                        isLoading = false,
-                        offlineBanner = if (state.wishlists.isNotEmpty())
-                            "Ekkert netsamband. Vistuð gögn eru birt."
-                        else
-                            "Ekkert netsamband."
-                    )
+            repo.refreshWishlists(ownerId)
+                .onSuccess {
+                    _uiState.update { it.copy(offlineBanner = null) }
                 }
+                .onFailure {
+                    _uiState.update { state ->
+                        state.copy(
+                            isLoading = false,
+                            offlineBanner = if (state.wishlists.isNotEmpty())
+                                "Ekkert netsamband. Vistuð gögn eru sýnd."
+                            else
+                                "Ekkert netsamband."
+                        )
+                    }
             }
         }
     }
 
     fun refresh(ownerId: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
+            _uiState.update { it.copy(isRefreshing = true) }
 
-            val result = repo.refreshWishlists(ownerId)
-
-            result.onSuccess {
-                _uiState.update {
-                    it.copy(
-                        offlineBanner = null,
-                        isRefreshing = false,
-                        isLoading = false
-                    )
-                }
-            }
-
-            result.onFailure {
-                _uiState.update { state ->
-                    state.copy(
-                        isRefreshing = false,
-                        isLoading = false,
-                        offlineBanner = if (state.wishlists.isNotEmpty())
-                            "Ekkert netsamband. Vistuð gögn eru sýnd."
-                        else
-                            "Ekkert netsamband.",
-                        offlineDialog = OfflineDialog(
-                            title = "Ekkert netsamband",
-                            message = "Vinsamlegast athugaðu netsamband og/eða reyndu aftur."
+            repo.refreshWishlists(ownerId)
+                .onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            offlineBanner = null,
+                            isRefreshing = false,
+                            isLoading = false,
+                            errorMessage = null
                         )
-                    )
+                    }
                 }
-            }
-
-            _uiState.update { it.copy(isRefreshing = false, isLoading = false) }
+                .onFailure {
+                    _uiState.update { state ->
+                        state.copy(
+                            isRefreshing = false,
+                            isLoading = false,
+                            offlineBanner = if (state.wishlists.isNotEmpty())
+                                "Ekkert netsamband. Vistuð gögn eru sýnd."
+                            else
+                                "Ekkert netsamband.",
+                            offlineDialog = OfflineDialog(
+                                title = "Ekkert netsamband",
+                                message = "Vinsamlegast athugaðu netsamband og/eða reyndu aftur."
+                            )
+                        )
+                    }
+                }
         }
     }
 
@@ -125,12 +124,11 @@ class WishlistsViewModel @Inject constructor(
         onDone: (() -> Unit)? = null,
         icon: WishlistIcon
     ) = viewModelScope.launch {
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null, offlineBanner = null) }
 
-        val result = repo.createWishlist(ownerId, title, description, icon)
-        result
+        repo.createWishlist(ownerId, title, description, icon)
             .onSuccess {
-                _uiState.update { it.copy(isLoading = false, errorMessage = null) }
+                _uiState.update { it.copy(isLoading = false) }
                 onDone?.invoke()
             }
             .onFailure { e ->

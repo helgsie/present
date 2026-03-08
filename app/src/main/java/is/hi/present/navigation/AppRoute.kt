@@ -15,4 +15,5 @@ sealed interface AppRoute : NavKey {
     @Serializable data object SharedWishlists : AppRoute
     @Serializable data object AddSharedWishlist : AppRoute
     @Serializable data object AccountSettings : AppRoute
+    @Serializable data class SharedWishlistDetail(val wishlistId: String) : AppRoute
 }

@@ -117,7 +117,9 @@ fun WishlistsScreen(
                         )
                     }
 
-                    Column(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
                         state.offlineBanner?.let { msg ->
                             Surface(
                                 tonalElevation = 1.dp,
@@ -134,7 +136,11 @@ fun WishlistsScreen(
                             Spacer(Modifier.height(8.dp))
                         }
 
-                        Box(modifier = Modifier.fillMaxSize()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        ) {
                             when {
                                 state.isLoading && state.wishlists.isEmpty() -> {
                                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -146,8 +152,8 @@ fun WishlistsScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         Text(
-                                            text = state.errorMessage ?: "Unknown error",
-                                            color = MaterialTheme.colorScheme.error
+                                            text = state.errorMessage ?: "Óþekkt villa kom upp.",
+                                            color = MaterialTheme.colorScheme.error,
                                         )
                                         Spacer(Modifier.height(12.dp))
                                         Button(onClick = { vm.refresh(ownerId) }) {

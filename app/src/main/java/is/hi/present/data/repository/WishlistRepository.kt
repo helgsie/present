@@ -24,11 +24,20 @@ class WishlistRepository @Inject constructor(
     private val wishlistDao: WishlistDao,
     private val supabase: SupabaseClient
 ){
-    // fylgjast með wishlists frá local cache (room)
+    // ------- READS FROM ROOM ---------
     fun observeWishlists(ownerId: String): Flow<List<Wishlist>> =
         wishlistDao.observeWishlists(ownerId).map { entities -> entities.map { it.toDomain() } }
 
-    // sækir nýjustu wishlists úr Supabase og skiptir þeim út fyrir local cache
+    fun observeWishlistById(wishlistId: String): Flow<Wishlist?> =
+        wishlistDao.observeWishlistById(wishlistId).map { entity -> entity?.toDomain() }
+
+    suspend fun getWishlistsLocal(ownerId: String): List<Wishlist> =
+        wishlistDao.getWishlists(ownerId).map { it.toDomain() }
+
+    suspend fun getWishlistByIdLocal(wishlistId: String): Wishlist? =
+        wishlistDao.getWishlistById(wishlistId)?.toDomain()
+
+    // ------ SYNCING ROOM WITH DATA FROM REMOTE -------
     suspend fun refreshWishlists(ownerId: String): Result<Unit> = runCatching {
         val remote = supabase
             .from("wishlists")
@@ -38,19 +47,16 @@ class WishlistRepository @Inject constructor(
             }
             .decodeList<WishlistDto>()
 
-        wishlistDao.replaceOwnerWishlists(ownerId, remote.map { it.toEntity() })
+        val entities = remote.map { it.toEntity() }
+        if (entities.isEmpty()) {
+            val cached = wishlistDao.getWishlists(ownerId)
+            if (cached.isEmpty()) {
+                wishlistDao.deleteByOwnerId(ownerId)
+            }
+            return@runCatching
+        }
+        wishlistDao.refreshWishlists(ownerId, entities)
     }
-
-    // nota þetta method fyrir screens sem loada einu sinni og renderast strax
-    suspend fun getWishlists(ownerId: String): List<Wishlist> =
-        wishlistDao.getWishlists(ownerId).map { it.toDomain() }
-
-    fun observeWishlistById(wishlistId: String): Flow<Wishlist?> =
-        wishlistDao.observeWishlistById(wishlistId)
-            .map { entity -> entity?.toDomain() }
-
-    suspend fun getWishlistByIdLocal(wishlistId: String): Wishlist? =
-        wishlistDao.getWishlistById(wishlistId)?.toDomain()
 
     suspend fun refreshWishlistById(wishlistId: String): Result<Unit> = runCatching {
         val dto: WishlistDto = supabase
@@ -60,10 +66,10 @@ class WishlistRepository @Inject constructor(
                 limit(1)
             }
             .decodeSingle()
-
         wishlistDao.upsert(dto.toEntity())
     }
 
+    // ----- REMOTE HELPERS -----
     suspend fun fetchWishlistRemoteById(wishlistId: String): Result<Wishlist> = runCatching {
         val dto: WishlistDto = supabase
             .from("wishlists")
@@ -75,17 +81,35 @@ class WishlistRepository @Inject constructor(
         dto.toEntity().toDomain()
     }
 
-    suspend fun getWishlistById(wishlistId: String): Result<Wishlist> {
-        val refreshResult = refreshWishlistById(wishlistId)
+    suspend fun fetchSharedWishlistsRemote(): Result<List<Wishlist>> = runCatching {
+        val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not signed in")
+        val shares: List<WishlistShareRow> = supabase
+            .from("wishlist_shares")
+            .select {
+                filter { eq("shared_with", userId) }
+            }
+            .decodeList()
+        if (shares.isEmpty()) return@runCatching emptyList()
 
-        val local = getWishlistByIdLocal(wishlistId)
-        if (local != null) return Result.success(local)
-
-        return refreshResult
-            .map { error("Óskalisti fannst ekki í cache") }
-            .recoverCatching { throw it }
+        val sharedIds = shares.map { it.wishlistId }.distinct()
+        // TODO: Change filter into in() style filter later
+        val wishlists: List<WishlistDto> = supabase
+            .from("wishlists")
+            .select {
+                filter {
+                    or {
+                        sharedIds.forEach { id ->
+                            eq("id", id)
+                        }
+                    }
+                }
+                order("updated_at", order = Order.DESCENDING)
+            }
+            .decodeList()
+        wishlists.map { it.toDomain() }
     }
 
+    // ---- WRITES ------
     suspend fun createWishlist(
         ownerId: String,
         title: String,
@@ -117,36 +141,6 @@ class WishlistRepository @Inject constructor(
         supabase.postgrest
             .rpc("create_share_link", CreateShareLinkArgs(wishlistId))
             .decodeAs()
-    }
-
-    suspend fun getSharedWishlists(): Result<List<Wishlist>> = runCatching {
-        val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not signed in")
-        val shares: List<WishlistShareRow> = supabase
-            .from("wishlist_shares")
-            .select {
-                filter { eq("shared_with", userId) }
-            }
-            .decodeList()
-
-        if (shares.isEmpty()) return@runCatching emptyList()
-
-        val sharedIds = shares.map { it.wishlistId }.distinct()
-
-        val wishlists: List<WishlistDto> = supabase
-            .from("wishlists")
-            .select {
-                filter {
-                    or {
-                        sharedIds.forEach { id ->
-                            eq("id", id)
-                        }
-                    }
-                }
-                order("updated_at", order = Order.DESCENDING)
-            }
-            .decodeList()
-
-        wishlists.map { it.toEntity().toDomain() }
     }
 
     suspend fun joinByToken(token: String): Result<String> = runCatching {

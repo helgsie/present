@@ -14,13 +14,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class WishlistDetailViewModel @Inject constructor(
-    private val repo: WishlistRepository,
-    private val repoAuth: AuthRepository,
+    private val wishlistRepo: WishlistRepository,
+    private val authRepo: AuthRepository,
     private val itemRepo: WishlistItemRepository
 ) : ViewModel() {
 
@@ -30,26 +31,41 @@ class WishlistDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(WishlistDetailUiState())
     val uiState: StateFlow<WishlistDetailUiState> = _uiState.asStateFlow()
 
+    // ---- INTERNAL FIELDS -----
     private var observeJob: Job? = null
     private var currentWishlistId: String? = null
 
-    fun loadAll(wishlistId: String, cacheToRoom: Boolean) {
+    fun loadAll(wishlistId: String) {
+        ensureObserver(wishlistId)
+
+        viewModelScope.launch {
+            refreshInternal(wishlistId, fromUser = false)
+        }
+    }
+
+    private fun ensureObserver(wishlistId: String) {
         if (currentWishlistId == wishlistId && observeJob?.isActive == true) {
             return
         }
+
         currentWishlistId = wishlistId
         observeJob?.cancel()
 
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null
+            )
+        }
 
         observeJob = viewModelScope.launch {
-            val wishlistFlow = repo.observeWishlistById(wishlistId)
+            val wishlistFlow = wishlistRepo.observeWishlistById(wishlistId)
             val itemsFlow = itemRepo.observeWishlistItems(wishlistId)
 
             wishlistFlow
                 .distinctUntilChanged()
                 .combine(itemsFlow.distinctUntilChanged()) { wishlist, items ->
-                    val currentUserId = repoAuth.getCurrentUserId()
+                    val currentUserId = authRepo.getCurrentUserId()
 
                     val itemUi = items.map {
                         WishlistItemUi(
@@ -65,58 +81,76 @@ class WishlistDetailViewModel @Inject constructor(
                 }
                 .collect { (wishlist, currentUserId, itemUi) ->
                     if (wishlist == null) {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            title = "",
-                            description = "",
-                            item = emptyList(),
-                            isOwner = false,
-                            errorMessage = _uiState.value.errorMessage
-                        )
+                        _uiState.update { state ->
+                            state.copy(
+                                isLoading = false,
+                                title = "",
+                                description = "",
+                                items = emptyList(),
+                                isOwner = false,
+                                errorMessage = state.errorMessage
+                            )
+                        }
                         return@collect
                     }
 
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        title = wishlist.title,
-                        description = wishlist.description,
-                        item = itemUi,
-                        isOwner = (wishlist.ownerId == currentUserId),
-                        errorMessage = _uiState.value.errorMessage
-                    )
+                    _uiState.update { state ->
+                        state.copy(
+                            isLoading = false,
+                            title = wishlist.title,
+                            description = wishlist.description,
+                            items = itemUi,
+                            isOwner = (wishlist.ownerId == currentUserId),
+                            errorMessage = null
+                        )
+                    }
                 }
         }
+    }
 
+    // ----- REFRESH BY USER ------
+    fun refresh(wishlistId: String) {
         viewModelScope.launch {
-            repo.refreshWishlistById(wishlistId)
-                .onFailure { e ->
-                    val friendlyMessage = when {
-                        e.message?.contains("Unable to resolve host", ignoreCase = true) == true ->
-                            "Ekkert netsamband - birtir geymd gögn"
+            _uiState.update { it.copy(isRefreshing = true) }
+            refreshInternal(wishlistId, fromUser = true)
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
 
-                        else -> "Ekki tókst að uppfæra - birtir geymd gögn"
-                    }
+    // ----- INTERNAL REFRESH HELPER ------
+    private suspend fun refreshInternal(
+        wishlistId: String,
+        fromUser: Boolean
+    ) {
+        val wishlistResult = wishlistRepo.refreshWishlistById(wishlistId)
+        val itemsResult = itemRepo.refreshWishlistItems(wishlistId)
 
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = _uiState.value.errorMessage ?: friendlyMessage
-                    )
-                }
+        val failed = wishlistResult.isFailure || itemsResult.isFailure
 
-            itemRepo.refreshWishlistItems(wishlistId)
-                .onFailure { e ->
-                    val friendlyMessage = when {
-                        e.message?.contains("Unable to resolve host", ignoreCase = true) == true ->
-                            "Ekkert netsamband - birtir geymd gögn"
+        if (!failed) {
+            _uiState.update {
+                it.copy(
+                    offlineBanner = null,
+                    errorMessage = null
+                )
+            }
+            return
+        }
 
-                        else -> "Ekki tókst að uppfæra items - birtir geymd gögn"
-                    }
+        _uiState.update { state ->
+            val hasCachedData = state.items.isNotEmpty() || state.title.isNotBlank()
 
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = _uiState.value.errorMessage ?: friendlyMessage
-                    )
-                }
+            if (hasCachedData) {
+                state.copy(
+                    errorMessage = null,
+                    offlineBanner = "Ekkert netsamband. Vistuð gögn eru sýnd."
+                )
+            } else {
+                state.copy(
+                    errorMessage = "Ekki tókst að sækja gögn.",
+                    offlineBanner = null
+                )
+            }
         }
     }
 
@@ -157,7 +191,7 @@ class WishlistDetailViewModel @Inject constructor(
     fun onShareClicked(wishlistId: String) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-        repo.createShareCode(wishlistId)
+        wishlistRepo.createShareCode(wishlistId)
             .onSuccess { code ->
                 _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = null)
                 _effects.send(WishlistDetailEffect.ShowShareCode(code))

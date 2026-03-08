@@ -39,6 +39,10 @@ fun SharedWishlistScreen(
     val state by vm.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(Unit) {
+        vm.loadSharedWishlists()
+    }
+
     LaunchedEffect(state.errorMessage) {
         val msg = state.errorMessage
         if (!msg.isNullOrBlank()) {
@@ -137,7 +141,9 @@ fun SharedWishlistScreen(
                     state.isEmpty -> {
                         Text(
                             text = "Engum óskalistum hefur verið deilt með þér",
-                            modifier = Modifier.align(Alignment.Center)
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .offset(y = (-40).dp)
                         )
                     }
 

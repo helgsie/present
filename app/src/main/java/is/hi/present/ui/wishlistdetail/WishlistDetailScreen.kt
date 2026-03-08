@@ -1,5 +1,6 @@
 package `is`.hi.present.ui.wishlistdetail
 
+import `is`.hi.present.ui.components.WishlistItemCard
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,12 +32,11 @@ fun WishlistDetailScreen(
     wishlistId: String,
     onBack: () -> Unit,
     onCreateItem: (wishlistId: String) -> Unit,
-    cacheToRoom: Boolean = true,
     vm: WishlistDetailViewModel = hiltViewModel()
 ) {
     val state = vm.uiState.collectAsState().value
     LaunchedEffect(wishlistId) {
-        vm.loadAll(wishlistId, cacheToRoom = cacheToRoom)
+        vm.loadAll(wishlistId)
     }
     val context = LocalContext.current
     var shareCode by remember { mutableStateOf<String?>(null) }
@@ -153,7 +153,7 @@ fun WishlistDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
             ) {
-                if (isOffline && state.item.isNotEmpty()) {
+                if (isOffline && state.items.isNotEmpty()) {
                     Surface(
                         tonalElevation = 1.dp,
                         modifier = Modifier
@@ -169,14 +169,16 @@ fun WishlistDetailScreen(
                 }
 
                 Box(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 ) {
                     when {
-                        state.isLoading && state.item.isEmpty() -> {
+                        state.isLoading && state.items.isEmpty() -> {
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                         }
 
-                        state.item.isNotEmpty() -> {
+                        state.items.isNotEmpty() -> {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
                                 contentPadding = PaddingValues(16.dp),
@@ -192,7 +194,7 @@ fun WishlistDetailScreen(
                                 }
 
                                 items(
-                                    items = state.item,
+                                    items = state.items,
                                     key = { it.id }
                                 ) { w ->
                                     WishlistItemCard(
@@ -206,7 +208,9 @@ fun WishlistDetailScreen(
                         state.isEmpty -> {
                             Text(
                                 text = "Þessi listi er tómur.",
-                                modifier = Modifier.align(Alignment.Center)
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset(y = (-40).dp)
                             )
                         }
 
@@ -219,47 +223,6 @@ fun WishlistDetailScreen(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
-    val iskFormatter = remember {
-        NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
-            maximumFractionDigits = 0
-            minimumFractionDigits = 0
-        }
-    }
-    ElevatedCard(onClick = onClick) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = painterResource(R.drawable.ic_item_placeholder),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(64.dp)
-            )
-            Spacer(Modifier.width(12.dp))
-
-            Column(Modifier.weight(1f)) {
-                Text(w.name, style = MaterialTheme.typography.titleMedium)
-                if (!w.notes.isNullOrBlank()) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(w.notes, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-            w.price?.let { price ->
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = iskFormatter.format(price),
-                    style = MaterialTheme.typography.titleMedium
-                )
             }
         }
     }

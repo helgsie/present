@@ -17,6 +17,7 @@ import `is`.hi.present.ui.wishlists.WishlistsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.sharedWishlist.AddSharedWishlistScreen
+import `is`.hi.present.ui.sharedWishlist.SharedWishlistDetailScreen
 import `is`.hi.present.ui.sharedWishlist.SharedWishlistScreen
 import `is`.hi.present.ui.wishlists.CreateTokenScreen
 import `is`.hi.present.ui.wishlists.WishlistsViewModel
@@ -42,12 +43,14 @@ fun AppNavGraphNav3(
         }
 
         is AuthStatus.LoggedIn -> {
-            AppNav(
-                authViewModel = authViewModel,
-                userId = status.userId,
-                pendingJoinToken = pendingJoinToken,
-                clearPendingJoinToken = { pendingJoinToken = null }
-            )
+            key(status.userId) {
+                AppNav(
+                    authViewModel = authViewModel,
+                    userId = status.userId,
+                    pendingJoinToken = pendingJoinToken,
+                    clearPendingJoinToken = { pendingJoinToken = null }
+                )
+            }
         }
     }
 }
@@ -138,6 +141,14 @@ private fun AppNav(
                 )
             }
 
+            entry<AppRoute.SharedWishlistDetail> { key ->
+                SharedWishlistDetailScreen(
+                    wishlistId = key.wishlistId,
+                    onBack = { backStack.removeLastOrNull()
+                    }
+                )
+            }
+
             entry<AppRoute.CreateWishlistItem> { key ->
                 CreateItemScreen(
                     wishlistId = key.wishlistId,
@@ -161,7 +172,7 @@ private fun AppNav(
                     onJoined = { wishlistId ->
                         clearPendingJoinToken()
                         backStack.removeLastOrNull()
-                        backStack.add(AppRoute.WishlistDetail(wishlistId))
+                        backStack.add(AppRoute.SharedWishlistDetail(wishlistId))
                     }
                 )
             }
@@ -169,7 +180,7 @@ private fun AppNav(
             entry<AppRoute.SharedWishlists> {
                 SharedWishlistScreen(
                     onAddSharedWishlist = { backStack.add(AppRoute.AddSharedWishlist) },
-                    onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
+                    onOpenWishlist = { id -> backStack.add(AppRoute.SharedWishlistDetail(id)) },
                     onSelectWishlists = { backStack.add(AppRoute.Wishlists) },
                     onLogout = { authViewModel.signOut() },
                     onAccountSettings = { backStack.add(AppRoute.AccountSettings) },

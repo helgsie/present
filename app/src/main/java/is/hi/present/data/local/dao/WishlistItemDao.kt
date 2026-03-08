@@ -7,11 +7,13 @@ import `is`.hi.present.data.local.entity.WishlistItemEntity
 @Dao
 interface WishlistItemDao {
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM wishlist_items 
         WHERE wishlistId = :wishlistId
         ORDER BY COALESCE(sortOrder, 2147483647), updatedAt DESC
-    """)
+        """
+    )
     fun observeItemsByWishlistId(wishlistId: String): Flow<List<WishlistItemEntity>>
 
     @Query("SELECT * FROM wishlist_items WHERE id = :itemId LIMIT 1")
@@ -44,10 +46,18 @@ interface WishlistItemDao {
     @Query("DELETE FROM wishlist_items WHERE wishlistId = :wishlistId")
     suspend fun deleteByWishlistId(wishlistId: String): Int
 
+    @Query("DELETE FROM wishlist_items WHERE wishlistId = :wishlistId AND id NOT IN (:keepIds)")
+    suspend fun deleteWishlistItemsNotIn(wishlistId: String, keepIds: List<String>): Int
+
     @Transaction
     suspend fun replaceWishlistItems(wishlistId: String, items: List<WishlistItemEntity>) {
-        deleteByWishlistId(wishlistId)
         upsertAll(items)
+
+        val keepIds = items.map { it.id }
+
+        if (keepIds.isNotEmpty()) {
+            deleteWishlistItemsNotIn(wishlistId, keepIds)
+        }
     }
 
     @Query("DELETE FROM wishlist_items")

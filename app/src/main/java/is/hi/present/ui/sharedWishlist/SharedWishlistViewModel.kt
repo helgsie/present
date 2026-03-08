@@ -28,7 +28,7 @@ class SharedWishlistViewModel @Inject constructor (
     fun loadSharedWishlists() = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-        val result = repo.getSharedWishlists()
+        val result = repo.fetchSharedWishlistsRemote()
 
         result
             .onSuccess { shared ->

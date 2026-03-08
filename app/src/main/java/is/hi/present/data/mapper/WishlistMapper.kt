@@ -15,6 +15,15 @@ fun WishlistDto.toEntity(): WishlistEntity =
         createdAt = Instant.parse(createdAt).toEpochMilli(),
         updatedAt = Instant.parse(updatedAt).toEpochMilli()
     )
+fun WishlistDto.toDomain(): Wishlist = Wishlist(
+    id = id,
+    title = title,
+    description = description,
+    iconKey = iconKey,
+    ownerId = ownerId,
+    createdAt = Instant.parse(createdAt).toEpochMilli(),
+    updatedAt = Instant.parse(updatedAt).toEpochMilli()
+)
 
 fun WishlistEntity.toDomain(): Wishlist =
     Wishlist(
