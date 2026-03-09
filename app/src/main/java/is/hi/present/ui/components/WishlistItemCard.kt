@@ -1,6 +1,7 @@
 package `is`.hi.present.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,13 +19,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 import `is`.hi.present.R
 import `is`.hi.present.ui.wishlistdetail.WishlistItemUi
 import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
-fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
+fun WishlistItemCard(
+    w: WishlistItemUi,
+    onClick: () -> Unit,
+    trailingContent: (@Composable () -> Unit)? = null
+) {
     val iskFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
             maximumFractionDigits = 0
@@ -38,11 +44,16 @@ fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val painter = if (!w.imagePath.isNullOrBlank()) {
+                rememberAsyncImagePainter(w.imagePath)
+            } else {
+                painterResource(R.drawable.ic_item_placeholder)
+            }
+
             Image(
-                painter = painterResource(R.drawable.ic_item_placeholder),
+                painter = painter,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(64.dp)
+                modifier = Modifier.size(64.dp)
             )
             Spacer(Modifier.width(12.dp))
 
@@ -59,6 +70,12 @@ fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit) {
                     text = iskFormatter.format(price),
                     style = MaterialTheme.typography.titleMedium
                 )
+            }
+            trailingContent?.let {
+                Spacer(Modifier.width(12.dp))
+                Box {
+                    it()
+                }
             }
         }
     }

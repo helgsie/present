@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +37,7 @@ import `is`.hi.present.ui.components.WishlistItemCard
 fun SharedWishlistDetailScreen(
     wishlistId: String,
     onBack: () -> Unit,
+    onOpenItem: (itemId: String) -> Unit,
     vm: SharedWishlistDetailViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
@@ -109,7 +111,20 @@ fun SharedWishlistDetailScreen(
                         ) { item ->
                             WishlistItemCard(
                                 w = item,
-                                onClick = { }
+                                onClick = { onOpenItem(item.id) },
+                                trailingContent = {
+                                    if (!item.isClaimed) {
+                                        Button(onClick = { vm.claimItem(wishlistId, item.id) }) {
+                                            Text("Taka frá")
+                                        }
+                                    } else if (item.isClaimedByMe) {
+                                        Button(onClick = { vm.releaseClaim(wishlistId, item.id) }) {
+                                            Text("Hætta við")
+                                        }
+                                    } else {
+                                        Text("Frátekið")
+                                    }
+                                }
                             )
                         }
                     }

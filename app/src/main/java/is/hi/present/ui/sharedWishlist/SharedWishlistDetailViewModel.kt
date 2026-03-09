@@ -3,6 +3,8 @@ package `is`.hi.present.ui.sharedWishlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `is`.hi.present.BuildConfig
+import `is`.hi.present.data.repository.AuthRepository
 import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistRepository
 import `is`.hi.present.ui.wishlistdetail.WishlistItemUi
@@ -12,6 +14,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
+
+private fun toPublicImageUrl(path: String): String {
+    return if (path.startsWith("http://") || path.startsWith("https://")) {
+        path
+    } else {
+        "$STORAGE_URL$path"
+    }
+}
 
 data class SharedWishlistDetailUiState(
     val isLoading: Boolean = true,
@@ -26,7 +38,8 @@ data class SharedWishlistDetailUiState(
 @HiltViewModel
 class SharedWishlistDetailViewModel @Inject constructor(
     private val wishlistRepo: WishlistRepository,
-    private val itemRepo: WishlistItemRepository
+    private val itemRepo: WishlistItemRepository,
+    private val authRepo: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SharedWishlistDetailUiState())
@@ -54,8 +67,14 @@ class SharedWishlistDetailViewModel @Inject constructor(
                 return@launch
             }
 
+            val currentUserId = authRepo.getCurrentUserId()
             val wishlist = wishlistResult.getOrThrow()
             val items = itemsResult.getOrThrow()
+            val claims = itemRepo
+                .getClaimsForItems(items.map { it.id })
+                .getOrElse { emptyList() }
+
+            val claimByItemId = claims.associateBy { it.itemId }
 
             _uiState.update {
                 it.copy(
@@ -63,16 +82,39 @@ class SharedWishlistDetailViewModel @Inject constructor(
                     title = wishlist.title,
                     description = wishlist.description,
                     items = items.map { item ->
+                        val claim = claimByItemId[item.id]
                         WishlistItemUi(
                             id = item.id,
                             name = item.name,
                             notes = item.notes,
                             price = item.price,
-                            imagePath = item.imagePath
+                            imagePath = item.imagePath?.let(::toPublicImageUrl),
+                            isClaimed = claim != null,
+                            isClaimedByMe = claim?.claimedBy == currentUserId
                         )
                     }
                 )
             }
         }
+    }
+
+    fun claimItem(wishlistId: String, itemId: String) = viewModelScope.launch {
+        itemRepo.claimItem(itemId)
+            .onSuccess { load(wishlistId) }
+            .onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = e.message ?: "Tókst ekki að taka frá gjöf"
+                )
+            }
+    }
+
+    fun releaseClaim(wishlistId: String, itemId: String) = viewModelScope.launch {
+        itemRepo.releaseClaim(itemId)
+            .onSuccess { load(wishlistId) }
+            .onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = e.message ?: "Tókst ekki að hætta við frátekningu"
+                )
+            }
     }
 }

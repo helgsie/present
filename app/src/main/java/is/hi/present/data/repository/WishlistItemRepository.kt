@@ -1,8 +1,15 @@
 package `is`.hi.present.data.repository
 
+import `is`.hi.present.data.dto.ItemClaim
+import `is`.hi.present.data.dto.ItemClaimInsert
+import android.content.Context
+import android.net.Uri
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.storage.storage
 import `is`.hi.present.data.dto.WishlistItemDto
 import `is`.hi.present.data.dto.WishlistItemInsert
 import `is`.hi.present.data.local.dao.WishlistItemDao
@@ -17,7 +24,7 @@ class WishlistItemRepository @Inject constructor(
     private val dao: WishlistItemDao,
     private val supabase: SupabaseClient
 ) {
-    // ------- READS FROM ROOM ---------
+    // ------- ROOM READS ---------
     fun observeWishlistItems(wishlistId: String): Flow<List<WishlistItem>> =
         dao.observeItemsByWishlistId(wishlistId)
             .map { entities ->
@@ -35,18 +42,30 @@ class WishlistItemRepository @Inject constructor(
         return dao.getItemById(itemId)?.toDomain()
     }
 
-    // ------- SYNCING ROOM WITH DATA FROM REMOTE -------
+    // ------- NETWORK -> ROOM SYNC -------
     suspend fun refreshWishlistItems(wishlistId: String): Result<Unit> = runCatching {
         val remote = fetchRemoteItems(wishlistId)
         val entities = remote.map { it.toEntity() }
         dao.replaceWishlistItems(wishlistId, entities)
     }
 
+    // ----- REMOTE-ONLY FETCHES -----
     suspend fun fetchWishlistItemsRemote(wishlistId: String): Result<List<WishlistItem>> = runCatching {
         fetchRemoteItems(wishlistId).map { it.toEntity().toDomain() }
     }
 
-    // ------ WRITES ------
+    suspend fun fetchWishlistItemRemoteById(itemId: String): Result<WishlistItem> = runCatching {
+        val dto: WishlistItemDto = supabase
+            .from("wishlist_items")
+            .select {
+                filter { eq("id", itemId) }
+                limit(1)
+            }
+            .decodeSingle()
+        dto.toEntity().toDomain()
+    }
+
+    // ------ ITEM WRITES ------
     suspend fun createWishlistItem(
         wishlistId: String,
         name: String,
@@ -77,7 +96,123 @@ class WishlistItemRepository @Inject constructor(
         }
     }
 
-    // ----- PRIVATE HELPER ------
+    suspend fun updateWishlistItem(
+        itemId: String,
+        name: String,
+        notes: String?,
+        price: Double?,
+        imagePath: String?
+    ): Result<Unit> = runCatching {
+        val dto: WishlistItemDto = supabase
+            .from("wishlist_items")
+            .select {
+                filter { eq("id", itemId) }
+                limit(1)
+            }
+            .decodeSingle()
+
+        val wishlistId = dto.wishlistId
+        supabase
+            .from("wishlist_items")
+            .update(
+                {
+                    set("name", name)
+                    set("notes", notes)
+                    set("price", price)
+                    set("image_path", imagePath)
+                }
+            ) {
+                filter { eq("id", itemId) }
+            }
+        refreshWishlistItems(wishlistId).getOrThrow()
+    }
+
+    suspend fun deleteWishlistItem(itemId: String): Result<Unit> = runCatching {
+        val dto: WishlistItemDto = supabase
+            .from("wishlist_items")
+            .select{
+                filter { eq("id", itemId) }
+                limit(1)
+            }
+            .decodeSingle()
+
+        val wishlistId = dto.wishlistId
+        supabase
+            .from("wishlist_items")
+            .delete {
+                filter { eq("id", itemId) }
+            }
+        refreshWishlistItems(wishlistId).getOrThrow()
+    }
+
+    // ---- REMOTE-ONLY MEDIA -----
+    suspend fun uploadItemImage(
+        context: Context,
+        wishlistId: String,
+        selectedImageUri: Uri
+    ): Result<String> = runCatching {
+        val inputStream = context.contentResolver.openInputStream(selectedImageUri)
+            ?: throw IllegalArgumentException("Cannot open image stream")
+        val bytes = inputStream.readBytes()
+        val filename = "wishlist_${wishlistId}_${System.currentTimeMillis()}.jpg"
+
+        supabase.storage.from("wishlist-images").upload(filename, bytes)
+        filename
+    }
+
+    // ----- REMOTE-ONLY CLAIMS ------
+    suspend fun getClaimsForItems(itemIds: List<String>): Result<List<ItemClaim>> = runCatching {
+        if (itemIds.isEmpty()) return@runCatching emptyList()
+
+        supabase
+            .from("item_claims")
+            .select {
+                filter {
+                    isIn("item_id", itemIds)
+                }
+            }
+            .decodeList()
+    }
+
+    suspend fun claimItem(itemId: String): Result<Unit> = runCatching {
+        val userId = supabase.auth.currentUserOrNull()?.id
+            ?: error("Not signed in")
+
+        val existing: List<ItemClaim> = supabase
+            .from("item_claims")
+            .select {
+                filter {
+                    eq("item_id", itemId)
+                }
+            }
+            .decodeList()
+
+        if (existing.isNotEmpty()) {
+            error("Item is already claimed")
+        }
+
+        supabase.postgrest["item_claims"].insert(
+            ItemClaimInsert(
+                itemId = itemId,
+                claimedBy = userId
+            )
+        )
+    }
+    suspend fun releaseClaim(itemId: String): Result<Unit> = runCatching {
+        val userId = supabase.auth.currentUserOrNull()?.id
+            ?: error("Not signed in")
+
+        supabase
+            .from("item_claims")
+            .delete {
+                filter {
+                    eq("item_id", itemId)
+                    eq("claimed_by", userId)
+                }
+            }
+    }
+
+    // ----- PRIVATE HELPERS -----
     private suspend fun fetchRemoteItems(wishlistId: String): List<WishlistItemDto> {
         val result = supabase
             .from("wishlist_items")

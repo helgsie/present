@@ -127,6 +127,48 @@ class WishlistRepository @Inject constructor(
         refreshWishlists(ownerId).getOrThrow()
     }
 
+    suspend fun updateWishlist(
+        wishlistId: String,
+        title: String,
+        description: String? = null,
+        icon: WishlistIcon
+    ): Result<Unit> = runCatching {
+        val userId = supabase.auth.currentUserOrNull()?.id ?: error("not signed in")
+
+        supabase
+            .from("wishlists")
+            .update (
+                {
+                    set("title", title)
+                    set("description", description)
+                    set("icon_key", icon.key)
+                }
+            ) {
+                filter {
+                    eq("id", wishlistId)
+                    eq("owner_id", userId)
+                }
+            }
+        refreshWishlists(userId).getOrThrow()
+    }
+
+    suspend fun deleteWishlist(wishlistId: String):
+        Result<Unit> = runCatching {
+        val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not signed in")
+
+        supabase
+            .from("wishlists")
+            .delete {
+                filter {
+                    eq("id", wishlistId)
+                    eq("owner_id", userId)
+                }
+            }
+        refreshWishlists(userId).getOrThrow()
+    }
+
+    // ---- SHARE LINK -----
+
     // Hægt að vinna með þetta þegar vitað er hvernig url virkar á milli browser og app
     /*suspend fun createShareLink(wishlistId: String): String {
         val token: String = supabase.postgrest
@@ -149,3 +191,4 @@ class WishlistRepository @Inject constructor(
             .decodeAs()
     }
 }
+

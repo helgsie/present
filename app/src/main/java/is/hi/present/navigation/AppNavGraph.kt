@@ -19,6 +19,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.sharedWishlist.AddSharedWishlistScreen
 import `is`.hi.present.ui.sharedWishlist.SharedWishlistDetailScreen
 import `is`.hi.present.ui.sharedWishlist.SharedWishlistScreen
+import `is`.hi.present.ui.sharedWishlist.SharedItemDetailScreen
+import `is`.hi.present.ui.wishlistdetail.ItemDetailScreen
 import `is`.hi.present.ui.wishlists.CreateTokenScreen
 import `is`.hi.present.ui.wishlists.WishlistsViewModel
 
@@ -137,6 +139,9 @@ private fun AppNav(
                     onBack = { backStack.removeLastOrNull() },
                     onCreateItem = { wishlistId ->
                         backStack.add(AppRoute.CreateWishlistItem(wishlistId))
+                    },
+                    onOpenItem = {itemId ->
+                        backStack.add(AppRoute.WishlistItemDetail(key.wishlistId, itemId))
                     }
                 )
             }
@@ -144,8 +149,17 @@ private fun AppNav(
             entry<AppRoute.SharedWishlistDetail> { key ->
                 SharedWishlistDetailScreen(
                     wishlistId = key.wishlistId,
-                    onBack = { backStack.removeLastOrNull()
+                    onBack = { backStack.removeLastOrNull() },
+                    onOpenItem = { itemId ->
+                        backStack.add(AppRoute.SharedItemDetail(itemId))
                     }
+                )
+            }
+
+            entry<AppRoute.SharedItemDetail> { key ->
+                SharedItemDetailScreen(
+                    itemId = key.itemId,
+                    onBack = { backStack.removeLastOrNull() }
                 )
             }
 
@@ -154,6 +168,14 @@ private fun AppNav(
                     wishlistId = key.wishlistId,
                     onBack = { backStack.removeLastOrNull() },
                     onDone = { backStack.removeLastOrNull() }
+                )
+            }
+
+            entry<AppRoute.WishlistItemDetail> { key ->
+                ItemDetailScreen(
+                    wishlistId = key.wishlistId,
+                    itemId = key.itemId,
+                    onBack = { backStack.removeLastOrNull() }
                 )
             }
 

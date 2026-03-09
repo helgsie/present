@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 class WishlistsViewModel @Inject constructor(
     private val repo: WishlistRepository
 ) : ViewModel() {
+
     // ---- STATE -----
     private val _uiState = MutableStateFlow(WishlistsUiState())
     val uiState: StateFlow<WishlistsUiState> = _uiState.asStateFlow()
@@ -27,6 +28,7 @@ class WishlistsViewModel @Inject constructor(
     private var currentOwnerId: String? = null
     private var observeJob: Job? = null
 
+    // ---- LOAD WISHLISTS -----
     fun loadWishlists(ownerId: String) {
         val ownerChanged = currentOwnerId != ownerId
         currentOwnerId = ownerId
@@ -117,6 +119,7 @@ class WishlistsViewModel @Inject constructor(
         _uiState.update { it.copy(offlineDialog = null) }
     }
 
+    // ----- WISHLIST ACTIONS -----
     fun createWishlist(
         ownerId: String,
         title: String,
