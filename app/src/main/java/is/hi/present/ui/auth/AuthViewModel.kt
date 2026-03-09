@@ -9,16 +9,95 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import `is`.hi.present.data.local.AppDatabase
 import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: AuthRepository,
-    private val sharedPref: SharedPreferenceHelper
+    private val repo: AuthRepository,
+    private val sharedPref: SharedPreferenceHelper,
+    private val appDatabase: AppDatabase
 ) : ViewModel() {
 
     private val _authUiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val authUiState: StateFlow<AuthUiState> = _authUiState.asStateFlow()
+
+    private companion object {
+        const val PREF_ACCESS_TOKEN = "accessToken"
+        const val PREF_USER_ID = "userId"
+        const val PREF_USER_EMAIL = "userEmail"
+    }
+
+    private val _authStatus = MutableStateFlow<AuthStatus>(AuthStatus.Loading)
+    val authStatus: StateFlow<AuthStatus> = _authStatus.asStateFlow()
+
+    private val _currentUserEmail = MutableStateFlow<String?>(null)
+    val currentUserEmail: StateFlow<String?> = _currentUserEmail.asStateFlow()
+
+    init {
+        resolveAuthStatus()
+    }
+
+    private fun resolveAuthStatus() {
+        viewModelScope.launch {
+            _authStatus.value = AuthStatus.Loading
+
+            // cached auth session þegar offline
+            val cachedUserId = sharedPref.getStringData(PREF_USER_ID)
+            if (!cachedUserId.isNullOrBlank()) {
+                _currentUserEmail.value = sharedPref.getStringData(PREF_USER_EMAIL)
+                _authStatus.value = AuthStatus.LoggedIn(cachedUserId)
+                return@launch
+            }
+
+            // reyna að tengjast Supabase
+            try {
+                val userId = repo.getCurrentUserId()
+                if (!userId.isNullOrBlank()) {
+                    sharedPref.saveStringData(PREF_USER_ID, userId)
+                    _authStatus.value = AuthStatus.LoggedIn(userId)
+                } else {
+                    _authStatus.value = AuthStatus.LoggedOut
+                }
+            } catch (_: Exception) {
+                _authStatus.value = AuthStatus.LoggedOut
+            }
+        }
+    }
+
+    private fun saveToken() {
+        val accessToken = repo.getAccessToken()
+        if (!accessToken.isNullOrBlank()) {
+            sharedPref.saveStringData(PREF_ACCESS_TOKEN, accessToken)
+        }
+    }
+
+    private fun saveUserId(userId: String) {
+        if (userId.isNotBlank()) {
+            sharedPref.saveStringData(PREF_USER_ID, userId)
+        }
+    }
+
+    private fun saveUserEmail(email: String?) {
+        if (!email.isNullOrBlank()) {
+            sharedPref.saveStringData(PREF_USER_EMAIL, email)
+            _currentUserEmail.value = email
+        }
+    }
+
+    private fun clearCachedAuth() {
+        sharedPref.clearPreferences()
+        _currentUserEmail.value = null
+    }
+
+    private suspend fun clearLocalDatabase() {
+        withContext(Dispatchers.IO) {
+            appDatabase.clearAllTables()
+        }
+    }
+
 
     fun signUp(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
@@ -29,23 +108,26 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _authUiState.value = AuthUiState.Loading
             try {
-                repository.signUp(email, password)
+                repo.signUp(email, password)
+                val user = repo.retrieveUser()
+                val userId = user?.id
+
+                if (userId == null) {
+                    _authUiState.value = AuthUiState.Error("Sign up succeeded but user could not be read")
+                    _authStatus.value = AuthStatus.LoggedOut
+                    return@launch
+                }
                 saveToken()
+                saveUserId(userId)
+                saveUserEmail(user.email)
+                _authStatus.value = AuthStatus.LoggedIn(userId)
                 _authUiState.value = AuthUiState.Success("Registered user successfully")
             } catch (e: Exception) {
                 _authUiState.value = AuthUiState.Error("Sign up failed: ${e.message}")
+                _authStatus.value = AuthStatus.LoggedOut
             }
         }
     }
-
-    private fun saveToken() {
-        val accessToken = repository.getAccessToken()
-        if (!accessToken.isNullOrBlank()) {
-            sharedPref.saveStringData("accessToken", accessToken)
-        }
-    }
-
-    fun getToken(): String? = sharedPref.getStringData("accessToken")
 
     fun signIn(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
@@ -55,54 +137,60 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _authUiState.value = AuthUiState.Loading
             try {
-                repository.signIn(email, password)
-                val user = repository.retrieveUser()
+                repo.signIn(email, password)
+                val user = repo.retrieveUser()
 
                 if (user == null) {
                     _authUiState.value = AuthUiState.Error("User not found. Please sign up.")
+                    _authStatus.value = AuthStatus.LoggedOut
                     return@launch
                 }
 
-                repository.getProfile(user.id)
-
+                saveUserEmail(user.email)
+                repo.getProfile(user.id)
                 saveToken()
+                saveUserId(user.id)
+                _authStatus.value = AuthStatus.LoggedIn(user.id)
                 _authUiState.value = AuthUiState.Success("Signed in successfully")
 
             } catch (e: Exception) {
                 _authUiState.value = AuthUiState.Error("Sign in failed: ${e.message}")
+                _authStatus.value = AuthStatus.LoggedOut
             }
         }
     }
 
-    fun signOut(onComplete: () -> Unit) {
+    fun signOut(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             _authUiState.value = AuthUiState.SignOutLoading
-            try {
-                repository.signOut()
-                sharedPref.clearPreferences()
-                _authUiState.value = AuthUiState.Idle
-                onComplete()
-            } catch (e: Exception) {
-                _authUiState.value = AuthUiState.Error("Failed to sign out: ${e.message}")
-            }
-        }
-    }
 
-    fun resetAuthState() {
-        _authUiState.value = AuthUiState.Idle
+            runCatching { repo.signOut() }
+            runCatching { clearLocalDatabase() }
+
+            clearCachedAuth()
+            _authStatus.value = AuthStatus.LoggedOut
+            _authUiState.value = AuthUiState.Idle
+            onComplete()
+        }
     }
 
     fun deleteAccount(onComplete: () -> Unit) {
         viewModelScope.launch {
             _authUiState.value = AuthUiState.DeleteLoading
             try {
-                repository.deleteAccount()
-                sharedPref.clearPreferences()
+                repo.deleteAccount()
+                runCatching { clearLocalDatabase() }
+                clearCachedAuth()
+                _authStatus.value = AuthStatus.LoggedOut
                 _authUiState.value = AuthUiState.Idle
                 onComplete()
             } catch (e: Exception) {
                 _authUiState.value = AuthUiState.Error("Failed to delete account: ${e.message}")
             }
         }
+    }
+
+    fun resetAuthState() {
+        _authUiState.value = AuthUiState.Idle
     }
 }

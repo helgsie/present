@@ -7,15 +7,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.layout.offset
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
 
@@ -30,14 +34,23 @@ fun SharedWishlistScreen(
     vm: SharedWishlistViewModel = hiltViewModel(),
     onSelectWishlists: () -> Unit,
     selectedSegmentIndex: Int = 0,
-    onOpenSharedWishlists: () -> Unit,
-    ) {
-    val state = vm.uiState.collectAsState().value
+    onOpenSharedWishlists: () -> Unit
+) {
+    val state by vm.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         vm.loadSharedWishlists()
     }
+
+    LaunchedEffect(state.errorMessage) {
+        val msg = state.errorMessage
+        if (!msg.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(message = msg)
+        }
+    }
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Shared wishlists") },
@@ -79,30 +92,58 @@ fun SharedWishlistScreen(
                     .fillMaxSize()
             ) {
                 when {
-                    state.isLoading -> {
+                    state.isLoading && state.wishlists.isEmpty() -> {
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
-
-                    state.errorMessage != null -> {
+                    state.errorMessage != null && state.wishlists.isEmpty() -> {
                         Column(
-                            modifier = Modifier.align(Alignment.Center),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 32.dp)
+                                .offset(y = (-40).dp),
+                            verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = state.errorMessage,
-                                color = MaterialTheme.colorScheme.error
+                            Icon(
+                                imageVector = Icons.Outlined.WifiOff,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(48.dp)
                             )
-                            Spacer(Modifier.height(12.dp))
-                            Button(onClick = { vm.loadSharedWishlists() }) {
-                                Text("Retry")
+
+                            Spacer(Modifier.height(16.dp))
+
+                            Text(
+                                text = "Ekkert netsamband",
+                                style = MaterialTheme.typography.titleLarge,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(Modifier.height(8.dp))
+
+                            Text(
+                                text = "Gakktu úr skugga um að þú sért tengd/ur neti og reyndu aftur.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(Modifier.height(20.dp))
+
+                            OutlinedButton(onClick = { vm.loadSharedWishlists() }) {
+                                Text("Reyna aftur")
                             }
                         }
                     }
 
                     state.isEmpty -> {
                         Text(
-                            text = "You have no shared wishlists yet.",
-                            modifier = Modifier.align(Alignment.Center)
+                            text = "Engum óskalistum hefur verið deilt með þér",
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .offset(y = (-40).dp)
                         )
                     }
 

@@ -7,21 +7,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,12 +45,13 @@ fun AccountSettingsScreen(
     onAccountDeleted: () -> Unit,
 ) {
     var showConfirm by remember { mutableStateOf(false) }
-    val authState by viewModel.authUiState.collectAsState()
+    val authState by viewModel.authUiState.collectAsStateWithLifecycle()
+    val email by viewModel.currentUserEmail.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Account Settings") },
+                title = { Text("Aðgangsstillingar") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -62,9 +67,11 @@ fun AccountSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(24.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.Top
         ) {
+
+            // Status / error
             when (authState) {
                 is AuthUiState.DeleteLoading -> Text("Deleting account...")
                 is AuthUiState.SignOutLoading -> Text("Signing out...")
@@ -75,9 +82,37 @@ fun AccountSettingsScreen(
                 else -> Unit
             }
 
-            Spacer(Modifier.height(32.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Netfang",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-            Button(
+                    Spacer(Modifier.height(6.dp))
+
+                    val emailText = email?.takeIf { it.isNotBlank() } ?: "Ekki innskráður"
+                    Text(
+                        text = emailText,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            OutlinedButton(
                 onClick = {
                     viewModel.signOut {
                         onSignedOut()
@@ -85,10 +120,10 @@ fun AccountSettingsScreen(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Logout")
+                Text("Útskrá")
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(10.dp))
 
             Button(
                 colors = ButtonDefaults.buttonColors(
@@ -98,17 +133,25 @@ fun AccountSettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    "Delete Account",
+                    "Eyða aðgangi",
                     color = MaterialTheme.colorScheme.onError
                 )
             }
 
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = "Að eyða aðganginum þínum eyðir gögnunum þínum til frambúðar.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             if (showConfirm) {
                 AlertDialog(
                     onDismissRequest = { showConfirm = false },
-                    title = { Text("Delete Account") },
+                    title = { Text("Eyða aðgangi") },
                     text = {
-                        Text("Are you sure you want to permanently delete your account? This action cannot be undone.")
+                        Text("Ertu viss um að þú viljir eyða aðganginum þínum? Þessi aðgerð er óendurkræf.")
                     },
                     confirmButton = {
                         TextButton(
@@ -119,12 +162,12 @@ fun AccountSettingsScreen(
                                 }
                             }
                         ) {
-                            Text("Delete", color = MaterialTheme.colorScheme.error)
+                            Text("Eyða", color = MaterialTheme.colorScheme.error)
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showConfirm = false }) {
-                            Text("Cancel")
+                            Text("Hætta við")
                         }
                     }
                 )

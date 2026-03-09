@@ -11,9 +11,11 @@ sealed interface AppRoute : NavKey {
     @Serializable data object CreateWishlist : AppRoute
     @Serializable data class WishlistDetail(val wishlistId: String) : AppRoute
     @Serializable data class CreateWishlistItem(val wishlistId: String) : AppRoute
+    @Serializable data class SharedItemDetail(val itemId: String) : AppRoute
     @Serializable data class WishlistItemDetail(val wishlistId: String, val itemId: String) : AppRoute
     @Serializable data class JoinWishlist(val token: String) : AppRoute
     @Serializable data object SharedWishlists : AppRoute
     @Serializable data object AddSharedWishlist : AppRoute
     @Serializable data object AccountSettings : AppRoute
+    @Serializable data class SharedWishlistDetail(val wishlistId: String) : AppRoute
 }

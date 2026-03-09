@@ -3,7 +3,7 @@ package `is`.hi.present.ui.sharedWishlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import `is`.hi.present.data.repository.WishlistsRepository
+import `is`.hi.present.data.repository.WishlistRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -11,7 +11,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddSharedWishlistViewModel @Inject constructor (
-    private val repo: WishlistsRepository
+    private val repo: WishlistRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddSharedWishlistUiState())
@@ -42,7 +42,7 @@ class AddSharedWishlistViewModel @Inject constructor (
         _uiState.value = AddSharedWishlistUiState(isLoading = true)
 
         try {
-            val wishlistId = repo.joinByToken(code)
+            val wishlistId = repo.joinByToken(code).getOrThrow()
             _uiState.value = AddSharedWishlistUiState(
                 isLoading = false,
                 joinedWishlistId = wishlistId

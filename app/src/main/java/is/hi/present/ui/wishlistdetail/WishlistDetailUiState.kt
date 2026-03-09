@@ -11,12 +11,16 @@ data class WishlistItemUi(
 )
 data class WishlistDetailUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
+    val offlineBanner: String? = null,
+
     val title: String = "",
     val description: String? = null,
-    val item: List<WishlistItemUi> = emptyList(),
+    val items: List<WishlistItemUi> = emptyList(),
     val isOwner: Boolean = false,
     val iconKey: String = "favorite"
 ) {
-    val isEmpty: Boolean get() = !isLoading && errorMessage == null && item.isEmpty()
+    val isEmpty: Boolean
+        get() = !isLoading && errorMessage == null && items.isEmpty()
 }

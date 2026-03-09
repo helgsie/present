@@ -28,27 +28,26 @@ class ItemDetailViewModel @Inject constructor(
 
     fun load(itemId: String) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-        try {
-            val item = itemRepo.getWishlistItemById(itemId)
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                name = item.name,
-                notes = item.notes.orEmpty(),
-                priceText = item.price?.toInt()?.toString().orEmpty(),
-                imageUrl = item.imagePath
-            )
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = e.message ?: "Failed to load item"
-            )
-        }
+        itemRepo.fetchWishlistItemRemoteById(itemId)
+            .onSuccess { item ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    name = item.name,
+                    notes = item.notes.orEmpty(),
+                    priceText = item.price?.toInt()?.toString().orEmpty(),
+                    imageUrl = item.imagePath
+                )
+            }
+            .onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Tókst ekki að sækja gjöf"
+                )
+            }
     }
 
-    fun save(itemId: String,
-             wishlistId: String,
-             context: Context,
-             selectedImageUri: Uri?) = viewModelScope.launch {
+    fun save(itemId: String, wishlistId: String, context: Context, selectedImageUri: Uri?
+        ) = viewModelScope.launch {
         val s = _uiState.value
         if (s.name.trim().isBlank()) {
             _uiState.value = s.copy(errorMessage = "Name má ekki vera tómt")
@@ -56,46 +55,46 @@ class ItemDetailViewModel @Inject constructor(
         }
 
         _uiState.value = s.copy(isLoading = true, errorMessage = null)
-        try {
-            val price = s.priceText.trim()
-                .takeIf { it.isNotBlank() }
-                ?.replace(',', '.')
-                ?.toDoubleOrNull()
+        val price = s.priceText.trim()
+            .takeIf { it.isNotBlank() }
+            ?.replace(',', '.')
+            ?.toDoubleOrNull()
 
-            val newImagePath =
-                if (selectedImageUri != null) {
-                    itemRepo.uploadItemImage(context, wishlistId, selectedImageUri)
-                } else {
-                    s.imageUrl
-                }
+        val newImagePath =
+            if (selectedImageUri != null) {
+                itemRepo.uploadItemImage(context, wishlistId, selectedImageUri).getOrThrow()
+            } else {
+                s.imageUrl
+            }
 
-            itemRepo.updateWishlistItem(
-                itemId = itemId,
-                name = s.name.trim(),
-                notes = s.notes.trim().ifBlank { null },
-                price = price,
-                imagePath = newImagePath
-            )
-            _effects.send(ItemDetailEffect.NavigateBack)
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = e.message ?: "Failed to save item"
-            )
-        }
+        itemRepo.updateWishlistItem(
+            itemId = itemId,
+            name = s.name.trim(),
+            notes = s.notes.trim().ifBlank { null },
+            price = price,
+            imagePath = newImagePath
+        )
+            .onSuccess { _effects.send(ItemDetailEffect.NavigateBack) }
+            .onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Tókst ekki að vista gjöf"
+                )
+            }
     }
 
     fun delete(itemId: String) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-        try {
-            itemRepo.deleteWishlistItem(itemId)
-            _effects.send(ItemDetailEffect.NavigateBack)
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = e.message ?: "Failed to delete item"
-            )
-        }
+        itemRepo.deleteWishlistItem(itemId)
+            .onSuccess {
+                _effects.send(ItemDetailEffect.NavigateBack)
+            }
+            .onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Tókst ekki að eyða gjöf"
+                )
+            }
     }
 
     fun uploadNewImage(
@@ -103,25 +102,25 @@ class ItemDetailViewModel @Inject constructor(
         wishlistId: String,
         selectedImageUri: Uri
     ) = viewModelScope.launch {
-        try {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-            val filename = itemRepo.uploadItemImage(
-                context = context,
-                wishlistId = wishlistId,
-                selectedImageUri = selectedImageUri
-            )
-
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                imageUrl = filename
-            )
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = e.message ?: "Failed to upload image"
-            )
-        }
+        itemRepo.uploadItemImage(
+            context = context,
+            wishlistId = wishlistId,
+            selectedImageUri = selectedImageUri
+        )
+            .onSuccess { filename ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    imageUrl = filename
+                )
+            }
+            .onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Tókst ekki að hlaða inn mynd"
+                )
+            }
     }
 
     fun onNameChange(v: String) { _uiState.value = _uiState.value.copy(name = v) }

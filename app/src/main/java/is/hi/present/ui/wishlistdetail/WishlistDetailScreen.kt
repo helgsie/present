@@ -17,17 +17,17 @@ import androidx.compose.ui.Modifier
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import `is`.hi.present.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import coil.compose.rememberAsyncImagePainter
 import java.text.NumberFormat
 import java.util.Locale
-import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.saveable.rememberSaveable
 import `is`.hi.present.ui.theme.*
 
@@ -54,6 +54,29 @@ fun WishlistDetailScreen(
     var description by rememberSaveable { mutableStateOf("") }
     var iconKey by rememberSaveable { mutableStateOf<String?>(null) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    var lastSnackbarMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    val isOffline = remember(state.errorMessage) {
+        val msg = state.errorMessage.orEmpty()
+        msg.contains("Ekkert netsamband", ignoreCase = true) ||
+                msg.contains("offline", ignoreCase = true) ||
+                msg.contains("Unable to resolve host", ignoreCase = true) ||
+                msg.contains("Couldn't reach", ignoreCase = true)
+    }
+
+    LaunchedEffect(state.errorMessage) {
+        val msg = state.errorMessage
+        if (!msg.isNullOrBlank() && msg != lastSnackbarMessage) {
+            lastSnackbarMessage = msg
+            snackbarHostState.showSnackbar(
+                message = msg,
+                withDismissAction = true,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
 
     LaunchedEffect(Unit) {
         vm.effects.collectLatest { effect ->
@@ -67,7 +90,6 @@ fun WishlistDetailScreen(
             }
         }
     }
-
 
     shareCode?.let { code ->
         AlertDialog(
@@ -102,8 +124,8 @@ fun WishlistDetailScreen(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete Wishlist?") },
-            text = { Text("This wishlist and along with its items will be permanently removed.") },
+            title = { Text("Eyða óskalista?") },
+            text = { Text("Þessum óskalista og öllum gjöfum hans verður eytt til frambúðar.") },
             confirmButton = {
                 TextButton(
                     enabled = !state.isLoading,
@@ -111,10 +133,10 @@ fun WishlistDetailScreen(
                         confirmDelete = false
                         vm.deleteWishlist(wishlistId) { onBack() }
                     }
-                ) { Text("Delete") }
+                ) { Text("Eyða") }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmDelete = false }) { Text("Hætta við") }
             }
         )
     }
@@ -131,10 +153,22 @@ fun WishlistDetailScreen(
                 actions = {
                     if (state.isOwner) {
                         IconButton(
-                            onClick = { vm.onShareClicked(wishlistId) },
+                            onClick = {
+                                if (isOffline) {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = "Til að deila óskalista þarf netsamband",
+                                            withDismissAction = true,
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                } else {
+                                    vm.onShareClicked(wishlistId)
+                                }
+                            },
                             enabled = !state.isLoading
                         ) {
-                            Icon(Icons.Default.Share, contentDescription = "Share wishlist")
+                            Icon(Icons.Default.Share, contentDescription = "Deila óskalista")
                         }
                     }
 
@@ -149,20 +183,20 @@ fun WishlistDetailScreen(
                                     isEditing = true
                                 }
                             ) {
-                                Icon(Icons.Default.Edit, contentDescription = "Edit wishlist")
+                                Icon(Icons.Default.Edit, contentDescription = "Breyta óskalista")
                             }
 
                             IconButton(
                                 enabled = !state.isLoading,
                                 onClick = { confirmDelete = true }
                             ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Delete wishlist")
+                                Icon(Icons.Default.Delete, contentDescription = "Eyða óskalista")
                             }
                         } else {
                             TextButton(
                                 enabled = !state.isLoading,
                                 onClick = { isEditing = false }
-                            ) { Text("Cancel") }
+                            ) { Text("Hætta við") }
 
                             TextButton(
                                 enabled = title.trim().isNotBlank() && !state.isLoading,
@@ -178,7 +212,7 @@ fun WishlistDetailScreen(
                                         }
                                     )
                                 }
-                            ) { Text("Save") }
+                            ) { Text("Vista") }
                         }
                     }
                 }
@@ -187,94 +221,122 @@ fun WishlistDetailScreen(
         floatingActionButton = {
             if (state.isOwner) {
                 FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
-                    Icon(Icons.Default.Add, contentDescription = "Create wishlist item")
+                    Icon(Icons.Default.Add, contentDescription = "Bæta við gjöf")
                 }
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
         Box(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            when {
-                state.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                state.errorMessage != null -> {
-                    Text(
-                        text = state.errorMessage,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-
-                state.isEmpty -> {
-                    Column(
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (isOffline && state.items.isNotEmpty()) {
+                    Surface(
+                        tonalElevation = 1.dp,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        if (isEditing) {
-                            WishlistEditor(
-                                title = title,
-                                onTitleChange = { title = it },
-                                description = description,
-                                onDescriptionChange = { description = it }
-                            )
-                        } else if (!state.description.isNullOrBlank()) {
-                            Text(
-                                text = state.description,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("You have no wishlist items yet.")
-                        }
+                        Text(
+                            text = "Ekkert netsamband. Vistuð gögn eru birt.",
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
 
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        item {
-                            if (isEditing) {
-                                WishlistEditor(
-                                    title = title,
-                                    onTitleChange = { title = it },
-                                    description = description,
-                                    onDescriptionChange = { description = it }
-                                )
-                            } else if (!state.description.isNullOrBlank()) {
-                                Text(
-                                    text = state.description,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    when {
+                        state.isLoading && state.items.isEmpty() -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+
+                        state.errorMessage != null && state.items.isEmpty() -> {
+                            Text(
+                                text = state.errorMessage,
+                                modifier = Modifier.align(Alignment.Center),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+
+                        state.isEmpty -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            ) {
+                                if (isEditing) {
+                                    WishlistEditor(
+                                        title = title,
+                                        onTitleChange = { title = it },
+                                        description = description,
+                                        onDescriptionChange = { description = it }
+                                    )
+                                } else if (!state.description.isNullOrBlank()) {
+                                    Text(
+                                        text = state.description,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("Þessi listi er tómur.")
+                                }
                             }
                         }
 
-                        items(
-                            items = state.item,
-                            key = { it.id }
-                        ) { w ->
-                            WishlistItemCard(
-                                w = w,
-                                onClick = { onOpenItem(w.id) },
-                                isOwner = state.isOwner,
-                                onClaim = { vm.claimItem(wishlistId, w.id) },
-                                onRelease = { vm.releaseClaim(wishlistId, w.id) }
-                            )
+                        else -> {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                item {
+                                    if (isEditing) {
+                                        WishlistEditor(
+                                            title = title,
+                                            onTitleChange = { title = it },
+                                            description = description,
+                                            onDescriptionChange = { description = it }
+                                        )
+                                    } else if (!state.description.isNullOrBlank()) {
+                                        Text(
+                                            text = state.description,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
+
+                                items(
+                                    items = state.items,
+                                    key = { it.id }
+                                ) { item ->
+                                    WishlistItemCard(
+                                        w = item,
+                                        onClick = { onOpenItem(item.id) },
+                                        isOwner = state.isOwner,
+                                        onClaim = { vm.claimItem(wishlistId, item.id) },
+                                        onRelease = { vm.releaseClaim(wishlistId, item.id) }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -282,8 +344,6 @@ fun WishlistDetailScreen(
         }
     }
 }
-
-
 
 @Composable
 private fun WishlistEditor(
@@ -359,9 +419,10 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: ()
                     style = MaterialTheme.typography.titleMedium
                 )
             }
+
             if (!isOwner) {
                 Spacer(Modifier.width(12.dp))
-                if ( !w.isClaimed) {
+                if (!w.isClaimed) {
                     Button(
                         onClick = onClaim,
                         colors = ButtonDefaults.buttonColors(
@@ -369,7 +430,7 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: ()
                             contentColor = Purple40
                         )
                     ) {
-                        Text("Claim")
+                        Text("Taka frá")
                     }
                 }
                 if (w.isClaimedByMe) {
@@ -380,12 +441,12 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: ()
                             contentColor = Black
                         )
                     ) {
-                        Text("Release")
+                        Text("Losa gjöf")
                     }
                 }
                 if (w.isClaimed && !w.isClaimedByMe) {
                     Text(
-                        text = "Claimed",
+                        text = "Frátekið",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

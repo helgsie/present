@@ -193,13 +193,6 @@ fun CreateItemScreen(
                     onDone()
                 },
             ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(Modifier.width(10.dp))
-                }
                 Text("Create")
             }
         }

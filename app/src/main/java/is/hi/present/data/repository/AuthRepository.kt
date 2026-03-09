@@ -54,22 +54,38 @@ class AuthRepository @Inject constructor(
             this.password = password
         }
     }
+
     suspend fun signOut() {
-        supabase.auth.signOut()
+        runCatching { supabase.auth.signOut() }
     }
+
     fun getAccessToken(): String? {
         return supabase.auth.currentAccessTokenOrNull()
     }
+
     fun retrieveUser(): UserInfo? {
         return supabase.auth.currentUserOrNull()
     }
+
     suspend fun refreshCurrentSession() {
-        supabase.auth.refreshCurrentSession()
+        try {
+            supabase.auth.refreshCurrentSession()
+        } catch (e: Exception) {
+        }
     }
 
     fun getCurrentUserId(): String? {
         return supabase.auth.currentUserOrNull()?.id
     }
+
+    fun getCurrentUserEmail(): String? {
+        return supabase.auth.currentUserOrNull()?.email
+    }
+
+    fun hasCachedSession(): Boolean {
+        return supabase.auth.currentSessionOrNull() != null
+    }
+
     suspend fun getProfile(userId: String): Profile? {
         val result = supabase.postgrest["profiles"]
             .select {

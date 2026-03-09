@@ -1,11 +1,24 @@
+package `is`.hi.present.data.dto
+
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+
+@Serializable
+data class WishlistDto(
+    val id: String,
+    @SerialName("owner_id") val ownerId: String,
+    val title: String,
+    val description: String?,
+    @SerialName("icon_key") val iconKey: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
 
 @Serializable
 data class WishlistInsert(
     val title: String,
     val description: String? = null,
-    val owner_id: String,
+    @SerialName("owner_id") val ownerId: String,
     @SerialName("icon_key") val iconKey: String
 )
 
