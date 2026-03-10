@@ -8,6 +8,7 @@ import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.rpc
 import `is`.hi.present.data.dto.CreateShareLinkArgs
 import `is`.hi.present.data.dto.JoinByTokenArgs
+import `is`.hi.present.data.dto.RemoveSharedUserArgs
 import `is`.hi.present.data.dto.SharedWithEmailRow
 import `is`.hi.present.data.dto.WishlistDto
 import `is`.hi.present.data.dto.WishlistIdArgs
@@ -206,14 +207,14 @@ class WishlistRepository @Inject constructor(
         wishlistId: String,
         userId: String
     ): Result<Unit> = runCatching {
-        supabase
-            .from("wishlist_shares")
-            .delete {
-                filter {
-                    eq("wishlist_id", wishlistId)
-                    eq("shared_with", userId)
-                }
-            }
+        supabase.postgrest
+            .rpc(
+                "remove_shared_user",
+                parameters = RemoveSharedUserArgs(
+                    wishlistId = wishlistId,
+                    userId = userId
+                )
+            )
     }
 }
 

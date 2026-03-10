@@ -341,20 +341,8 @@ class WishlistDetailViewModel @Inject constructor(
             userId = userId
         )
             .onSuccess {
-                wishlistRepo.getSharedWithEmails(wishlistId)
-                    .onSuccess { emails ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            sharedWithEmails = emails,
-                            errorMessage = null
-                        )
-                    }
-                    .onFailure { error ->
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            errorMessage = error.message ?: "Tókst ekki að uppfæra þátttakendalista"
-                        )
-                    }
+                onSharedWith(wishlistId)
+                loadAll(wishlistId)
             }
             .onFailure { error ->
                 _uiState.value = _uiState.value.copy(

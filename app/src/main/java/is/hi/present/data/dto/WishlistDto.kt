@@ -47,6 +47,14 @@ data class SharedWithEmailRow(
 )
 
 @Serializable
+data class RemoveSharedUserArgs(
+    @SerialName("p_wishlist_id")
+    val wishlistId: String,
+    @SerialName("p_user_id")
+    val userId: String
+)
+
+@Serializable
 data class WishlistShareRow(
     @SerialName("wishlist_id") val wishlistId: String,
     @SerialName("shared_with") val sharedWith: String,
