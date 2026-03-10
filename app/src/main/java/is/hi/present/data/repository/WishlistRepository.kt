@@ -201,5 +201,19 @@ class WishlistRepository @Inject constructor(
             )
             .decodeAs<List<SharedWithEmailRow>>()
     }
+
+    suspend fun removeFromWishlist(
+        wishlistId: String,
+        userId: String
+    ): Result<Unit> = runCatching {
+        supabase
+            .from("wishlist_shares")
+            .delete {
+                filter {
+                    eq("wishlist_id", wishlistId)
+                    eq("shared_with", userId)
+                }
+            }
+    }
 }
 

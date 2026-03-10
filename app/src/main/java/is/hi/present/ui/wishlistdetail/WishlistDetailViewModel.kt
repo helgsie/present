@@ -12,13 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import `is`.hi.present.ui.components.WishlistIcon
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -332,6 +326,40 @@ class WishlistDetailViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = error.message ?: "Failed to load shared users"
+                )
+            }
+    }
+
+    fun removeSharedUser(wishlistId: String, userId: String) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(
+            isLoading = true,
+            errorMessage = null
+        )
+
+        wishlistRepo.removeFromWishlist(
+            wishlistId = wishlistId,
+            userId = userId
+        )
+            .onSuccess {
+                wishlistRepo.getSharedWithEmails(wishlistId)
+                    .onSuccess { emails ->
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            sharedWithEmails = emails,
+                            errorMessage = null
+                        )
+                    }
+                    .onFailure { error ->
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = error.message ?: "Tókst ekki að uppfæra þátttakendalista"
+                        )
+                    }
+            }
+            .onFailure { error ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = error.message ?: "Tókst ekki að fjarlægja aðgang"
                 )
             }
     }
