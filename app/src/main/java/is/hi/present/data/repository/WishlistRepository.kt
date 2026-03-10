@@ -8,7 +8,10 @@ import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.rpc
 import `is`.hi.present.data.dto.CreateShareLinkArgs
 import `is`.hi.present.data.dto.JoinByTokenArgs
+import `is`.hi.present.data.dto.RemoveSharedUserArgs
+import `is`.hi.present.data.dto.SharedWithEmailRow
 import `is`.hi.present.data.dto.WishlistDto
+import `is`.hi.present.data.dto.WishlistIdArgs
 import `is`.hi.present.data.dto.WishlistInsert
 import `is`.hi.present.data.dto.WishlistShareRow
 import `is`.hi.present.data.local.dao.WishlistDao
@@ -189,6 +192,29 @@ class WishlistRepository @Inject constructor(
         supabase.postgrest
             .rpc(function = "join_by_token", parameters = JoinByTokenArgs(token))
             .decodeAs()
+    }
+
+    suspend fun getSharedWithEmails(wishlistId: String): Result<List<SharedWithEmailRow>> = runCatching {
+        supabase.postgrest
+            .rpc(
+                "shared_with_emails",
+                parameters = WishlistIdArgs(wishlistId)
+            )
+            .decodeAs<List<SharedWithEmailRow>>()
+    }
+
+    suspend fun removeFromWishlist(
+        wishlistId: String,
+        userId: String
+    ): Result<Unit> = runCatching {
+        supabase.postgrest
+            .rpc(
+                "remove_shared_user",
+                parameters = RemoveSharedUserArgs(
+                    wishlistId = wishlistId,
+                    userId = userId
+                )
+            )
     }
 }
 

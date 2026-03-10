@@ -33,6 +33,28 @@ data class JoinByTokenArgs(
 )
 
 @Serializable
+data class WishlistIdArgs(
+    @SerialName("wishlist_id")
+    val wishlistId: String
+)
+
+@Serializable
+data class SharedWithEmailRow(
+    @SerialName("user_id")
+    val userId: String,
+    val email: String,
+    val role: String? = null
+)
+
+@Serializable
+data class RemoveSharedUserArgs(
+    @SerialName("p_wishlist_id")
+    val wishlistId: String,
+    @SerialName("p_user_id")
+    val userId: String
+)
+
+@Serializable
 data class WishlistShareRow(
     @SerialName("wishlist_id") val wishlistId: String,
     @SerialName("shared_with") val sharedWith: String,
