@@ -8,13 +8,14 @@ import `is`.hi.present.ui.wishlists.WishlistUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.inject.Inject
 
 @HiltViewModel
-class SharedWishlistViewModel @Inject constructor (
+class SharedWishlistViewModel @Inject constructor(
     private val repo: WishlistRepository
 ) : ViewModel() {
 
@@ -57,5 +58,19 @@ class SharedWishlistViewModel @Inject constructor (
                     errorMessage = friendly
                 )
             }
+    }
+
+    fun leaveSharedWishlist(wishlistId: String) {
+        viewModelScope.launch {
+            repo.leaveSharedWishlist(wishlistId)
+                .onSuccess {
+                    loadSharedWishlists()
+                }
+                .onFailure {
+                    _uiState.update {
+                        it.copy(errorMessage = "Tókst ekki að yfirgefa lista")
+                    }
+                }
+        }
     }
 }
