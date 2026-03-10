@@ -31,6 +31,8 @@ import java.util.Locale
 import androidx.compose.runtime.saveable.rememberSaveable
 import `is`.hi.present.ui.components.SharedWith
 import `is`.hi.present.ui.theme.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,6 +48,7 @@ fun WishlistDetailScreen(
     LaunchedEffect(wishlistId) {
         vm.loadAll(wishlistId)
     }
+    val pullState = rememberPullToRefreshState()
     val context = LocalContext.current
     var shareCode by remember { mutableStateOf<String?>(null) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
@@ -241,88 +244,61 @@ fun WishlistDetailScreen(
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
-        Box(
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = { vm.refresh(wishlistId) },
+            state = pullState,
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            Column(
+            Box(
                 modifier = Modifier.fillMaxSize()
             ) {
-                if (isOffline && state.items.isNotEmpty()) {
-                    Surface(
-                        tonalElevation = 1.dp,
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    if (isOffline && state.items.isNotEmpty()) {
+                        Surface(
+                            tonalElevation = 1.dp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = "Ekkert netsamband. Vistuð gögn eru birt.",
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .weight(1f)
                     ) {
-                        Text(
-                            text = "Ekkert netsamband. Vistuð gögn eru birt.",
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
+                        when {
+                            state.isLoading && state.items.isEmpty() -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                            }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-                    when {
-                        state.isLoading && state.items.isEmpty() -> {
-                            CircularProgressIndicator(
-                                modifier = Modifier.align(Alignment.Center)
-                            )
-                        }
+                            state.errorMessage != null && state.items.isEmpty() -> {
+                                Text(
+                                    text = state.errorMessage,
+                                    modifier = Modifier.align(Alignment.Center),
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
 
-                        state.errorMessage != null && state.items.isEmpty() -> {
-                            Text(
-                                text = state.errorMessage,
-                                modifier = Modifier.align(Alignment.Center),
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-
-                        state.isEmpty -> {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp)
-                            ) {
-                                if (isEditing) {
-                                    WishlistEditor(
-                                        title = title,
-                                        onTitleChange = { title = it },
-                                        description = description,
-                                        onDescriptionChange = { description = it }
-                                    )
-                                } else if (!state.description.isNullOrBlank()) {
-                                    Text(
-                                        text = state.description,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-
+                            state.isEmpty -> {
                                 Column(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .weight(1f),
-                                    verticalArrangement = Arrangement.Center,
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                        .fillMaxSize()
+                                        .padding(16.dp)
                                 ) {
-                                    Text("Þessi listi er tómur.")
-                                }
-                            }
-                        }
-
-                        else -> {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                item {
                                     if (isEditing) {
                                         WishlistEditor(
                                             title = title,
@@ -336,19 +312,53 @@ fun WishlistDetailScreen(
                                             style = MaterialTheme.typography.bodyMedium
                                         )
                                     }
-                                }
 
-                                items(
-                                    items = state.items,
-                                    key = { it.id }
-                                ) { item ->
-                                    WishlistItemCard(
-                                        w = item,
-                                        onClick = { onOpenItem(item.id) },
-                                        isOwner = state.isOwner,
-                                        onClaim = { vm.claimItem(wishlistId, item.id) },
-                                        onRelease = { vm.releaseClaim(wishlistId, item.id) }
-                                    )
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text("Þessi listi er tómur.")
+                                    }
+                                }
+                            }
+
+                            else -> {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    item {
+                                        if (isEditing) {
+                                            WishlistEditor(
+                                                title = title,
+                                                onTitleChange = { title = it },
+                                                description = description,
+                                                onDescriptionChange = { description = it }
+                                            )
+                                        } else if (!state.description.isNullOrBlank()) {
+                                            Text(
+                                                text = state.description,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
+                                    }
+
+                                    items(
+                                        items = state.items,
+                                        key = { it.id }
+                                    ) { item ->
+                                        WishlistItemCard(
+                                            w = item,
+                                            onClick = { onOpenItem(item.id) },
+                                            isOwner = state.isOwner,
+                                            onClaim = { vm.claimItem(wishlistId, item.id) },
+                                            onRelease = { vm.releaseClaim(wishlistId, item.id) }
+                                        )
+                                    }
                                 }
                             }
                         }

@@ -9,6 +9,8 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +40,7 @@ fun SharedWishlistScreen(
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val pullState = rememberPullToRefreshState()
 
     LaunchedEffect(Unit) {
         vm.loadSharedWishlists()
@@ -49,6 +52,7 @@ fun SharedWishlistScreen(
             snackbarHostState.showSnackbar(message = msg)
         }
     }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
@@ -87,77 +91,87 @@ fun SharedWishlistScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             )
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
+
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = { vm.loadSharedWishlists() },
+                state = pullState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
             ) {
-                when {
-                    state.isLoading && state.wishlists.isEmpty() -> {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                    }
-                    state.errorMessage != null && state.wishlists.isEmpty() -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 32.dp)
-                                .offset(y = (-40).dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.WifiOff,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(48.dp)
-                            )
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    when {
+                        state.isLoading && state.wishlists.isEmpty() -> {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        }
 
-                            Spacer(Modifier.height(16.dp))
+                        state.errorMessage != null && state.wishlists.isEmpty() -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 32.dp)
+                                    .offset(y = (-40).dp),
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.WifiOff,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(48.dp)
+                                )
 
-                            Text(
-                                text = "Ekkert netsamband",
-                                style = MaterialTheme.typography.titleLarge,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                                Spacer(Modifier.height(16.dp))
 
-                            Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = "Ekkert netsamband",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
 
-                            Text(
-                                text = "Gakktu úr skugga um að þú sért tengd/ur neti og reyndu aftur.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                                Spacer(Modifier.height(8.dp))
 
-                            Spacer(Modifier.height(20.dp))
+                                Text(
+                                    text = "Gakktu úr skugga um að þú sért tengd/ur neti og reyndu aftur.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
 
-                            OutlinedButton(onClick = { vm.loadSharedWishlists() }) {
-                                Text("Reyna aftur")
+                                Spacer(Modifier.height(20.dp))
+
+                                OutlinedButton(onClick = { vm.loadSharedWishlists() }) {
+                                    Text("Reyna aftur")
+                                }
                             }
                         }
-                    }
 
-                    state.isEmpty -> {
-                        Text(
-                            text = "Engum óskalistum hefur verið deilt með þér",
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .offset(y = (-40).dp)
-                        )
-                    }
+                        state.isEmpty -> {
+                            Text(
+                                text = "Engum óskalistum hefur verið deilt með þér",
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset(y = (-40).dp)
+                            )
+                        }
 
-                    else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(state.wishlists, key = { it.id }) { w ->
-                                WishlistCard(
-                                    w = w,
-                                    onClick = { onOpenWishlist(w.id) }
-                                )
+                        else -> {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(state.wishlists, key = { it.id }) { w ->
+                                    WishlistCard(
+                                        w = w,
+                                        onClick = { onOpenWishlist(w.id) }
+                                    )
+                                }
                             }
                         }
                     }
