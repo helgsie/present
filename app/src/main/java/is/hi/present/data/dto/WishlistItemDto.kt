@@ -29,3 +29,9 @@ data class WishlistItemInsert(
     val category: String? = null,
     @SerialName("sort_order") val sortOrder: Int? = null
 )
+
+@Serializable
+data class ClaimItemArgs(
+    @SerialName("p_item_id")
+    val itemId: String
+)

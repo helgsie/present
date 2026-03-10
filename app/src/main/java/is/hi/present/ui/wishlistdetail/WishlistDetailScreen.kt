@@ -88,6 +88,15 @@ fun WishlistDetailScreen(
 
                 WishlistDetailEffect.NavigateBack -> onBack()
                 WishlistDetailEffect.WishlistSaved -> isEditing = false
+
+                WishlistDetailEffect.AccessRevoked -> {
+                    snackbarHostState.showSnackbar(
+                        message = "Það er búið að taka aðganginn þinn af þessum óskalista.",
+                        withDismissAction = true,
+                        duration = SnackbarDuration.Short
+                    )
+                    onBack()
+                }
             }
         }
     }

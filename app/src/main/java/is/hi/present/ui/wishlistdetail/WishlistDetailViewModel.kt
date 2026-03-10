@@ -225,20 +225,72 @@ class WishlistDetailViewModel @Inject constructor(
 
     fun claimItem(wishlistId: String, itemId: String) = viewModelScope.launch {
         itemRepo.claimItem(itemId)
-            .onSuccess { loadAll(wishlistId) }
+            .onSuccess { result ->
+                when (result) {
+                    "ok" -> loadAll(wishlistId)
+
+                    "access_revoked" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Það er búið að taka aðganginn þinn af þessum óskalista."
+                        )
+                        _effects.send(WishlistDetailEffect.AccessRevoked)
+                    }
+
+                    "already_claimed" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Það er þegar búið að taka þessa gjöf frá."
+                        )
+                    }
+
+                    "not_found" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Gjafin fannst ekki."
+                        )
+                    }
+
+                    else -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Tókst ekki að taka frá gjöf."
+                        )
+                    }
+                }
+            }
             .onFailure { e ->
                 _uiState.value = _uiState.value.copy(
-                    errorMessage = e.message ?: "Tókst ekki að taka frá gjöf"
+                    errorMessage = e.message ?: "Tókst ekki að taka frá gjöf."
                 )
             }
     }
 
     fun releaseClaim(wishlistId: String, itemId: String) = viewModelScope.launch {
         itemRepo.releaseClaim(itemId)
-            .onSuccess { loadAll(wishlistId) }
+            .onSuccess { result ->
+                when (result) {
+                    "ok" -> loadAll(wishlistId)
+
+                    "access_revoked" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Það er búið að taka aðganginn þinn af þessum óskalista."
+                        )
+                        _effects.send(WishlistDetailEffect.AccessRevoked)
+                    }
+
+                    "not_found" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Gjafin fannst ekki."
+                        )
+                    }
+
+                    else -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Tókst ekki að losa frátekningu."
+                        )
+                    }
+                }
+            }
             .onFailure { e ->
                 _uiState.value = _uiState.value.copy(
-                    errorMessage = e.message ?: "Tókst ekki að hætta við frátekningu"
+                    errorMessage = e.message ?: "Tókst ekki að losa frátekningu."
                 )
             }
     }

@@ -1,15 +1,15 @@
 package `is`.hi.present.data.repository
 
 import `is`.hi.present.data.dto.ItemClaim
-import `is`.hi.present.data.dto.ItemClaimInsert
 import android.content.Context
 import android.net.Uri
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.storage.storage
+import `is`.hi.present.data.dto.ClaimItemArgs
 import `is`.hi.present.data.dto.WishlistItemDto
 import `is`.hi.present.data.dto.WishlistItemInsert
 import `is`.hi.present.data.local.dao.WishlistItemDao
@@ -174,42 +174,22 @@ class WishlistItemRepository @Inject constructor(
             .decodeList()
     }
 
-    suspend fun claimItem(itemId: String): Result<Unit> = runCatching {
-        val userId = supabase.auth.currentUserOrNull()?.id
-            ?: error("Not signed in")
-
-        val existing: List<ItemClaim> = supabase
-            .from("item_claims")
-            .select {
-                filter {
-                    eq("item_id", itemId)
-                }
-            }
-            .decodeList()
-
-        if (existing.isNotEmpty()) {
-            error("Item is already claimed")
-        }
-
-        supabase.postgrest["item_claims"].insert(
-            ItemClaimInsert(
-                itemId = itemId,
-                claimedBy = userId
+    suspend fun claimItem(itemId: String): Result<String> = runCatching {
+        supabase.postgrest
+            .rpc(
+                function = "claim_item",
+                parameters = ClaimItemArgs(itemId)
             )
-        )
+            .decodeAs<String>()
     }
-    suspend fun releaseClaim(itemId: String): Result<Unit> = runCatching {
-        val userId = supabase.auth.currentUserOrNull()?.id
-            ?: error("Not signed in")
 
-        supabase
-            .from("item_claims")
-            .delete {
-                filter {
-                    eq("item_id", itemId)
-                    eq("claimed_by", userId)
-                }
-            }
+    suspend fun releaseClaim(itemId: String): Result<String> = runCatching {
+        supabase.postgrest
+            .rpc(
+                function = "release_claim",
+                parameters = ClaimItemArgs(itemId)
+            )
+            .decodeAs<String>()
     }
 
     // ----- PRIVATE HELPERS -----
