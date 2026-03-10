@@ -314,4 +314,25 @@ class WishlistDetailViewModel @Inject constructor(
             }
     }
 
+    fun onSharedWith(wishlistId: String) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(
+            isLoading = true,
+            errorMessage = null
+        )
+
+        wishlistRepo.getSharedWithEmails(wishlistId)
+            .onSuccess { emails ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    sharedWithEmails = emails,
+                    errorMessage = null
+                )
+            }
+            .onFailure { error ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = error.message ?: "Failed to load shared users"
+                )
+            }
+    }
 }

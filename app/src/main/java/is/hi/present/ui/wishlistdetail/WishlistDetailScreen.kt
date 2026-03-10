@@ -29,6 +29,7 @@ import coil.compose.rememberAsyncImagePainter
 import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.runtime.saveable.rememberSaveable
+import `is`.hi.present.ui.components.SharedWith
 import `is`.hi.present.ui.theme.*
 
 
@@ -170,6 +171,10 @@ fun WishlistDetailScreen(
                         ) {
                             Icon(Icons.Default.Share, contentDescription = "Deila óskalista")
                         }
+                        SharedWith(
+                            isLoading = state.isLoading,
+                            wishlistId = wishlistId
+                        )
                     }
 
                     if (state.isOwner) {
