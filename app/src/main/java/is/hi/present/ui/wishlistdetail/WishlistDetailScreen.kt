@@ -1,5 +1,9 @@
 package `is`.hi.present.ui.wishlistdetail
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,33 +11,30 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import android.content.ClipData
-import android.content.ClipboardManager
-import androidx.compose.foundation.Image
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
-import `is`.hi.present.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import coil.compose.rememberAsyncImagePainter
-import java.text.NumberFormat
-import java.util.Locale
-import androidx.compose.runtime.saveable.rememberSaveable
+import `is`.hi.present.R
+import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.components.SharedWith
 import `is`.hi.present.ui.theme.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,11 +46,14 @@ fun WishlistDetailScreen(
     vm: WishlistDetailViewModel = hiltViewModel()
 ) {
     val state = vm.uiState.collectAsState().value
+
     LaunchedEffect(wishlistId) {
         vm.loadAll(wishlistId)
     }
+
     val pullState = rememberPullToRefreshState()
     val context = LocalContext.current
+
     var shareCode by remember { mutableStateOf<String?>(null) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var isEditing by rememberSaveable { mutableStateOf(false) }
@@ -146,21 +150,35 @@ fun WishlistDetailScreen(
                         confirmDelete = false
                         vm.deleteWishlist(wishlistId) { onBack() }
                     }
-                ) { Text("Eyða") }
+                ) {
+                    Text("Eyða")
+                }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Hætta við") }
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text("Hætta við")
+                }
             }
         )
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text(state.title.ifBlank { "Wishlist" }) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
+                ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
                     }
                 },
                 actions = {
@@ -181,8 +199,12 @@ fun WishlistDetailScreen(
                             },
                             enabled = !state.isLoading
                         ) {
-                            Icon(Icons.Default.Share, contentDescription = "Deila óskalista")
+                            Icon(
+                                Icons.Default.Share,
+                                contentDescription = "Deila óskalista"
+                            )
                         }
+
                         SharedWith(
                             isLoading = state.isLoading,
                             wishlistId = wishlistId
@@ -200,20 +222,28 @@ fun WishlistDetailScreen(
                                     isEditing = true
                                 }
                             ) {
-                                Icon(Icons.Default.Edit, contentDescription = "Breyta óskalista")
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Breyta óskalista"
+                                )
                             }
 
                             IconButton(
                                 enabled = !state.isLoading,
                                 onClick = { confirmDelete = true }
                             ) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eyða óskalista")
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Eyða óskalista"
+                                )
                             }
                         } else {
                             TextButton(
                                 enabled = !state.isLoading,
                                 onClick = { isEditing = false }
-                            ) { Text("Hætta við") }
+                            ) {
+                                Text("Hætta við")
+                            }
 
                             TextButton(
                                 enabled = title.trim().isNotBlank() && !state.isLoading,
@@ -229,7 +259,9 @@ fun WishlistDetailScreen(
                                         }
                                     )
                                 }
-                            ) { Text("Vista") }
+                            ) {
+                                Text("Vista")
+                            }
                         }
                     }
                 }
@@ -237,9 +269,10 @@ fun WishlistDetailScreen(
         },
         floatingActionButton = {
             if (state.isOwner) {
-                FloatingActionButton(onClick = { onCreateItem(wishlistId) }) {
-                    Icon(Icons.Default.Add, contentDescription = "Bæta við gjöf")
-                }
+                AddButton(
+                    onClick = { onCreateItem(wishlistId) },
+                    contentDescription = "Bæta við gjöf"
+                )
             }
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
@@ -251,16 +284,22 @@ fun WishlistDetailScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
             Box(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
                     if (isOffline && state.items.isNotEmpty()) {
                         Surface(
                             tonalElevation = 1.dp,
+                            color = MaterialTheme.colorScheme.surface,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -395,8 +434,13 @@ private fun WishlistEditor(
 }
 
 @Composable
-private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: () -> Unit, isOwner: Boolean, onRelease: () -> Unit) {
-
+private fun WishlistItemCard(
+    w: WishlistItemUi,
+    onClick: () -> Unit,
+    onClaim: () -> Unit,
+    isOwner: Boolean,
+    onRelease: () -> Unit
+) {
     val iskFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
             maximumFractionDigits = 0
@@ -404,7 +448,12 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: ()
         }
     }
 
-    ElevatedCard(onClick = onClick) {
+    ElevatedCard(
+        onClick = onClick,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -416,11 +465,13 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: ()
             } else {
                 painterResource(R.drawable.ic_item_placeholder)
             }
+
             Image(
                 painter = painter,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp)
             )
+
             Spacer(Modifier.width(12.dp))
 
             Column(Modifier.weight(1f)) {
@@ -430,12 +481,16 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: ()
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
                 if (!w.notes.isNullOrBlank()) {
                     Spacer(Modifier.height(4.dp))
-                    Text(w.notes, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        w.notes,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
-            Spacer(Modifier.width(12.dp))
+
             w.price?.let { price ->
                 Spacer(Modifier.width(12.dp))
                 Text(
@@ -446,28 +501,31 @@ private fun WishlistItemCard(w: WishlistItemUi, onClick: () -> Unit, onClaim: ()
 
             if (!isOwner) {
                 Spacer(Modifier.width(12.dp))
+
                 if (!w.isClaimed) {
                     Button(
                         onClick = onClaim,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = NewMint,
-                            contentColor = Purple40
+                            containerColor = RosePink,
+                            contentColor = TextPrimary
                         )
                     ) {
                         Text("Taka frá")
                     }
                 }
+
                 if (w.isClaimedByMe) {
                     Button(
                         onClick = onRelease,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = PurpleGrey80,
-                            contentColor = Black
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurface
                         )
                     ) {
                         Text("Losa gjöf")
                     }
                 }
+
                 if (w.isClaimed && !w.isClaimedByMe) {
                     Text(
                         text = "Frátekið",

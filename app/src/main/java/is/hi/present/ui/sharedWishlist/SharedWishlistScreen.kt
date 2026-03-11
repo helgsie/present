@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
 
@@ -87,9 +88,10 @@ fun SharedWishlistScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddSharedWishlist) {
-                Icon(Icons.Default.Add, contentDescription = "Add shared wishlist")
-            }
+            AddButton(
+                onClick = onAddSharedWishlist,
+                contentDescription = "Add shared wishlist"
+            )
         }
     ) { padding ->
         Column(

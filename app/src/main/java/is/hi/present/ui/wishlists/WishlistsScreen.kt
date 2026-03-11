@@ -1,5 +1,6 @@
 package `is`.hi.present.ui.wishlists
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
 
@@ -36,32 +38,47 @@ fun WishlistsScreen(
     LaunchedEffect(ownerId) {
         vm.loadWishlists(ownerId)
     }
+
     val state by vm.uiState.collectAsStateWithLifecycle()
     val pullState = rememberPullToRefreshState()
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("My wishlists") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
+                ),
                 actions = {
                     IconButton(onClick = onAccountSettings) {
-                        Icon(Icons.Filled.AccountCircle, contentDescription = "Account Settings")
+                        Icon(
+                            Icons.Filled.AccountCircle,
+                            contentDescription = "Account Settings"
+                        )
                     }
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Logout"
+                        )
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onCreateWishlist) {
-                Icon(Icons.Default.Add, contentDescription = "Create wishlist")
-            }
+            AddButton(
+                onClick = onCreateWishlist,
+                contentDescription = "Create wishlist"
+            )
         }
     ) { padding ->
         Column(
             modifier = modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
         ) {
             Segments(
@@ -88,10 +105,12 @@ fun WishlistsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
                     state.offlineDialog?.let { dialog ->
                         AlertDialog(
@@ -118,11 +137,14 @@ fun WishlistsScreen(
                     }
 
                     Column(
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
                     ) {
                         state.offlineBanner?.let { msg ->
                             Surface(
                                 tonalElevation = 1.dp,
+                                color = MaterialTheme.colorScheme.surface,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp)
@@ -143,7 +165,9 @@ fun WishlistsScreen(
                         ) {
                             when {
                                 state.isLoading && state.wishlists.isEmpty() -> {
-                                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
                                 }
 
                                 state.errorMessage != null && state.wishlists.isEmpty() -> {
