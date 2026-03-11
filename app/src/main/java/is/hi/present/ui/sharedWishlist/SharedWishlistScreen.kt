@@ -7,20 +7,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.compose.foundation.layout.offset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
@@ -42,6 +41,9 @@ fun SharedWishlistScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val pullState = rememberPullToRefreshState()
 
+    var isEditMode by remember { mutableStateOf(false) }
+    var wishlistToLeave by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         vm.loadSharedWishlists()
     }
@@ -53,12 +55,28 @@ fun SharedWishlistScreen(
         }
     }
 
+    LaunchedEffect(state.wishlists) {
+        if (state.wishlists.isEmpty() && isEditMode) {
+            isEditMode = false
+            wishlistToLeave = null
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Shared wishlists") },
                 actions = {
+                    if (state.wishlists.isNotEmpty()) {
+                        IconButton(onClick = { isEditMode = !isEditMode }) {
+                            Icon(
+                                imageVector = if (isEditMode) Icons.Default.Close else Icons.Default.Edit,
+                                contentDescription = if (isEditMode) "Close edit mode" else "Edit shared wishlists"
+                            )
+                        }
+                    }
+
                     IconButton(onClick = onAccountSettings) {
                         Icon(Icons.Filled.AccountCircle, contentDescription = "Account Settings")
                     }
@@ -100,9 +118,7 @@ fun SharedWishlistScreen(
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize()
-                ) {
+                Box(modifier = Modifier.fillMaxSize()) {
                     when {
                         state.isLoading && state.wishlists.isEmpty() -> {
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -169,11 +185,41 @@ fun SharedWishlistScreen(
                                 items(state.wishlists, key = { it.id }) { w ->
                                     WishlistCard(
                                         w = w,
-                                        onClick = { onOpenWishlist(w.id) }
+                                        onClick = {
+                                            if (!isEditMode) {
+                                                onOpenWishlist(w.id)
+                                            }
+                                        },
+                                        isEditMode = isEditMode,
+                                        showLeaveButton = true,
+                                        onLeaveClick = {
+                                            wishlistToLeave = w.id
+                                        }
                                     )
                                 }
                             }
                         }
+                    }
+
+                    if (wishlistToLeave != null) {
+                        AlertDialog(
+                            onDismissRequest = { wishlistToLeave = null },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    vm.leaveSharedWishlist(wishlistToLeave!!)
+                                    wishlistToLeave = null
+                                }) {
+                                    Text("Yfirgefa")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { wishlistToLeave = null }) {
+                                    Text("Hætta við")
+                                }
+                            },
+                            title = { Text("Ertu viss þú viljir yfirgefa?") },
+                            text = { Text("Þú missir aðgang að þessum óskalista ef þú heldur áfram.") }
+                        )
                     }
                 }
             }

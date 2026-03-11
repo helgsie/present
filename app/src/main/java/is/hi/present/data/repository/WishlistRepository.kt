@@ -216,5 +216,13 @@ class WishlistRepository @Inject constructor(
                 )
             )
     }
+
+    suspend fun leaveSharedWishlist(wishlistId: String): Result<Unit> = runCatching {
+        supabase.postgrest
+            .rpc(
+                function = "leave_wishlist",
+                parameters = WishlistIdArgs(wishlistId)
+            )
+    }
 }
 
