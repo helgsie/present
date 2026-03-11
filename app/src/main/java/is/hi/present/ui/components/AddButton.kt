@@ -101,12 +101,12 @@ fun AddButton(
     )
 
     Box(
-        modifier = modifier.size(90.dp),
+        modifier = modifier.size(65.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .size(74.dp)
+                .size(54.dp)
                 .offset(x = shadowLayerOffsetX, y = shadowLayerOffsetY)
                 .clip(shape)
                 .background(SoftLavenderDark.copy(alpha = 0.08f))
@@ -116,7 +116,7 @@ fun AddButton(
             modifier = Modifier
                 .offset(y = buttonOffsetY)
                 .scale(scale)
-                .size(78.dp)
+                .size(75.dp)
                 .shadow(
                     elevation = shadowElevation,
                     shape = shape,
@@ -151,7 +151,7 @@ fun AddButton(
                 imageVector = Icons.Default.Add,
                 contentDescription = contentDescription,
                 tint = TextPrimary.copy(alpha = 0.82f),
-                modifier = Modifier.size(34.dp)
+                modifier = Modifier.size(30.dp)
             )
         }
     }
