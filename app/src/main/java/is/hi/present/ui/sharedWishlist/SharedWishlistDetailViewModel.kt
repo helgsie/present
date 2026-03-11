@@ -30,7 +30,9 @@ data class SharedWishlistDetailUiState(
     val errorMessage: String? = null,
     val title: String = "",
     val description: String? = null,
-    val items: List<WishlistItemUi> = emptyList()
+    val items: List<WishlistItemUi> = emptyList(),
+    val didLeaveWishlist: Boolean = false
+
 ) {
     val isEmpty: Boolean get() = !isLoading && errorMessage == null && items.isEmpty()
 }
@@ -50,7 +52,8 @@ class SharedWishlistDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isLoading = true,
-                    errorMessage = null
+                    errorMessage = null,
+                    didLeaveWishlist = false
                 )
             }
 
@@ -116,5 +119,30 @@ class SharedWishlistDetailViewModel @Inject constructor(
                     errorMessage = e.message ?: "Tókst ekki að hætta við frátekningu"
                 )
             }
+    }
+
+    fun leaveSharedWishlist(wishlistId: String) = viewModelScope.launch {
+        wishlistRepo.leaveSharedWishlist(wishlistId)
+            .onSuccess {
+                _uiState.update {
+                    it.copy(
+                        didLeaveWishlist = true,
+                        errorMessage = null
+                    )
+                }
+            }
+            .onFailure { e ->
+                _uiState.update {
+                    it.copy(
+                        errorMessage = e.message ?: "Tókst ekki að yfirgefa lista"
+                    )
+                }
+            }
+    }
+
+    fun consumeLeaveSuccess() {
+        _uiState.update {
+            it.copy(didLeaveWishlist = false)
+        }
     }
 }

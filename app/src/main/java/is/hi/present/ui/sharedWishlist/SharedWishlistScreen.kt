@@ -217,8 +217,8 @@ fun SharedWishlistScreen(
                                     Text("Hætta við")
                                 }
                             },
-                            title = { Text("Yfirgefa lista?") },
-                            text = { Text("Ertu viss um að þú viljir yfirgefa þennan shared wishlist?") }
+                            title = { Text("Ertu viss þú viljir yfirgefa?") },
+                            text = { Text("Þú missir aðgang að þessum óskalista ef þú heldur áfram.") }
                         )
                     }
                 }
