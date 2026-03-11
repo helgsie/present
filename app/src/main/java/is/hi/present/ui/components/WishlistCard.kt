@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.ElevatedCard
@@ -39,10 +41,10 @@ fun WishlistCard(
 ) {
     val shakeTransition = rememberInfiniteTransition(label = "shake")
     val shakeOffset by shakeTransition.animateFloat(
-        initialValue = -2f,
-        targetValue = 2f,
+        initialValue = -1f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(120),
+            animation = tween(150),
             repeatMode = RepeatMode.Reverse
         ),
         label = "shakeOffset"
@@ -74,8 +76,10 @@ fun WishlistCard(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset(x = 8.dp, y = (-8).dp)
-                    .offset(x = shakeOffset.dp),
-                shape = MaterialTheme.shapes.small,
+                    .offset(x = shakeOffset.dp)
+                    .size(30.dp),
+
+                shape = CircleShape,
                 color = MaterialTheme.colorScheme.error,
                 tonalElevation = 4.dp
             ) {
@@ -83,7 +87,8 @@ fun WishlistCard(
                     Icon(
                         imageVector = Icons.Default.Remove,
                         contentDescription = "Leave wishlist",
-                        tint = MaterialTheme.colorScheme.onError
+                        tint = MaterialTheme.colorScheme.onError,
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }

@@ -218,16 +218,11 @@ class WishlistRepository @Inject constructor(
     }
 
     suspend fun leaveSharedWishlist(wishlistId: String): Result<Unit> = runCatching {
-        val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not signed in")
-
-        supabase
-            .from("wishlist_shares")
-            .delete {
-                filter {
-                    eq("wishlist_id", wishlistId)
-                    eq("shared_with", userId)
-                }
-            }
+        supabase.postgrest
+            .rpc(
+                function = "leave_wishlist",
+                parameters = WishlistIdArgs(wishlistId)
+            )
     }
 }
 
