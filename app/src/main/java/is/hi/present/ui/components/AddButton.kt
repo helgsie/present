@@ -34,73 +34,85 @@ fun AddButton(
 
     val baseGradient = Brush.linearGradient(
         colors = listOf(
-            White.copy(alpha = 0.30f),
-            SoftLavender,
-            SoftLavenderDark,
-            SoftLavenderDark
+            White.copy(alpha = 0.28f),
+            SoftLavender.copy(alpha = 0.98f),
+            SoftLavenderDark.copy(alpha = 0.72f)
         ),
-        start = Offset(0f, 340f),
-        end = Offset(340f, 0f)
+        start = Offset(0f, 320f),   // bottom-left
+        end = Offset(320f, 0f)      // top-right
     )
 
     val glossySpot = Brush.radialGradient(
         colors = listOf(
-            White.copy(alpha = 0.34f),
-            White.copy(alpha = 0.10f),
+            White.copy(alpha = 0.46f),
+            White.copy(alpha = 0.18f),
             White.copy(alpha = 0f)
         ),
-        center = Offset(45f, 145f),
-        radius = 95f
+        center = Offset(58f, 52f),
+        radius = 92f
     )
 
     val diagonalShine = Brush.linearGradient(
         colors = listOf(
             White.copy(alpha = 0f),
-            White.copy(alpha = 0.16f),
+            White.copy(alpha = 0.12f),
             White.copy(alpha = 0f)
         ),
-        start = Offset(35f, 120f),
-        end = Offset(170f, 20f)
+        start = Offset(20f, 135f),
+        end = Offset(150f, 18f)
     )
 
     Box(
-        modifier = modifier
-            .size(78.dp)
-            .shadow(
-                elevation = 18.dp,
-                shape = shape,
-                ambientColor = SoftLavenderDark.copy(alpha = 0.28f),
-                spotColor = SoftLavenderDark.copy(alpha = 0.28f)
-            )
-            .clip(shape)
-            .background(baseGradient)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
+        modifier = modifier.size(90.dp),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .matchParentSize()
+                .size(74.dp)
+                .offset(x = 5.dp, y = 7.dp)
                 .clip(shape)
-                .background(glossySpot)
+                .background(SoftLavenderDark.copy(alpha = 0.08f))
         )
 
         Box(
             modifier = Modifier
-                .matchParentSize()
-                .offset(x = 4.dp, y = (-4).dp)
+                .size(78.dp)
+                .shadow(
+                    elevation = 18.dp,
+                    shape = shape,
+                    ambientColor = SoftLavenderDark.copy(alpha = 0.12f),
+                    spotColor = SoftLavenderDark.copy(alpha = 0.16f)
+                )
                 .clip(shape)
-                .background(diagonalShine)
-        )
+                .background(baseGradient)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(shape)
+                    .background(glossySpot)
+            )
 
-        Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = contentDescription,
-            tint = TextPrimary.copy(alpha = 0.82f),
-            modifier = Modifier.size(34.dp)
-        )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .clip(shape)
+                    .background(diagonalShine)
+            )
+
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = contentDescription,
+                tint = TextPrimary.copy(alpha = 0.82f),
+                modifier = Modifier.size(34.dp)
+            )
+        }
     }
 }
