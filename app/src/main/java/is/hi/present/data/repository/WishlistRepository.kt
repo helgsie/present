@@ -10,6 +10,7 @@ import `is`.hi.present.data.dto.CreateShareLinkArgs
 import `is`.hi.present.data.dto.JoinByTokenArgs
 import `is`.hi.present.data.dto.RemoveSharedUserArgs
 import `is`.hi.present.data.dto.SharedWithEmailRow
+import `is`.hi.present.data.dto.WishlistCardDto
 import `is`.hi.present.data.dto.WishlistDto
 import `is`.hi.present.data.dto.WishlistIdArgs
 import `is`.hi.present.data.dto.WishlistInsert
@@ -39,7 +40,6 @@ class WishlistRepository @Inject constructor(
 
     suspend fun getWishlistByIdLocal(wishlistId: String): Wishlist? =
         wishlistDao.getWishlistById(wishlistId)?.toDomain()
-
     // ------ SYNCING ROOM WITH DATA FROM REMOTE -------
     suspend fun refreshWishlists(ownerId: String): Result<Unit> = runCatching {
         val remote = supabase
@@ -110,6 +110,17 @@ class WishlistRepository @Inject constructor(
             }
             .decodeList()
         wishlists.map { it.toDomain() }
+    }
+    suspend fun fetchMyWishlistCards(): Result<List<WishlistCardDto>> = runCatching {
+        supabase.postgrest
+            .rpc("get_my_wishlist_cards")
+            .decodeList<WishlistCardDto>()
+    }
+
+    suspend fun fetchSharedWishlistCards(): Result<List<WishlistCardDto>> = runCatching {
+        supabase.postgrest
+            .rpc("get_shared_wishlist_cards")
+            .decodeList<WishlistCardDto>()
     }
 
     // ---- WRITES ------

@@ -3,81 +3,76 @@ package `is`.hi.present.ui.wishlists
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `is`.hi.present.BuildConfig
 import `is`.hi.present.data.repository.WishlistRepository
 import `is`.hi.present.ui.components.WishlistIcon
-import javax.inject.Inject
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
+
+private fun toPublicImageUrl(path: String?): String? {
+    if (path.isNullOrBlank()) return null
+    return if (path.startsWith("http://") || path.startsWith("https://")) path else "$STORAGE_URL$path"
+}
 
 @HiltViewModel
 class WishlistsViewModel @Inject constructor(
     private val repo: WishlistRepository
 ) : ViewModel() {
 
-    // ---- STATE -----
     private val _uiState = MutableStateFlow(WishlistsUiState())
     val uiState: StateFlow<WishlistsUiState> = _uiState.asStateFlow()
 
-    // ---- INTERNAL FIELDS ----
-    private var currentOwnerId: String? = null
-    private var observeJob: Job? = null
-
-    // ---- LOAD WISHLISTS -----
     fun loadWishlists(ownerId: String) {
-        val ownerChanged = currentOwnerId != ownerId
-        currentOwnerId = ownerId
-
-        if (ownerChanged) {
-            observeJob?.cancel()
-
-            observeJob = viewModelScope.launch {
-                repo.observeWishlists(ownerId)
-                    .map { wishlists ->
-                        wishlists
-                            .sortedByDescending { it.updatedAt }
-                            .map { w ->
-                                WishlistUi(
-                                    id = w.id,
-                                    title = w.title,
-                                    description = w.description,
-                                    iconKey = w.iconKey
-                                )
-                            }
-                    }
-                    .distinctUntilChanged()
-                    .collect { uiWishlists ->
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                wishlists = uiWishlists
-                            )
-                        }
-                    }
-            }
-            _uiState.update { it.copy(isLoading = true) }
-        }
         viewModelScope.launch {
-            repo.refreshWishlists(ownerId)
-                .onSuccess {
-                    _uiState.update { it.copy(offlineBanner = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    errorMessage = null
+                )
+            }
+
+            repo.fetchMyWishlistCards()
+                .onSuccess { cards ->
+                    val uiWishlists = cards.map { dto ->
+                        WishlistUi(
+                            id = dto.id,
+                            title = dto.title,
+                            description = dto.description,
+                            iconKey = dto.iconKey,
+                            itemCount = dto.itemCount.toInt(),
+                            isShared = dto.isShared,
+                            previewImageUrl = toPublicImageUrl(dto.previewImageUrl)
+                        )
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            wishlists = uiWishlists,
+                            errorMessage = null,
+                            offlineBanner = null
+                        )
+                    }
                 }
                 .onFailure {
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
+                            isRefreshing = false,
                             offlineBanner = if (state.wishlists.isNotEmpty())
                                 "Ekkert netsamband. Vistuð gögn eru sýnd."
                             else
                                 "Ekkert netsamband."
                         )
                     }
-            }
+                }
         }
     }
 
@@ -85,14 +80,28 @@ class WishlistsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
 
-            repo.refreshWishlists(ownerId)
-                .onSuccess {
+            repo.fetchMyWishlistCards()
+                .onSuccess { cards ->
+                    val uiWishlists = cards.map { dto ->
+                        WishlistUi(
+                            id = dto.id,
+                            title = dto.title,
+                            description = dto.description,
+                            iconKey = dto.iconKey,
+                            itemCount = dto.itemCount.toInt(),
+                            isShared = dto.isShared,
+                            previewImageUrl = toPublicImageUrl(dto.previewImageUrl)
+                        )
+                    }
+
                     _uiState.update {
                         it.copy(
-                            offlineBanner = null,
-                            isRefreshing = false,
                             isLoading = false,
-                            errorMessage = null
+                            isRefreshing = false,
+                            wishlists = uiWishlists,
+                            errorMessage = null,
+                            offlineBanner = null,
+                            offlineDialog = null
                         )
                     }
                 }
@@ -119,7 +128,6 @@ class WishlistsViewModel @Inject constructor(
         _uiState.update { it.copy(offlineDialog = null) }
     }
 
-    // ----- WISHLIST ACTIONS -----
     fun createWishlist(
         ownerId: String,
         title: String,
@@ -131,7 +139,7 @@ class WishlistsViewModel @Inject constructor(
 
         repo.createWishlist(ownerId, title, description, icon)
             .onSuccess {
-                _uiState.update { it.copy(isLoading = false) }
+                loadWishlists(ownerId)
                 onDone?.invoke()
             }
             .onFailure { e ->

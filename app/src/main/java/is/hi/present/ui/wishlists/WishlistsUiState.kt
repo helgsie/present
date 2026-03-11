@@ -6,7 +6,10 @@ data class WishlistUi(
     val id: String,
     val title: String,
     val description: String? = null,
-    val iconKey: String = WishlistIcon.FAVORITE.key
+    val iconKey: String = WishlistIcon.FAVORITE.key,
+    val itemCount: Int = 0,
+    val isShared: Boolean = false,
+    val previewImageUrl: String? = null
 )
 
 data class OfflineDialog(
