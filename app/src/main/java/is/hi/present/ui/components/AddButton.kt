@@ -1,8 +1,12 @@
 package `is`.hi.present.ui.components
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -11,10 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -31,6 +37,38 @@ fun AddButton(
     modifier: Modifier = Modifier
 ) {
     val shape = CircleShape
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = tween(durationMillis = 120),
+        label = "fabScale"
+    )
+
+    val buttonOffsetY by animateDpAsState(
+        targetValue = if (isPressed) 3.dp else 0.dp,
+        animationSpec = tween(durationMillis = 120),
+        label = "fabOffsetY"
+    )
+
+    val shadowElevation by animateDpAsState(
+        targetValue = if (isPressed) 8.dp else 18.dp,
+        animationSpec = tween(durationMillis = 120),
+        label = "fabShadow"
+    )
+
+    val shadowLayerOffsetX by animateDpAsState(
+        targetValue = if (isPressed) 2.dp else 5.dp,
+        animationSpec = tween(durationMillis = 120),
+        label = "shadowLayerOffsetX"
+    )
+
+    val shadowLayerOffsetY by animateDpAsState(
+        targetValue = if (isPressed) 3.dp else 7.dp,
+        animationSpec = tween(durationMillis = 120),
+        label = "shadowLayerOffsetY"
+    )
 
     val baseGradient = Brush.linearGradient(
         colors = listOf(
@@ -38,8 +76,8 @@ fun AddButton(
             SoftLavender.copy(alpha = 0.98f),
             SoftLavenderDark.copy(alpha = 0.72f)
         ),
-        start = Offset(0f, 320f),   // bottom-left
-        end = Offset(320f, 0f)      // top-right
+        start = Offset(0f, 320f),
+        end = Offset(320f, 0f)
     )
 
     val glossySpot = Brush.radialGradient(
@@ -69,16 +107,18 @@ fun AddButton(
         Box(
             modifier = Modifier
                 .size(74.dp)
-                .offset(x = 5.dp, y = 7.dp)
+                .offset(x = shadowLayerOffsetX, y = shadowLayerOffsetY)
                 .clip(shape)
                 .background(SoftLavenderDark.copy(alpha = 0.08f))
         )
 
         Box(
             modifier = Modifier
+                .offset(y = buttonOffsetY)
+                .scale(scale)
                 .size(78.dp)
                 .shadow(
-                    elevation = 18.dp,
+                    elevation = shadowElevation,
                     shape = shape,
                     ambientColor = SoftLavenderDark.copy(alpha = 0.12f),
                     spotColor = SoftLavenderDark.copy(alpha = 0.16f)
@@ -86,7 +126,7 @@ fun AddButton(
                 .clip(shape)
                 .background(baseGradient)
                 .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                    interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick
                 ),
