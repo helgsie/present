@@ -1,26 +1,45 @@
 package `is`.hi.present.ui.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import `is`.hi.present.R
+import `is`.hi.present.ui.theme.BlushPink
+import `is`.hi.present.ui.theme.RosePink
+import `is`.hi.present.ui.theme.SoftCard
+import `is`.hi.present.ui.theme.SoftSurfaceVariant
+import `is`.hi.present.ui.theme.TextPrimary
+import `is`.hi.present.ui.theme.TextSecondary
 import `is`.hi.present.ui.wishlistdetail.WishlistItemUi
 import java.text.NumberFormat
 import java.util.Locale
@@ -29,7 +48,7 @@ import java.util.Locale
 fun WishlistItemCard(
     w: WishlistItemUi,
     onClick: () -> Unit,
-    trailingContent: (@Composable () -> Unit)? = null
+    trailingContent: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val iskFormatter = remember {
         NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
@@ -37,11 +56,21 @@ fun WishlistItemCard(
             minimumFractionDigits = 0
         }
     }
-    ElevatedCard(onClick = onClick) {
+
+    ElevatedCard(
+        onClick = onClick,
+        shape = RoundedCornerShape(26.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = SoftCard
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 3.dp
+        )
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val painter = if (!w.imagePath.isNullOrBlank()) {
@@ -53,29 +82,56 @@ fun WishlistItemCard(
             Image(
                 painter = painter,
                 contentDescription = null,
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(18.dp))
             )
-            Spacer(Modifier.width(12.dp))
 
-            Column(Modifier.weight(1f)) {
-                Text(w.name, style = MaterialTheme.typography.titleMedium)
-                if (!w.notes.isNullOrBlank()) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(w.notes, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-            w.price?.let { price ->
-                Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
-                    text = iskFormatter.format(price),
-                    style = MaterialTheme.typography.titleMedium
+                    text = w.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            }
-            trailingContent?.let {
-                Spacer(Modifier.width(12.dp))
-                Box {
-                    it()
+
+                if (!w.notes.isNullOrBlank()) {
+                    Text(
+                        text = w.notes,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
+            }
+
+            Spacer(Modifier.width(10.dp))
+
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                w.price?.let { price ->
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = SoftSurfaceVariant
+                    ) {
+                        Text(
+                            text = iskFormatter.format(price),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = TextPrimary
+                        )
+                    }
+                }
+
+                trailingContent?.invoke(this)
             }
         }
     }

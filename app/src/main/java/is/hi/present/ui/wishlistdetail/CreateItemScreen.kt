@@ -82,7 +82,7 @@ fun CreateItemScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create item") },
+                title = { Text("Ný gjöf") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -105,28 +105,28 @@ fun CreateItemScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Title") },
+                label = { Text("Titill") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Description (optional)") },
+                label = { Text("Lýsing (valkvæð)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
-                label = { Text("URL (optional)") },
+                label = { Text("Hlekkur (valkvæð)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = priceText,
                 onValueChange = { priceText = it },
-                label = { Text("Price (ISK)") },
+                label = { Text("Verð (ISK)") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = priceText.isNotBlank() && parsedPrice == null,
             )
@@ -134,11 +134,11 @@ fun CreateItemScreen(
             // Buttons for images/photos
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { galleryLauncher.launch("image/*") }) {
-                    Text("Choose from gallery")
+                    Text("Velja frá safni")
                 }
 
                 Button(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                    Text("Take photo")
+                    Text("Taka mynd")
                 }
             }
 
@@ -193,7 +193,7 @@ fun CreateItemScreen(
                     onDone()
                 },
             ) {
-                Text("Create")
+                Text("Búa til")
             }
         }
     }

@@ -17,7 +17,6 @@ import `is`.hi.present.ui.wishlists.WishlistsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.sharedWishlist.AddSharedWishlistScreen
-import `is`.hi.present.ui.sharedWishlist.SharedWishlistDetailScreen
 import `is`.hi.present.ui.sharedWishlist.SharedWishlistScreen
 import `is`.hi.present.ui.sharedWishlist.SharedItemDetailScreen
 import `is`.hi.present.ui.wishlistdetail.ItemDetailScreen
@@ -146,16 +145,6 @@ private fun AppNav(
                 )
             }
 
-            entry<AppRoute.SharedWishlistDetail> { key ->
-                SharedWishlistDetailScreen(
-                    wishlistId = key.wishlistId,
-                    onBack = { backStack.removeLastOrNull() },
-                    onOpenItem = { itemId ->
-                        backStack.add(AppRoute.SharedItemDetail(itemId))
-                    }
-                )
-            }
-
             entry<AppRoute.SharedItemDetail> { key ->
                 SharedItemDetailScreen(
                     itemId = key.itemId,
@@ -194,7 +183,7 @@ private fun AppNav(
                     onJoined = { wishlistId ->
                         clearPendingJoinToken()
                         backStack.removeLastOrNull()
-                        backStack.add(AppRoute.SharedWishlistDetail(wishlistId))
+                        backStack.add(AppRoute.WishlistDetail(wishlistId))
                     }
                 )
             }
@@ -202,7 +191,7 @@ private fun AppNav(
             entry<AppRoute.SharedWishlists> {
                 SharedWishlistScreen(
                     onAddSharedWishlist = { backStack.add(AppRoute.AddSharedWishlist) },
-                    onOpenWishlist = { id -> backStack.add(AppRoute.SharedWishlistDetail(id)) },
+                    onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
                     onSelectWishlists = { backStack.add(AppRoute.Wishlists) },
                     onLogout = { authViewModel.signOut() },
                     onAccountSettings = { backStack.add(AppRoute.AccountSettings) },

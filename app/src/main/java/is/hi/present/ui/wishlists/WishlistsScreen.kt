@@ -1,23 +1,49 @@
 package `is`.hi.present.ui.wishlists
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.WifiOff
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.*
-import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
+import android.content.res.Configuration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,32 +62,51 @@ fun WishlistsScreen(
     LaunchedEffect(ownerId) {
         vm.loadWishlists(ownerId)
     }
+
     val state by vm.uiState.collectAsStateWithLifecycle()
     val pullState = rememberPullToRefreshState()
 
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val columns = if (isLandscape) 4 else 2
+
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("My wishlists") },
+                title = { Text("Óskalistarnir mínir") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
+                ),
                 actions = {
                     IconButton(onClick = onAccountSettings) {
-                        Icon(Icons.Filled.AccountCircle, contentDescription = "Account Settings")
+                        Icon(
+                            Icons.Filled.AccountCircle,
+                            contentDescription = "Account Settings"
+                        )
                     }
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Logout"
+                        )
                     }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onCreateWishlist) {
-                Icon(Icons.Default.Add, contentDescription = "Create wishlist")
-            }
+            AddButton(
+                onClick = onCreateWishlist,
+                contentDescription = "Create wishlist"
+            )
         }
     ) { padding ->
         Column(
             modifier = modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
         ) {
             Segments(
@@ -88,10 +133,12 @@ fun WishlistsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
                     state.offlineDialog?.let { dialog ->
                         AlertDialog(
@@ -118,11 +165,14 @@ fun WishlistsScreen(
                     }
 
                     Column(
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background)
                     ) {
                         state.offlineBanner?.let { msg ->
                             Surface(
                                 tonalElevation = 1.dp,
+                                color = MaterialTheme.colorScheme.surface,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp)
@@ -143,7 +193,9 @@ fun WishlistsScreen(
                         ) {
                             when {
                                 state.isLoading && state.wishlists.isEmpty() -> {
-                                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
                                 }
 
                                 state.errorMessage != null && state.wishlists.isEmpty() -> {
@@ -170,10 +222,12 @@ fun WishlistsScreen(
                                 }
 
                                 else -> {
-                                    LazyColumn(
+                                    LazyVerticalGrid(
+                                        columns = GridCells.Fixed(columns),
                                         modifier = Modifier.fillMaxSize(),
                                         contentPadding = PaddingValues(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
                                     ) {
                                         items(
                                             items = state.wishlists,

@@ -114,13 +114,13 @@ fun SignInScreen(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Sign In")
+                Text("Skrá inn")
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Don't have an account? Sign Up",
+                text = "Nýskráning",
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
@@ -139,13 +139,13 @@ fun SignInScreen(
                 is AuthUiState.Loading -> LoadingComponent()
                 is AuthUiState.DeleteLoading -> {
                     Text(
-                        text = "Deleting account...",
+                        text = "Eyði aðgangi...",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
                 is AuthUiState.SignOutLoading -> {
                     Text(
-                        text = "Signing out...",
+                        text = "Skrái út...",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

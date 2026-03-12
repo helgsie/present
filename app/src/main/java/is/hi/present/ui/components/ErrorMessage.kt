@@ -17,7 +17,7 @@ fun ErrorMessage(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = NewPink
+            containerColor = RosePink
         )
     ) {
         Text(
