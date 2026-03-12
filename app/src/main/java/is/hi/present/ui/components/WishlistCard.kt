@@ -102,13 +102,13 @@ fun WishlistCard(
                     Surface(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(12.dp),
+                            .padding(12.dp)
+                            .offset(x = (20).dp, y = -20.dp),
                         shape = RoundedCornerShape(16.dp),
                         color = SoftSurfaceVariant
                     ) {
                         Text(
-                            text = "${w.itemCount} item" + if (w.itemCount == 1) "" else "s",
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            text = "${w.itemCount} ${if (w.itemCount == 1) "Hlutur" else "Hlutir"}",                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -176,7 +176,7 @@ fun WishlistCard(
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            text = if (w.isShared) "Shared" else "Private",
+                            text = if (w.isShared) "Deilt" else "Einka",
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
@@ -198,7 +198,7 @@ fun WishlistCard(
                 IconButton(onClick = onLeaveClick) {
                     Icon(
                         imageVector = Icons.Default.Remove,
-                        contentDescription = "Leave wishlist",
+                        contentDescription = "Fara úr óskalista",
                         tint = MaterialTheme.colorScheme.onError,
                         modifier = Modifier.size(14.dp)
                     )

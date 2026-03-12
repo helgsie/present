@@ -101,7 +101,7 @@ fun SharedWishlistScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Shared wishlists") },
+                title = { Text("Deildir óskalistar") },
                 actions = {
                     if (state.wishlists.isNotEmpty()) {
                         IconButton(onClick = { isEditMode = !isEditMode }) {

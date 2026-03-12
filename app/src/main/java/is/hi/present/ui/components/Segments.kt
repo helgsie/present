@@ -12,7 +12,7 @@ fun Segments(
     onSelectedChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val options = listOf("Wishlists", "Shared")
+    val options = listOf("Mínir", "Deilt")
 
     SingleChoiceSegmentedButtonRow(
         modifier = modifier.fillMaxWidth()

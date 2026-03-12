@@ -84,7 +84,7 @@ fun ItemDetailScreen(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete item?") },
+            title = { Text("Eyða gjöf?") },
             text = { Text("This item will be permanently removed.") },
             confirmButton = {
                 TextButton(
@@ -96,14 +96,14 @@ fun ItemDetailScreen(
                 ) { Text("Delete") }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmDelete = false }) { Text("Hætta við") }
             }
         )
     }
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Item") },
+                title = { Text("Gjöf") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -177,7 +177,7 @@ fun ItemDetailScreen(
                     OutlinedTextField(
                         value = state.name,
                         onValueChange = vm::onNameChange,
-                        label = { Text("Name") },
+                        label = { Text("Nafn") },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = isEditing,
                         singleLine = true
@@ -186,7 +186,7 @@ fun ItemDetailScreen(
                     OutlinedTextField(
                         value = state.notes,
                         onValueChange = vm::onNotesChange,
-                        label = { Text("Notes") },
+                        label = { Text("Nótur") },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = isEditing
                     )
@@ -194,7 +194,7 @@ fun ItemDetailScreen(
                     OutlinedTextField(
                         value = state.priceText,
                         onValueChange = vm::onPriceChange,
-                        label = { Text("Price") },
+                        label = { Text("Verð") },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = isEditing,
                         singleLine = true
@@ -205,14 +205,14 @@ fun ItemDetailScreen(
                                 enabled = !state.isLoading,
                                 onClick = { galleryLauncher.launch("image/*") }
                             ) {
-                                Text("Choose from gallery")
+                                Text("Velja frá safni")
                             }
 
                             Button(
                                 enabled = !state.isLoading,
                                 onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }
                             ) {
-                                Text("Take photo")
+                                Text("Taka mynd")
                             }
                         }
                     }
@@ -258,7 +258,7 @@ fun ItemDetailScreen(
                             }
 
                             else -> {
-                                Text("No image")
+                                Text("Engin mynd")
                             }
                         }
                     }

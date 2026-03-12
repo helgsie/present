@@ -56,7 +56,7 @@ fun SignUpScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Create Account",
+                text = "Búa til aðgang",
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.fillMaxWidth(),
@@ -155,7 +155,7 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "Already have an account? Sign In",
+                text = "Nú þegar með aðgang? Skrá inn",
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
@@ -174,13 +174,13 @@ fun SignUpScreen(
                 is AuthUiState.Loading -> LoadingComponent()
                 is AuthUiState.DeleteLoading -> {
                     Text(
-                        text = "Deleting account...",
+                        text = "Eyði aðgangi...",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
                 is AuthUiState.SignOutLoading -> {
                     Text(
-                        text = "Signing out...",
+                        text = "Skrái út...",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

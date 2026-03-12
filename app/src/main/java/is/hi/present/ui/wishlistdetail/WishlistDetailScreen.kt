@@ -148,7 +148,7 @@ fun WishlistDetailScreen(
     shareCode?.let { code ->
         AlertDialog(
             onDismissRequest = { shareCode = null },
-            title = { Text("Invite code") },
+            title = { Text("Aðgangskóði") },
             text = {
                 SelectionContainer {
                     Text(code)
@@ -168,7 +168,7 @@ fun WishlistDetailScreen(
                             ClipData.newPlainText("invite_code", code)
                         )
                         scope.launch {
-                            snackbarHostState.showSnackbar("Invite code afritað")
+                            snackbarHostState.showSnackbar("Aðgangskóða afritað")
                         }
                     }
                 ) {

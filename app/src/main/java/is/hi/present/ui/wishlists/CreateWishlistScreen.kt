@@ -33,7 +33,7 @@ fun CreateWishlistScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create wishlist") },
+                title = { Text("Búa til óskalista") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -52,14 +52,14 @@ fun CreateWishlistScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Title") },
+                label = { Text("Titill") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Description (optional)") },
+                label = { Text("Lýsing(valkvætt)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -88,7 +88,7 @@ fun CreateWishlistScreen(
                     )
                     Spacer(Modifier.width(10.dp))
                 }
-                Text("Create")
+                Text("Búa til")
             }
         }
     }
