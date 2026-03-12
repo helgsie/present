@@ -37,11 +37,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
+import android.content.res.Configuration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +65,10 @@ fun WishlistsScreen(
 
     val state by vm.uiState.collectAsStateWithLifecycle()
     val pullState = rememberPullToRefreshState()
+
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val columns = if (isLandscape) 4 else 2
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -217,7 +223,7 @@ fun WishlistsScreen(
 
                                 else -> {
                                     LazyVerticalGrid(
-                                        columns = GridCells.Adaptive(minSize = 220.dp),
+                                        columns = GridCells.Fixed(columns),
                                         modifier = Modifier.fillMaxSize(),
                                         contentPadding = PaddingValues(16.dp),
                                         horizontalArrangement = Arrangement.spacedBy(16.dp),

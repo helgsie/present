@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -41,6 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import coil.size.Size
 import `is`.hi.present.R
 import `is`.hi.present.ui.theme.BlushPink
 import `is`.hi.present.ui.theme.MintAccent
@@ -69,6 +71,7 @@ fun WishlistCard(
     )
 
     val cardShape = RoundedCornerShape(28.dp)
+    val imageShape = RoundedCornerShape(22.dp)
 
     Box {
         ElevatedCard(
@@ -86,21 +89,31 @@ fun WishlistCard(
                 modifier = Modifier.padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                val painter = if (!w.previewImageUrl.isNullOrBlank()) {
-                    rememberAsyncImagePainter(w.previewImageUrl)
-                } else {
-                    rememberAsyncImagePainter(R.drawable.ic_item_placeholder)
-                }
-
-                Image(
-                    painter = painter,
-                    contentDescription = null,
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(1.35f)
-                        .clip(RoundedCornerShape(22.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                        .height(120.dp)
+                ) {
+                    WishlistPreviewGrid(
+                        imageUrls = w.previewImageUrls,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = SoftSurfaceVariant
+                    ) {
+                        Text(
+                            text = "${w.itemCount} item" + if (w.itemCount == 1) "" else "s",
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
 
                 Row(
                     verticalAlignment = Alignment.Top
@@ -137,51 +150,35 @@ fun WishlistCard(
                                 text = w.description,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextSecondary,
-                                maxLines = 2,
+                                maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
                 }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = SoftSurfaceVariant
-                    ) {
-                        Text(
-                            text = "${w.itemCount} item" + if (w.itemCount == 1) "" else "s",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (w.isShared) {
+                        MintAccent.copy(alpha = 0.45f)
+                    } else {
+                        BlushPink.copy(alpha = 0.45f)
                     }
-
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (w.isShared) {
-                            MintAccent.copy(alpha = 0.45f)
-                        } else {
-                            BlushPink.copy(alpha = 0.45f)
-                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = if (w.isShared) Icons.Default.People else Icons.Default.Lock,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = if (w.isShared) "Shared" else "Private",
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        }
+                        Icon(
+                            imageVector = if (w.isShared) Icons.Default.People else Icons.Default.Lock,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = if (w.isShared) "Shared" else "Private",
+                            style = MaterialTheme.typography.labelLarge
+                        )
                     }
                 }
             }
@@ -205,6 +202,89 @@ fun WishlistCard(
                         tint = MaterialTheme.colorScheme.onError,
                         modifier = Modifier.size(14.dp)
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WishlistPreviewGrid(
+    imageUrls: List<String>,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(22.dp)
+    val images = imageUrls.take(4)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .clip(shape)
+    ) {
+        when (images.size) {
+            0 -> {
+                Image(
+                    painter = rememberAsyncImagePainter(R.drawable.ic_item_placeholder),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            1 -> {
+                Image(
+                    painter = rememberAsyncImagePainter(images[0]),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            2 -> {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    images.forEach { url ->
+                        Image(
+                            painter = rememberAsyncImagePainter(url),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+            }
+
+            else -> {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(modifier = Modifier.weight(1f)) {
+                        images.take(2).forEach { url ->
+                            Image(
+                                painter = rememberAsyncImagePainter(url),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                    Row(modifier = Modifier.weight(1f)) {
+                        images.drop(2).take(2).forEach { url ->
+                            Image(
+                                painter = rememberAsyncImagePainter(url),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        if (images.size == 3) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }

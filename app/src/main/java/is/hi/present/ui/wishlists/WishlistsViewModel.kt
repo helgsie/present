@@ -15,9 +15,12 @@ import javax.inject.Inject
 
 private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
 
-private fun toPublicImageUrl(path: String?): String? {
-    if (path.isNullOrBlank()) return null
-    return if (path.startsWith("http://") || path.startsWith("https://")) path else "$STORAGE_URL$path"
+private fun toPublicImageUrl(path: String): String {
+    return if (path.startsWith("http://") || path.startsWith("https://")) {
+        path
+    } else {
+        "$STORAGE_URL$path"
+    }
 }
 
 @HiltViewModel
@@ -47,8 +50,7 @@ class WishlistsViewModel @Inject constructor(
                             iconKey = dto.iconKey,
                             itemCount = dto.itemCount.toInt(),
                             isShared = dto.isShared,
-                            previewImageUrl = toPublicImageUrl(dto.previewImageUrl)
-                        )
+                            previewImageUrls = dto.previewImageUrls.mapNotNull(::toPublicImageUrl)                        )
                     }
 
                     _uiState.update {
@@ -90,8 +92,7 @@ class WishlistsViewModel @Inject constructor(
                             iconKey = dto.iconKey,
                             itemCount = dto.itemCount.toInt(),
                             isShared = dto.isShared,
-                            previewImageUrl = toPublicImageUrl(dto.previewImageUrl)
-                        )
+                            previewImageUrls = dto.previewImageUrls.mapNotNull(::toPublicImageUrl)                        )
                     }
 
                     _uiState.update {

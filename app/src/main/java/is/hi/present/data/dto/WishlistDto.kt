@@ -75,9 +75,8 @@ data class WishlistCardDto(
     @SerialName("updated_at")
     val updatedAt: String,
     @SerialName("item_count")
-    val itemCount: Long,
+    val itemCount: Int,
     @SerialName("is_shared")
     val isShared: Boolean,
-    @SerialName("preview_image_url")
-    val previewImageUrl: String? = null
+    @SerialName("preview_image_urls") val previewImageUrls: List<String> = emptyList()
 )
