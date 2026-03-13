@@ -7,7 +7,7 @@ import `is`.hi.present.BuildConfig
 import `is`.hi.present.data.repository.AuthRepository
 import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistRepository
-import `is`.hi.present.ui.wishlist.detail.WishlistItemUi
+import `is`.hi.present.ui.ownedwishlist.detail.WishlistItemUi
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

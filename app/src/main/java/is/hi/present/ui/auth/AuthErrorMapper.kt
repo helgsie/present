@@ -1,6 +1,6 @@
 package `is`.hi.present.ui.auth
 
-fun AuthErrorMessage(raw: String): String {
+fun authErrorMessage(raw: String): String {
     val s = raw.lowercase()
 
     return when {

@@ -10,6 +10,7 @@ import `is`.hi.present.data.dto.CreateShareLinkArgs
 import `is`.hi.present.data.dto.JoinByTokenArgs
 import `is`.hi.present.data.dto.RemoveSharedUserArgs
 import `is`.hi.present.data.dto.SharedWithEmailRow
+import `is`.hi.present.data.dto.WishlistCardDto
 import `is`.hi.present.data.dto.WishlistDto
 import `is`.hi.present.data.dto.WishlistIdArgs
 import `is`.hi.present.data.dto.WishlistInsert
@@ -17,8 +18,8 @@ import `is`.hi.present.data.dto.WishlistShareRow
 import `is`.hi.present.core.local.dao.WishlistDao
 import `is`.hi.present.data.mapper.toDomain
 import `is`.hi.present.data.mapper.toEntity
-import `is`.hi.present.domain.model.Wishlist
-import `is`.hi.present.ui.wishlist.components.WishlistIcon
+import `is`.hi.present.domain.Wishlist
+import `is`.hi.present.ui.components.WishlistIcon
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -39,7 +40,6 @@ class WishlistRepository @Inject constructor(
 
     suspend fun getWishlistByIdLocal(wishlistId: String): Wishlist? =
         wishlistDao.getWishlistById(wishlistId)?.toDomain()
-
     // ------ SYNCING ROOM WITH DATA FROM REMOTE -------
     suspend fun refreshWishlists(ownerId: String): Result<Unit> = runCatching {
         val remote = supabase
@@ -110,6 +110,17 @@ class WishlistRepository @Inject constructor(
             }
             .decodeList()
         wishlists.map { it.toDomain() }
+    }
+    suspend fun fetchMyWishlistCards(): Result<List<WishlistCardDto>> = runCatching {
+        supabase.postgrest
+            .rpc("get_my_wishlist_cards")
+            .decodeList<WishlistCardDto>()
+    }
+
+    suspend fun fetchSharedWishlistCards(): Result<List<WishlistCardDto>> = runCatching {
+        supabase.postgrest
+            .rpc("get_shared_wishlist_cards")
+            .decodeList<WishlistCardDto>()
     }
 
     // ---- WRITES ------
@@ -214,6 +225,14 @@ class WishlistRepository @Inject constructor(
                     wishlistId = wishlistId,
                     userId = userId
                 )
+            )
+    }
+
+    suspend fun leaveSharedWishlist(wishlistId: String): Result<Unit> = runCatching {
+        supabase.postgrest
+            .rpc(
+                function = "leave_wishlist",
+                parameters = WishlistIdArgs(wishlistId)
             )
     }
 }

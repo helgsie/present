@@ -1,6 +1,6 @@
 package `is`.hi.present.ui.sharedwishlist.list
 
-import `is`.hi.present.ui.wishlist.list.WishlistUi
+import `is`.hi.present.ui.ownedwishlist.list.WishlistUi
 
 data class SharedWishlistUiState(
     val isLoading: Boolean = true,

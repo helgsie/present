@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import `is`.hi.present.core.theme.Black
-import `is`.hi.present.core.theme.NewPink
+import `is`.hi.present.core.theme.RosePink
 
 @Composable
 fun ErrorMessage(
@@ -18,7 +18,7 @@ fun ErrorMessage(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = NewPink
+            containerColor = RosePink
         )
     ) {
         Text(

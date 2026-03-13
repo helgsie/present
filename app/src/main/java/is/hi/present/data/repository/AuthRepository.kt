@@ -1,7 +1,7 @@
 package `is`.hi.present.data.repository
 
 import `is`.hi.present.BuildConfig
-import `is`.hi.present.domain.model.Profile
+import `is`.hi.present.domain.Profile
 import dagger.hilt.android.scopes.ViewModelScoped
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth

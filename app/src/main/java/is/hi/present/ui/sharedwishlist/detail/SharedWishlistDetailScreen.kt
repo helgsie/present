@@ -30,7 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import `is`.hi.present.ui.wishlist.components.WishlistItemCard
+import `is`.hi.present.ui.components.WishlistItemCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -37,7 +37,7 @@ fun AddSharedWishlistScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add shared wishlist") },
+                title = { Text("Bæta við óskalista") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -55,7 +55,7 @@ fun AddSharedWishlistScreen(
             OutlinedTextField(
                 value = code,
                 onValueChange = { code = it },
-                label = { Text("Invite code") },
+                label = { Text("Aðgangskóði") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -63,7 +63,7 @@ fun AddSharedWishlistScreen(
                 onClick = { vm.joinByToken(code) },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Join")
+                Text("Bæta við")
             }
             state.error?.let { message ->
                 ErrorMessage(

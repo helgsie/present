@@ -15,7 +15,7 @@ import `is`.hi.present.data.dto.WishlistItemInsert
 import `is`.hi.present.core.local.dao.WishlistItemDao
 import `is`.hi.present.data.mapper.toDomain
 import `is`.hi.present.data.mapper.toEntity
-import `is`.hi.present.domain.model.WishlistItem
+import `is`.hi.present.domain.WishlistItem
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

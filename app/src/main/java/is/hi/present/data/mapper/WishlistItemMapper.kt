@@ -2,7 +2,7 @@ package `is`.hi.present.data.mapper
 
 import `is`.hi.present.data.dto.WishlistItemDto
 import `is`.hi.present.core.local.entity.WishlistItemEntity
-import `is`.hi.present.domain.model.WishlistItem
+import `is`.hi.present.domain.WishlistItem
 import java.time.Instant
 
 fun WishlistItemDto.toEntity(): WishlistItemEntity =

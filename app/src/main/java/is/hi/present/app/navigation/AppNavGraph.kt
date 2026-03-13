@@ -10,19 +10,19 @@ import `is`.hi.present.ui.auth.AuthViewModel
 import `is`.hi.present.ui.auth.SignInScreen
 import `is`.hi.present.ui.auth.SignUpScreen
 import `is`.hi.present.ui.components.LoadingComponent
-import `is`.hi.present.ui.wishlist.item.CreateItemScreen
-import `is`.hi.present.ui.wishlist.detail.WishlistDetailScreen
-import `is`.hi.present.ui.wishlist.create.CreateWishlistScreen
-import `is`.hi.present.ui.wishlist.list.WishlistsScreen
+import `is`.hi.present.ui.ownedwishlist.create.CreateItemScreen
+import `is`.hi.present.ui.ownedwishlist.detail.WishlistDetailScreen
+import `is`.hi.present.ui.ownedwishlist.create.CreateWishlistScreen
+import `is`.hi.present.ui.ownedwishlist.list.WishlistsScreen
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.sharedwishlist.join.AddSharedWishlistScreen
 import `is`.hi.present.ui.sharedwishlist.detail.SharedWishlistDetailScreen
 import `is`.hi.present.ui.sharedwishlist.list.SharedWishlistScreen
 import `is`.hi.present.ui.sharedwishlist.item.SharedItemDetailScreen
-import `is`.hi.present.ui.wishlist.item.ItemDetailScreen
-import `is`.hi.present.ui.wishlist.invite.CreateTokenScreen
-import `is`.hi.present.ui.wishlist.list.WishlistsViewModel
+import `is`.hi.present.ui.ownedwishlist.item.ItemDetailScreen
+import `is`.hi.present.ui.ownedwishlist.invite.CreateTokenScreen
+import `is`.hi.present.ui.ownedwishlist.list.WishlistsViewModel
 
 @Composable
 fun AppNavGraphNav3(
