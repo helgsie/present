@@ -3,7 +3,7 @@ package `is`.hi.present.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import `is`.hi.present.data.repository.AuthRepository
-import `is`.hi.present.util.SharedPreferenceHelper
+import `is`.hi.present.core.util.SharedPreferenceHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import `is`.hi.present.data.local.AppDatabase
+import `is`.hi.present.core.local.AppDatabase
 import javax.inject.Inject
 
 @HiltViewModel

@@ -14,11 +14,11 @@ import `is`.hi.present.data.dto.WishlistDto
 import `is`.hi.present.data.dto.WishlistIdArgs
 import `is`.hi.present.data.dto.WishlistInsert
 import `is`.hi.present.data.dto.WishlistShareRow
-import `is`.hi.present.data.local.dao.WishlistDao
+import `is`.hi.present.core.local.dao.WishlistDao
 import `is`.hi.present.data.mapper.toDomain
 import `is`.hi.present.data.mapper.toEntity
 import `is`.hi.present.domain.model.Wishlist
-import `is`.hi.present.ui.components.WishlistIcon
+import `is`.hi.present.ui.wishlist.components.WishlistIcon
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
