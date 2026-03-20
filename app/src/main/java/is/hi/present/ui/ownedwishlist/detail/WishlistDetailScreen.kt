@@ -18,12 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,9 +51,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import `is`.hi.present.ui.components.AddButton
-import `is`.hi.present.ui.sharedwishlist.components.ClaimButton
-import `is`.hi.present.ui.sharedwishlist.components.ClaimedBadge
-import `is`.hi.present.ui.sharedwishlist.components.ReleaseClaimButton
 import `is`.hi.present.ui.ownedwishlist.components.SharedWithSection
 import `is`.hi.present.ui.components.WishlistItemCard
 import `is`.hi.present.ui.components.WishlistInfoCard
@@ -87,8 +81,6 @@ fun WishlistDetailScreen(
     var shareCode by remember { mutableStateOf<String?>(null) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var isEditing by rememberSaveable { mutableStateOf(false) }
-    var showMenu by rememberSaveable { mutableStateOf(false) }
-    var showLeaveDialog by rememberSaveable { mutableStateOf(false) }
 
     var title by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
@@ -126,15 +118,7 @@ fun WishlistDetailScreen(
 
                 WishlistDetailEffect.NavigateBack -> onBack()
                 WishlistDetailEffect.WishlistSaved -> isEditing = false
-
-                WishlistDetailEffect.AccessRevoked -> {
-                    snackbarHostState.showSnackbar(
-                        message = "Það er búið að taka aðganginn þinn af þessum óskalista.",
-                        withDismissAction = true,
-                        duration = SnackbarDuration.Short
-                    )
-                    onBack()
-                }
+                else -> {}
             }
         }
     }
@@ -191,31 +175,6 @@ fun WishlistDetailScreen(
             dismissButton = {
                 TextButton(onClick = { confirmDelete = false }) {
                     Text("Hætta við")
-                }
-            }
-        )
-    }
-
-    if (showLeaveDialog) {
-        AlertDialog(
-            onDismissRequest = { showLeaveDialog = false },
-            title = { Text("Ertu viss þú viljir yfirgefa?") },
-            text = {
-                Text("Þú missir aðgang að þessum óskalista ef þú heldur áfram.")
-            },
-            dismissButton = {
-                TextButton(onClick = { showLeaveDialog = false }) {
-                    Text("Hætta við")
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showLeaveDialog = false
-                        vm.leaveSharedWishlist(wishlistId)
-                    }
-                ) {
-                    Text("Yfirgefa")
                 }
             }
         )
@@ -315,26 +274,6 @@ fun WishlistDetailScreen(
                             ) {
                                 Text("Vista")
                             }
-                        }
-                    } else {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Meira"
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Yfirgefa óskalista") },
-                                onClick = {
-                                    showMenu = false
-                                    showLeaveDialog = true
-                                }
-                            )
                         }
                     }
                 }
@@ -488,28 +427,7 @@ fun WishlistDetailScreen(
                                     ) { item ->
                                         WishlistItemCard(
                                             w = item,
-                                            onClick = { onOpenItem(item.id) },
-                                            trailingContent = {
-                                                if (!state.isOwner) {
-                                                    when {
-                                                        !item.isClaimed -> {
-                                                            ClaimButton(
-                                                                onClick = { vm.claimItem(wishlistId, item.id) }
-                                                            )
-                                                        }
-
-                                                        item.isClaimedByMe -> {
-                                                            ReleaseClaimButton(
-                                                                onClick = { vm.releaseClaim(wishlistId, item.id) }
-                                                            )
-                                                        }
-
-                                                        else -> {
-                                                            ClaimedBadge()
-                                                        }
-                                                    }
-                                                }
-                                            }
+                                            onClick = { onOpenItem(item.id) }
                                         )
                                     }
                                 }

@@ -81,37 +81,17 @@ class WishlistDetailViewModel @Inject constructor(
                 .distinctUntilChanged()
                 .combine(itemsFlow.distinctUntilChanged()) { wishlist, items ->
                     val currentUserId = authRepo.getCurrentUserId()
-                    val isOwner = wishlist?.ownerId == currentUserId
 
-                    val itemUi = if (isOwner) {
-                        items.map { item ->
-                            WishlistItemUi(
-                                id = item.id,
-                                name = item.name,
-                                notes = item.notes,
-                                price = item.price,
-                                imagePath = item.imagePath?.let(::toPublicImageUrl),
-                                isClaimed = false,
-                                isClaimedByMe = false
-                            )
-                        }
-                    } else {
-                        val claims = itemRepo.getClaimsForItems(items.map { it.id })
-                            .getOrDefault(emptyList())
-                        val claimByItemId = claims.associateBy { it.itemId }
-
-                        items.map { item ->
-                            val claim = claimByItemId[item.id]
-                            WishlistItemUi(
-                                id = item.id,
-                                name = item.name,
-                                notes = item.notes,
-                                price = item.price,
-                                imagePath = item.imagePath?.let(::toPublicImageUrl),
-                                isClaimed = claim != null,
-                                isClaimedByMe = claim?.claimedBy == currentUserId
-                            )
-                        }
+                    val itemUi = items.map { item ->
+                        WishlistItemUi(
+                            id = item.id,
+                            name = item.name,
+                            notes = item.notes,
+                            price = item.price,
+                            imagePath = item.imagePath?.let(::toPublicImageUrl),
+                            isClaimed = false,
+                            isClaimedByMe = false
+                        )
                     }
 
                     Triple(wishlist, currentUserId, itemUi)
@@ -131,13 +111,27 @@ class WishlistDetailViewModel @Inject constructor(
                         return@collect
                     }
 
+                    if (wishlist.ownerId != currentUserId) {
+                        _uiState.update { state ->
+                            state.copy(
+                                isLoading = false,
+                                title = "",
+                                description = "",
+                                items = emptyList(),
+                                isOwner = false,
+                                errorMessage = "Þessi skjár er aðeins fyrir eigin óskalista."
+                            )
+                        }
+                        return@collect
+                    }
+
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
                             title = wishlist.title,
                             description = wishlist.description,
                             items = itemUi,
-                            isOwner = wishlist.ownerId == currentUserId,
+                            isOwner = true,
                             errorMessage = null
                         )
                     }
@@ -233,80 +227,7 @@ class WishlistDetailViewModel @Inject constructor(
             }
     }
 
-    // Tekur gjöf frá fyrir non-owner og uppfærir claim state strax
-    fun claimItem(wishlistId: String, itemId: String) = viewModelScope.launch {
-        itemRepo.claimItem(itemId)
-            .onSuccess { result ->
-                when (result) {
-                    "ok" -> reloadDetailState(wishlistId)
 
-                    "access_revoked" -> {
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "Það er búið að fjarlægja þig af þessum óskalista."
-                        )
-                        _effects.send(WishlistDetailEffect.AccessRevoked)
-                    }
-
-                    "already_claimed" -> {
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "Það er þegar búið að taka þessa gjöf frá."
-                        )
-                        reloadDetailState(wishlistId)
-                    }
-
-                    "not_found" -> {
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "Gjöfin fannst ekki."
-                        )
-                    }
-
-                    else -> {
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "Tókst ekki að taka frá gjöf."
-                        )
-                    }
-                }
-            }
-            .onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = e.message ?: "Tókst ekki að taka frá gjöf."
-                )
-            }
-    }
-
-    // Losar claim af gjöf og endurhleður claim state
-    fun releaseClaim(wishlistId: String, itemId: String) = viewModelScope.launch {
-        itemRepo.releaseClaim(itemId)
-            .onSuccess { result ->
-                when (result) {
-                    "ok" -> reloadDetailState(wishlistId)
-
-                    "access_revoked" -> {
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "Það er búið að fjarlægja þig af þessum óskalista."
-                        )
-                        _effects.send(WishlistDetailEffect.AccessRevoked)
-                    }
-
-                    "not_found" -> {
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "Gjöfin fannst ekki."
-                        )
-                    }
-
-                    else -> {
-                        _uiState.value = _uiState.value.copy(
-                            errorMessage = "Tókst ekki að losa frátekningu."
-                        )
-                    }
-                }
-            }
-            .onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    errorMessage = e.message ?: "Tókst ekki að losa frátekningu."
-                )
-            }
-    }
 
     // Uppfærir title/description/icon á wishlist og sendir save effect
     fun updateWishlist(
@@ -356,28 +277,6 @@ class WishlistDetailViewModel @Inject constructor(
             }
     }
 
-    // Leyfir shared member að yfirgefa wishlist og fer svo til baka
-    fun leaveSharedWishlist(wishlistId: String) = viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(
-            isLoading = true,
-            errorMessage = null
-        )
-
-        wishlistRepo.leaveSharedWishlist(wishlistId)
-            .onSuccess {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = null
-                )
-                _effects.send(WishlistDetailEffect.NavigateBack)
-            }
-            .onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message ?: "Tókst ekki að yfirgefa lista"
-                )
-            }
-    }
 
     // Býr til invite code til að deila wishlist
     fun onShareClicked(wishlistId: String) = viewModelScope.launch {
@@ -463,38 +362,31 @@ class WishlistDetailViewModel @Inject constructor(
         val currentUserId = authRepo.getCurrentUserId()
         val wishlist = wishlistResult.getOrThrow()
         val items = itemsResult.getOrThrow()
-        val isOwner = wishlist.ownerId == currentUserId
 
-        val itemUi = if (isOwner) {
-            items.map { item ->
-                WishlistItemUi(
-                    id = item.id,
-                    name = item.name,
-                    notes = item.notes,
-                    price = item.price,
-                    imagePath = item.imagePath?.let(::toPublicImageUrl),
-                    isClaimed = false,
-                    isClaimedByMe = false
+        if (wishlist.ownerId != currentUserId) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    title = "",
+                    description = "",
+                    items = emptyList(),
+                    isOwner = false,
+                    errorMessage = "Þessi skjár er aðeins fyrir eigin óskalista."
                 )
             }
-        } else {
-            val claims = itemRepo.getClaimsForItems(items.map { it.id })
-                .getOrElse { emptyList() }
+            return
+        }
 
-            val claimByItemId = claims.associateBy { it.itemId }
-
-            items.map { item ->
-                val claim = claimByItemId[item.id]
-                WishlistItemUi(
-                    id = item.id,
-                    name = item.name,
-                    notes = item.notes,
-                    price = item.price,
-                    imagePath = item.imagePath?.let(::toPublicImageUrl),
-                    isClaimed = claim != null,
-                    isClaimedByMe = claim?.claimedBy == currentUserId
-                )
-            }
+        val itemUi = items.map { item ->
+            WishlistItemUi(
+                id = item.id,
+                name = item.name,
+                notes = item.notes,
+                price = item.price,
+                imagePath = item.imagePath?.let(::toPublicImageUrl),
+                isClaimed = false,
+                isClaimedByMe = false
+            )
         }
 
         _uiState.update {
@@ -503,7 +395,7 @@ class WishlistDetailViewModel @Inject constructor(
                 title = wishlist.title,
                 description = wishlist.description,
                 items = itemUi,
-                isOwner = isOwner,
+                isOwner = true,
                 errorMessage = null
             )
         }

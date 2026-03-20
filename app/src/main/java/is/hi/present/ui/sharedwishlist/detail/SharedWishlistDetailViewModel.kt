@@ -8,12 +8,12 @@ import `is`.hi.present.data.repository.AuthRepository
 import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistRepository
 import `is`.hi.present.ui.ownedwishlist.detail.WishlistItemUi
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
 
@@ -30,7 +30,8 @@ data class SharedWishlistDetailUiState(
     val errorMessage: String? = null,
     val title: String = "",
     val description: String? = null,
-    val items: List<WishlistItemUi> = emptyList()
+    val items: List<WishlistItemUi> = emptyList(),
+    val didLeaveWishlist: Boolean = false
 ) {
     val isEmpty: Boolean get() = !isLoading && errorMessage == null && items.isEmpty()
 }
@@ -50,7 +51,8 @@ class SharedWishlistDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isLoading = true,
-                    errorMessage = null
+                    errorMessage = null,
+                    didLeaveWishlist = false
                 )
             }
 
@@ -100,7 +102,36 @@ class SharedWishlistDetailViewModel @Inject constructor(
 
     fun claimItem(wishlistId: String, itemId: String) = viewModelScope.launch {
         itemRepo.claimItem(itemId)
-            .onSuccess { load(wishlistId) }
+            .onSuccess { result ->
+                when (result) {
+                    "ok" -> load(wishlistId)
+
+                    "access_revoked" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Það er búið að fjarlægja þig af þessum óskalista."
+                        )
+                    }
+
+                    "already_claimed" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Það er þegar búið að taka þessa gjöf frá."
+                        )
+                        load(wishlistId)
+                    }
+
+                    "not_found" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Gjöfin fannst ekki."
+                        )
+                    }
+
+                    else -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Tókst ekki að taka frá gjöf"
+                        )
+                    }
+                }
+            }
             .onFailure { e ->
                 _uiState.value = _uiState.value.copy(
                     errorMessage = e.message ?: "Tókst ekki að taka frá gjöf"
@@ -110,11 +141,61 @@ class SharedWishlistDetailViewModel @Inject constructor(
 
     fun releaseClaim(wishlistId: String, itemId: String) = viewModelScope.launch {
         itemRepo.releaseClaim(itemId)
-            .onSuccess { load(wishlistId) }
+            .onSuccess { result ->
+                when (result) {
+                    "ok" -> load(wishlistId)
+
+                    "access_revoked" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Það er búið að fjarlægja þig af þessum óskalista."
+                        )
+                    }
+
+                    "not_found" -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Gjöfin fannst ekki."
+                        )
+                    }
+
+                    else -> {
+                        _uiState.value = _uiState.value.copy(
+                            errorMessage = "Tókst ekki að hætta við frátekningu"
+                        )
+                    }
+                }
+            }
             .onFailure { e ->
                 _uiState.value = _uiState.value.copy(
                     errorMessage = e.message ?: "Tókst ekki að hætta við frátekningu"
                 )
             }
+    }
+
+    fun leaveSharedWishlist(wishlistId: String) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(
+            isLoading = true,
+            errorMessage = null
+        )
+
+        wishlistRepo.leaveSharedWishlist(wishlistId)
+            .onSuccess {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = null,
+                    didLeaveWishlist = true
+                )
+            }
+            .onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Tókst ekki að yfirgefa lista"
+                )
+            }
+    }
+
+    fun consumeLeaveSuccess() {
+        _uiState.update {
+            it.copy(didLeaveWishlist = false)
+        }
     }
 }
