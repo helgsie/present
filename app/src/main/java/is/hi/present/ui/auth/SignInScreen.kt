@@ -34,7 +34,7 @@ fun SignInScreen(
         when (authState) {
             is AuthUiState.Error -> {
                 val raw = (authState as AuthUiState.Error).message
-                snackbarHostState.showSnackbar(AuthErrorMessage(raw))
+                snackbarHostState.showSnackbar(authErrorMessage(raw))
                 viewModel.resetAuthState()
             }
             is AuthUiState.Success -> onSuccess()

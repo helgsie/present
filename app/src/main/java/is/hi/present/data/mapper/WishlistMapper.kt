@@ -1,8 +1,8 @@
 package `is`.hi.present.data.mapper
 
 import `is`.hi.present.data.dto.WishlistDto
-import `is`.hi.present.data.local.entity.WishlistEntity
-import `is`.hi.present.domain.model.Wishlist
+import `is`.hi.present.core.local.entity.WishlistEntity
+import `is`.hi.present.domain.Wishlist
 import java.time.Instant
 
 fun WishlistDto.toEntity(): WishlistEntity =

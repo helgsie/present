@@ -42,14 +42,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import coil.size.Size
 import `is`.hi.present.R
-import `is`.hi.present.ui.theme.BlushPink
-import `is`.hi.present.ui.theme.MintAccent
-import `is`.hi.present.ui.theme.SoftCard
-import `is`.hi.present.ui.theme.SoftSurfaceVariant
-import `is`.hi.present.ui.theme.TextSecondary
-import `is`.hi.present.ui.wishlists.WishlistUi
+import `is`.hi.present.core.theme.BlushPink
+import `is`.hi.present.core.theme.MintAccent
+import `is`.hi.present.core.theme.SoftCard
+import `is`.hi.present.core.theme.SoftSurfaceVariant
+import `is`.hi.present.core.theme.TextSecondary
+import `is`.hi.present.ui.ownedwishlist.list.WishlistUi
 
 @Composable
 fun WishlistCard(
@@ -125,7 +124,7 @@ fun WishlistCard(
                             .background(SoftSurfaceVariant),
                         contentAlignment = Alignment.Center
                     ) {
-                        val icon = WishlistIcon.fromKey(w.iconKey).toImageVector()
+                        val icon = WishlistIcon.Companion.fromKey(w.iconKey).toImageVector()
                         Icon(
                             imageVector = icon,
                             contentDescription = null

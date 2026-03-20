@@ -25,10 +25,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import `is`.hi.present.ui.theme.SoftLavender
-import `is`.hi.present.ui.theme.SoftLavenderDark
-import `is`.hi.present.ui.theme.TextPrimary
-import `is`.hi.present.ui.theme.White
+import `is`.hi.present.core.theme.SoftLavender
+import `is`.hi.present.core.theme.SoftLavenderDark
+import `is`.hi.present.core.theme.TextPrimary
+import `is`.hi.present.core.theme.White
 
 @Composable
 fun AddButton(
