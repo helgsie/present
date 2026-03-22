@@ -345,7 +345,7 @@ fun WishlistDetailScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Text(
-                                        text = state.errorMessage ?: "Óþekkt villa kom upp.",
+                                        text = state.errorMessage,
                                         color = MaterialTheme.colorScheme.error,
                                         style = MaterialTheme.typography.bodyLarge
                                     )

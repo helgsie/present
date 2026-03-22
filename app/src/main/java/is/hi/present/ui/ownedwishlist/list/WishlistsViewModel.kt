@@ -48,9 +48,9 @@ class WishlistsViewModel @Inject constructor(
                             title = dto.title,
                             description = dto.description,
                             iconKey = dto.iconKey,
-                            itemCount = dto.itemCount.toInt(),
+                            itemCount = dto.itemCount,
                             isShared = dto.isShared,
-                            previewImageUrls = dto.previewImageUrls.mapNotNull(::toPublicImageUrl)                        )
+                            previewImageUrls = dto.previewImageUrls.map(::toPublicImageUrl)                        )
                     }
 
                     _uiState.update {
@@ -90,9 +90,9 @@ class WishlistsViewModel @Inject constructor(
                             title = dto.title,
                             description = dto.description,
                             iconKey = dto.iconKey,
-                            itemCount = dto.itemCount.toInt(),
+                            itemCount = dto.itemCount,
                             isShared = dto.isShared,
-                            previewImageUrls = dto.previewImageUrls.mapNotNull(::toPublicImageUrl)                        )
+                            previewImageUrls = dto.previewImageUrls.map(::toPublicImageUrl)                        )
                     }
 
                     _uiState.update {

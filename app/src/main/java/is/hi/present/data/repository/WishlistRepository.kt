@@ -6,6 +6,7 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.rpc
+import `is`.hi.present.core.local.dao.PendingOpDao
 import `is`.hi.present.data.dto.CreateShareLinkArgs
 import `is`.hi.present.data.dto.JoinByTokenArgs
 import `is`.hi.present.data.dto.RemoveSharedUserArgs
@@ -16,16 +17,22 @@ import `is`.hi.present.data.dto.WishlistIdArgs
 import `is`.hi.present.data.dto.WishlistInsert
 import `is`.hi.present.data.dto.WishlistShareRow
 import `is`.hi.present.core.local.dao.WishlistDao
+import `is`.hi.present.core.local.entity.PendingOpEntity
+import `is`.hi.present.core.local.entity.WishlistEntity
+import `is`.hi.present.data.dto.PendingWishlistPayload
 import `is`.hi.present.data.mapper.toDomain
 import `is`.hi.present.data.mapper.toEntity
 import `is`.hi.present.domain.Wishlist
 import `is`.hi.present.ui.components.WishlistIcon
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
+import java.util.UUID
 import javax.inject.Inject
 
 class WishlistRepository @Inject constructor(
     private val wishlistDao: WishlistDao,
+    private val pendingOpDao: PendingOpDao,
     private val supabase: SupabaseClient
 ){
     // ------- READS FROM ROOM ---------
@@ -130,7 +137,40 @@ class WishlistRepository @Inject constructor(
         description: String? = null,
         icon: WishlistIcon
     ): Result<Unit> = runCatching {
-        supabase.postgrest["wishlists"].insert(
+        val id = UUID.randomUUID().toString()
+        val now = System.currentTimeMillis()
+
+        val entity = WishlistEntity(
+            id = id,
+            ownerId = ownerId,
+            title = title,
+            description = description,
+            iconKey = icon.key,
+            createdAt = now,
+            updatedAt = now
+        )
+
+        wishlistDao.upsert(entity)
+
+        val payload = PendingWishlistPayload(
+            id = id,
+            ownerId = ownerId,
+            title = title,
+            description = description,
+            iconKey = icon.key
+        )
+
+        pendingOpDao.insert(
+            PendingOpEntity(
+                type = "WISHLIST_CREATE",
+                entityId = id,
+                parentId = null,
+                payloadJson = Json.encodeToString(payload),
+                createdAt = System.currentTimeMillis()
+            )
+        )
+
+        /*supabase.postgrest["wishlists"].insert(
             WishlistInsert(
                 title = title,
                 description = description,
@@ -138,7 +178,7 @@ class WishlistRepository @Inject constructor(
                 iconKey = icon.key
             )
         )
-        refreshWishlists(ownerId).getOrThrow()
+        refreshWishlists(ownerId).getOrThrow()*/
     }
 
     suspend fun updateWishlist(
