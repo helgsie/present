@@ -42,7 +42,7 @@ interface WishlistDao {
 
         val keepIds = wishlists.map { it.id }
         if (keepIds.isNotEmpty()) {
-            val deleted = deleteOwnerWishlistsNotIn(ownerId, keepIds)
+            deleteOwnerWishlistsNotIn(ownerId, keepIds)
         }
     }
 
