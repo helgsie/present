@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `is`.hi.present.BuildConfig
 import `is`.hi.present.data.repository.WishlistItemRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
 @HiltViewModel
 class ItemDetailViewModel @Inject constructor(
     private val itemRepo: WishlistItemRepository
@@ -25,6 +27,16 @@ class ItemDetailViewModel @Inject constructor(
     private val _effects = Channel<ItemDetailEffect>(Channel.Factory.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
+
+
+    private fun toPublicImageUrl(path: String): String {
+        return if (path.startsWith("http://") || path.startsWith("https://")) {
+            path
+        } else {
+            "$STORAGE_URL$path"
+        }
+    }
+
     fun load(itemId: String) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
         itemRepo.fetchWishlistItemRemoteById(itemId)
@@ -34,7 +46,7 @@ class ItemDetailViewModel @Inject constructor(
                     name = item.name,
                     notes = item.notes.orEmpty(),
                     priceText = item.price?.toInt()?.toString().orEmpty(),
-                    imageUrl = item.imagePath
+                    imageUrl = item.imagePath?.let(::toPublicImageUrl)
                 )
             }
             .onFailure { e ->
@@ -63,7 +75,7 @@ class ItemDetailViewModel @Inject constructor(
             if (selectedImageUri != null) {
                 itemRepo.uploadItemImage(context, wishlistId, selectedImageUri).getOrThrow()
             } else {
-                s.imageUrl
+                s.imageUrl?.removePrefix(STORAGE_URL)
             }
 
         itemRepo.updateWishlistItem(
