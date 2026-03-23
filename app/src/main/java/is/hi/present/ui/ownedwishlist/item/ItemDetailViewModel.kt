@@ -72,10 +72,16 @@ class ItemDetailViewModel @Inject constructor(
             ?.toDoubleOrNull()
 
         val newImagePath =
-            if (selectedImageUri != null) {
-                itemRepo.uploadItemImage(context, wishlistId, selectedImageUri).getOrThrow()
-            } else {
-                s.imageUrl?.removePrefix(STORAGE_URL)
+            when {
+                selectedImageUri != null -> {
+                    itemRepo.uploadItemImage(context, wishlistId, selectedImageUri).getOrThrow()
+                }
+                s.isImageRemoved -> {
+                    null
+                }
+                else -> {
+                    s.imageUrl?.removePrefix(STORAGE_URL)
+                }
             }
 
         itemRepo.updateWishlistItem(
@@ -132,6 +138,12 @@ class ItemDetailViewModel @Inject constructor(
                     errorMessage = e.message ?: "Tókst ekki að hlaða inn mynd"
                 )
             }
+    }
+    fun removeImage() {
+        _uiState.value = _uiState.value.copy(
+            imageUrl = null,
+            isImageRemoved = true
+        )
     }
 
     fun onNameChange(v: String) { _uiState.value = _uiState.value.copy(name = v) }

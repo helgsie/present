@@ -132,6 +132,7 @@ fun ItemDetailScreen(
                                 isEditing = false
                                 selectedImageUri = null
                                 selectedCameraBitmap = null
+                                vm.load(itemId)
                             }
                         ) {
                             Icon(Icons.Default.Close, contentDescription = "Cancel")
@@ -215,6 +216,18 @@ fun ItemDetailScreen(
                             ) {
                                 Text("Taka mynd")
                             }
+                        }
+                    }
+                    if (isEditing && !state.imageUrl.isNullOrBlank()) {
+                        Button(
+                            enabled = !state.isLoading,
+                            onClick = {
+                                vm.removeImage()
+                                selectedImageUri = null
+                                selectedCameraBitmap = null
+                            }
+                        ) {
+                            Text("Fjarlægja mynd")
                         }
                     }
 
