@@ -201,30 +201,37 @@ class WishlistDetailViewModel @Inject constructor(
 
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-        val imageUrl = selectedImageUri?.let { uri ->
-            itemRepo.uploadItemImage(context, wishlistId, uri).getOrThrow()
-        }
+        try {
+            val imageUrl = selectedImageUri?.let { uri ->
+                itemRepo.uploadItemImage(context, wishlistId, uri).getOrThrow()
+            }
 
-        itemRepo.createWishlistItem(
-            wishlistId = wishlistId,
-            name = name.trim(),
-            notes = notes?.trim()?.takeIf { it.isNotBlank() },
-            url = url?.trim()?.takeIf { it.isNotBlank() },
-            price = price,
-            imagePath = imageUrl
-        )
-            .onSuccess {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = null
-                )
-            }
-            .onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message ?: "Tókst ekki að búa til item"
-                )
-            }
+            itemRepo.createWishlistItem(
+                wishlistId = wishlistId,
+                name = name.trim(),
+                notes = notes?.trim()?.takeIf { it.isNotBlank() },
+                url = url?.trim()?.takeIf { it.isNotBlank() },
+                price = price,
+                imagePath = imageUrl
+            )
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = null
+                    )
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Tókst ekki að búa til item"
+                    )
+                }
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = e.message ?: "Tókst ekki að hlaða upp mynd"
+            )
+        }
     }
 
 

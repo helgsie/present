@@ -11,18 +11,27 @@ import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.storage.storage
 import `is`.hi.present.data.dto.ClaimItemArgs
 import `is`.hi.present.data.dto.WishlistItemDto
-import `is`.hi.present.data.dto.WishlistItemInsert
 import `is`.hi.present.core.local.dao.WishlistItemDao
 import `is`.hi.present.data.mapper.toDomain
 import `is`.hi.present.data.mapper.toEntity
 import `is`.hi.present.domain.WishlistItem
+import `is`.hi.present.core.local.dao.PendingOpDao
+import `is`.hi.present.core.local.entity.PendingOpEntity
+import `is`.hi.present.core.local.entity.WishlistItemEntity
+import `is`.hi.present.core.sync.SyncManager
+import `is`.hi.present.core.sync.SyncScheduler
+import `is`.hi.present.data.dto.PendingWishlistItemPayload
+import kotlinx.serialization.json.Json
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class WishlistItemRepository @Inject constructor(
     private val dao: WishlistItemDao,
-    private val supabase: SupabaseClient
+    private val pendingOpDao: PendingOpDao,
+    private val supabase: SupabaseClient,
+    private val syncScheduler: SyncScheduler
 ) {
     // ------- ROOM READS ---------
     fun observeWishlistItems(wishlistId: String): Flow<List<WishlistItem>> =
@@ -45,8 +54,19 @@ class WishlistItemRepository @Inject constructor(
     // ------- NETWORK -> ROOM SYNC -------
     suspend fun refreshWishlistItems(wishlistId: String): Result<Unit> = runCatching {
         val remote = fetchRemoteItems(wishlistId)
-        val entities = remote.map { it.toEntity() }
-        dao.replaceWishlistItems(wishlistId, entities)
+        val remoteEntities = remote.map { it.toEntity() }
+
+        val pendingIds = pendingOpDao.getPendingWishlistItemIds(wishlistId).toSet()
+        val localEntities = dao.getItemsByWishlistId(wishlistId)
+
+        val merged = buildList {
+            addAll(remoteEntities)
+            localEntities
+                .filter { local -> local.id in pendingIds && remoteEntities.none { it.id == local.id } }
+                .forEach { add(it) }
+        }
+
+        dao.replaceWishlistItems(wishlistId, merged)
     }
 
     // ----- REMOTE-ONLY FETCHES -----
@@ -77,22 +97,48 @@ class WishlistItemRepository @Inject constructor(
         sortOrder: Int? = null
     ): Result<Unit> {
         return runCatching {
-            supabase
-                .from("wishlist_items")
-                .insert(
-                    WishlistItemInsert(
-                        wishlistId = wishlistId,
-                        name = name,
-                        notes = notes,
-                        url = url,
-                        price = price,
-                        imagePath = imagePath,
-                        category = category,
-                        sortOrder = sortOrder
-                    )
-                )
+            val id = UUID.randomUUID().toString()
+            val now = System.currentTimeMillis()
 
-            refreshWishlistItems(wishlistId).getOrThrow()
+            val entity = WishlistItemEntity(
+                id = id,
+                wishlistId = wishlistId,
+                name = name,
+                notes = notes,
+                url = url,
+                price = price,
+                imagePath = imagePath,
+                category = category,
+                sortOrder = sortOrder,
+                createdAt = now,
+                updatedAt = now
+            )
+
+            dao.upsert(entity)
+
+            val payload = PendingWishlistItemPayload(
+                id = id,
+                wishlistId = wishlistId,
+                name = name,
+                notes = notes,
+                url = url,
+                price = price,
+                imagePath = imagePath,
+                category = category,
+                sortOrder = sortOrder
+            )
+
+            pendingOpDao.insert(
+                PendingOpEntity(
+                    type = SyncManager.ITEM_CREATE,
+                    entityId = id,
+                    parentId = wishlistId,
+                    payloadJson = Json.encodeToString(payload),
+                    createdAt = now
+                )
+            )
+
+            syncScheduler.enqueueOneTimeSync()
         }
     }
 
@@ -103,46 +149,71 @@ class WishlistItemRepository @Inject constructor(
         price: Double?,
         imagePath: String?
     ): Result<Unit> = runCatching {
-        val dto: WishlistItemDto = supabase
-            .from("wishlist_items")
-            .select {
-                filter { eq("id", itemId) }
-                limit(1)
-            }
-            .decodeSingle()
+        val existing = dao.getItemById(itemId) ?: error("Item not found")
 
-        val wishlistId = dto.wishlistId
-        supabase
-            .from("wishlist_items")
-            .update(
-                {
-                    set("name", name)
-                    set("notes", notes)
-                    set("price", price)
-                    set("image_path", imagePath)
-                }
-            ) {
-                filter { eq("id", itemId) }
-            }
-        refreshWishlistItems(wishlistId).getOrThrow()
+        val updated = existing.copy(
+            name = name,
+            notes = notes,
+            price = price,
+            imagePath = imagePath,
+            updatedAt = System.currentTimeMillis()
+        )
+
+        dao.upsert(updated)
+
+        val payload = PendingWishlistItemPayload(
+            id = updated.id,
+            wishlistId = updated.wishlistId,
+            name = updated.name,
+            notes = updated.notes,
+            url = updated.url,
+            price = updated.price,
+            imagePath = updated.imagePath,
+            category = updated.category,
+            sortOrder = updated.sortOrder
+        )
+
+        pendingOpDao.insert(
+            PendingOpEntity(
+                type = SyncManager.ITEM_UPDATE,
+                entityId = updated.id,
+                parentId = updated.wishlistId,
+                payloadJson = Json.encodeToString(payload),
+                createdAt = System.currentTimeMillis()
+            )
+        )
+
+        syncScheduler.enqueueOneTimeSync()
     }
 
     suspend fun deleteWishlistItem(itemId: String): Result<Unit> = runCatching {
-        val dto: WishlistItemDto = supabase
-            .from("wishlist_items")
-            .select{
-                filter { eq("id", itemId) }
-                limit(1)
-            }
-            .decodeSingle()
+        val existing = dao.getItemById(itemId) ?: error("Item not found")
 
-        val wishlistId = dto.wishlistId
-        supabase
-            .from("wishlist_items")
-            .delete {
-                filter { eq("id", itemId) }
-            }
-        refreshWishlistItems(wishlistId).getOrThrow()
+        dao.deleteById(itemId)
+
+        val payload = PendingWishlistItemPayload(
+            id = existing.id,
+            wishlistId = existing.wishlistId,
+            name = existing.name,
+            notes = existing.notes,
+            url = existing.url,
+            price = existing.price,
+            imagePath = existing.imagePath,
+            category = existing.category,
+            sortOrder = existing.sortOrder
+        )
+
+        pendingOpDao.insert(
+            PendingOpEntity(
+                type = SyncManager.ITEM_DELETE,
+                entityId = existing.id,
+                parentId = existing.wishlistId,
+                payloadJson = Json.encodeToString(payload),
+                createdAt = System.currentTimeMillis()
+            )
+        )
+
+        syncScheduler.enqueueOneTimeSync()
     }
 
     // ---- REMOTE-ONLY MEDIA -----

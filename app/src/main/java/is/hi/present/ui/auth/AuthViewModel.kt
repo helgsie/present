@@ -12,13 +12,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import `is`.hi.present.core.local.AppDatabase
+import `is`.hi.present.core.sync.SyncScheduler
 import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val repo: AuthRepository,
     private val sharedPref: SharedPreferenceHelper,
-    private val appDatabase: AppDatabase
+    private val appDatabase: AppDatabase,
+    private val syncScheduler: SyncScheduler
 ) : ViewModel() {
 
     private val _authUiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
@@ -120,6 +122,7 @@ class AuthViewModel @Inject constructor(
                 saveToken()
                 saveUserId(userId)
                 saveUserEmail(user.email)
+                syncScheduler.rescheduleAllSync()
                 _authStatus.value = AuthStatus.LoggedIn(userId)
                 _authUiState.value = AuthUiState.Success("Registered user successfully")
             } catch (e: Exception) {
@@ -150,6 +153,7 @@ class AuthViewModel @Inject constructor(
                 repo.getProfile(user.id)
                 saveToken()
                 saveUserId(user.id)
+                syncScheduler.rescheduleAllSync()
                 _authStatus.value = AuthStatus.LoggedIn(user.id)
                 _authUiState.value = AuthUiState.Success("Signed in successfully")
 
@@ -166,6 +170,7 @@ class AuthViewModel @Inject constructor(
 
             runCatching { repo.signOut() }
             runCatching { clearLocalDatabase() }
+            runCatching { syncScheduler.cancelAllSync() }
 
             clearCachedAuth()
             _authStatus.value = AuthStatus.LoggedOut
@@ -180,6 +185,7 @@ class AuthViewModel @Inject constructor(
             try {
                 repo.deleteAccount()
                 runCatching { clearLocalDatabase() }
+                runCatching { syncScheduler.cancelAllSync() }
                 clearCachedAuth()
                 _authStatus.value = AuthStatus.LoggedOut
                 _authUiState.value = AuthUiState.Idle

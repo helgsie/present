@@ -280,12 +280,10 @@ fun WishlistDetailScreen(
             )
         },
         floatingActionButton = {
-            if (state.isOwner) {
-                AddButton(
-                    onClick = { onCreateItem(wishlistId) },
-                    contentDescription = "Bæta við gjöf"
-                )
-            }
+            AddButton(
+                onClick = { onCreateItem(wishlistId) },
+                contentDescription = "Bæta við gjöf"
+            )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->

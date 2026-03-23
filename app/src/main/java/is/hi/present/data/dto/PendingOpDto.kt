@@ -8,7 +8,7 @@ data class PendingWishlistPayload(
     val ownerId: String,
     val title: String,
     val description: String?,
-    val iconKey: String?
+    val iconKey: String
 )
 
 @Serializable

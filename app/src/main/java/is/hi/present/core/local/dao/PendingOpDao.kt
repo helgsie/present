@@ -23,8 +23,24 @@ interface PendingOpDao {
     @Query("SELECT * FROM pending_ops ORDER BY createdAt ASC")
     suspend fun getAll(): List<PendingOpEntity>
 
+    @Query("SELECT * FROM pending_ops ORDER BY createdAt ASC")
+    suspend fun getAllOrdered(): List<PendingOpEntity>
+
     @Query("SELECT * FROM pending_ops WHERE entityId = :entityId")
     suspend fun getByEntityId(entityId: String): List<PendingOpEntity>
+
+    @Query("""
+    SELECT entityId FROM pending_ops
+    WHERE type IN ('WISHLIST_CREATE', 'WISHLIST_UPDATE', 'WISHLIST_DELETE')
+    """)
+    suspend fun getPendingWishlistIds(): List<String>
+
+    @Query("""
+    SELECT entityId FROM pending_ops
+    WHERE type IN ('ITEM_CREATE','ITEM_UPDATE','ITEM_DELETE')
+    AND parentId = :wishlistId
+    """)
+    suspend fun getPendingWishlistItemIds(wishlistId: String): List<String>
 
     @Query("DELETE FROM pending_ops WHERE entityId = :entityId")
     suspend fun deleteByEntityId(entityId: String)
