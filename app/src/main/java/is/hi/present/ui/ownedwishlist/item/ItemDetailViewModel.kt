@@ -27,6 +27,20 @@ class ItemDetailViewModel @Inject constructor(
 
     fun load(itemId: String) = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+        // sækja fyrst local gögn
+        val local = itemRepo.getWishlistItemByIdLocal(itemId)
+        if (local != null) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                name = local.name,
+                notes = local.notes.orEmpty(),
+                priceText = local.price?.toInt()?.toString().orEmpty(),
+                imageUrl = local.imagePath
+            )
+        }
+
+        // reyna svo að sækja frá remote
         itemRepo.fetchWishlistItemRemoteById(itemId)
             .onSuccess { item ->
                 _uiState.value = _uiState.value.copy(
@@ -37,11 +51,13 @@ class ItemDetailViewModel @Inject constructor(
                     imageUrl = item.imagePath
                 )
             }
-            .onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message ?: "Tókst ekki að sækja gjöf"
-                )
+            .onFailure {
+                if (local == null) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Ekkert netsamband eða tókst ekki að sækja gjöf"
+                    )
+                }
             }
     }
 

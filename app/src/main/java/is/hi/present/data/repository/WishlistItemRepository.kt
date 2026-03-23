@@ -47,7 +47,7 @@ class WishlistItemRepository @Inject constructor(
         return dao.getItemsByWishlistId(wishlistId).map { it.toDomain() }
     }
 
-    suspend fun getWishlistItemLocal(itemId: String): WishlistItem? {
+    suspend fun getWishlistItemByIdLocal(itemId: String): WishlistItem? {
         return dao.getItemById(itemId)?.toDomain()
     }
 
