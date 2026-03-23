@@ -18,7 +18,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import javax.inject.Inject
 
-@ViewModelScoped
 class AuthRepository @Inject constructor(
     private val supabase: SupabaseClient,
     private val httpClient: HttpClient,
