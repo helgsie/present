@@ -106,6 +106,8 @@ fun ItemDetailScreen(
             }
         )
     }
+    
+  //Ana
     if (showImagePickerDialog) {
         AlertDialog(
             onDismissRequest = { showImagePickerDialog = false },
@@ -140,6 +142,7 @@ fun ItemDetailScreen(
             }
         )
     }
+    //
     Scaffold(
         topBar = {
             TopAppBar(
@@ -171,6 +174,7 @@ fun ItemDetailScreen(
                                 isEditing = false
                                 selectedImageUri = null
                                 selectedCameraBitmap = null
+                                vm.load(itemId)
                             }
                         ) {
                             Icon(Icons.Default.Close, contentDescription = "Cancel")
@@ -230,7 +234,8 @@ fun ItemDetailScreen(
                             )
                         }
                     }
-
+                    
+                  //Ana
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -287,6 +292,7 @@ fun ItemDetailScreen(
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
+                    //
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -329,6 +335,83 @@ fun ItemDetailScreen(
                         singleLine = true,
                         enabled = true,
                     )
+                    
+                  //Þetta er það sem var aður
+                    if (isEditing) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                enabled = !state.isLoading,
+                                onClick = { galleryLauncher.launch("image/*") }
+                            ) {
+                                Text("Velja frá safni")
+                            }
+
+                            Button(
+                                enabled = !state.isLoading,
+                                onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }
+                            ) {
+                                Text("Taka mynd")
+                            }
+                        }
+                    }
+                    if (isEditing && !state.imageUrl.isNullOrBlank()) {
+                        Button(
+                            enabled = !state.isLoading,
+                            onClick = {
+                                vm.removeImage()
+                                selectedImageUri = null
+                                selectedCameraBitmap = null
+                            }
+                        ) {
+                            Text("Fjarlægja mynd")
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp)
+                            .padding(top = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when {
+                            selectedImageUri != null -> {
+                                Image(
+                                    painter = rememberAsyncImagePainter(selectedImageUri.toString()),
+                                    contentDescription = "Selected gallery image",
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .aspectRatio(1f)
+                                )
+                            }
+
+                            selectedCameraBitmap != null -> {
+                                Image(
+                                    bitmap = selectedCameraBitmap!!.asImageBitmap(),
+                                    contentDescription = "Captured camera image",
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .aspectRatio(1f)
+                                )
+                            }
+
+                            // NOTE: if state.imageUri is a filename, you may need to convert it to a public URL.
+                            // If it's already a URL, this will display it.
+                            !state.imageUrl.isNullOrBlank() -> {
+                                Image(
+                                    painter = rememberAsyncImagePainter(state.imageUrl),
+                                    contentDescription = "Current item image",
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .aspectRatio(1f)
+                                )
+                            }
+
+                            else -> {
+                                Text("Engin mynd")
+                            }
+                        }
+                    }
                 }
             }
         }

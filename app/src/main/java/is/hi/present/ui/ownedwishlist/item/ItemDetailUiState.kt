@@ -7,5 +7,6 @@ data class ItemDetailUiState(
     val notes: String = "",
     val priceText: String = "",
     val url: String = "",
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val isImageRemoved: Boolean = false
 )
