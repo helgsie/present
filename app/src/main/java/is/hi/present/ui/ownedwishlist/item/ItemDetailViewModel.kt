@@ -25,16 +25,32 @@ class ItemDetailViewModel @Inject constructor(
     private val _effects = Channel<ItemDetailEffect>(Channel.Factory.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    fun load(itemId: String) = viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-        itemRepo.fetchWishlistItemRemoteById(itemId)
+    fun load(itemId: String) {
+        viewModelScope.launch {
+            itemRepo.observeWishlistItem(itemId).collect { item ->
+                if (item != null) {
+                    _uiState.value = _uiState.value.copy(
+                        name = item.name,
+                        notes = item.notes.orEmpty(),
+                        url = item.url.orEmpty(),
+                        priceText = item.price?.toInt()?.toString().orEmpty(),
+                        imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull()
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            itemRepo.fetchWishlistItemRemoteById(itemId)
             .onSuccess { item ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     name = item.name,
                     notes = item.notes.orEmpty(),
+                    url = item.url.orEmpty(),
                     priceText = item.price?.toInt()?.toString().orEmpty(),
-                    imageUrl = item.imagePath
+                    imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull(),
+                    errorMessage = null
                 )
             }
             .onFailure { e ->
@@ -43,13 +59,14 @@ class ItemDetailViewModel @Inject constructor(
                     errorMessage = e.message ?: "Tókst ekki að sækja gjöf"
                 )
             }
+        }
     }
 
     fun save(itemId: String, wishlistId: String, context: Context, selectedImageUri: Uri?
         ) = viewModelScope.launch {
         val s = _uiState.value
         if (s.name.trim().isBlank()) {
-            _uiState.value = s.copy(errorMessage = "Name má ekki vera tómt")
+            _uiState.value = s.copy(errorMessage = "Nafn má ekki vera tómt")
             return@launch
         }
 
@@ -111,7 +128,7 @@ class ItemDetailViewModel @Inject constructor(
             .onSuccess { filename ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    imageUrl = filename
+                    imageUrl = itemRepo.getWishlistImage(filename).getOrNull()
                 )
             }
             .onFailure { e ->
@@ -125,6 +142,8 @@ class ItemDetailViewModel @Inject constructor(
     fun onNameChange(v: String) { _uiState.value = _uiState.value.copy(name = v) }
     fun onNotesChange(v: String) { _uiState.value = _uiState.value.copy(notes = v) }
     fun onPriceChange(v: String) { _uiState.value = _uiState.value.copy(priceText = v) }
+    fun onUrlChange(v: String) { _uiState.value = _uiState.value.copy(url = v) }
+
     fun onImageSelected(uriString: String?) {
         _uiState.value = _uiState.value.copy(imageUrl = uriString)
     }

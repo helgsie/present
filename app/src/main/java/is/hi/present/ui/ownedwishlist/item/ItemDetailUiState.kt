@@ -6,5 +6,6 @@ data class ItemDetailUiState(
     val name: String = "",
     val notes: String = "",
     val priceText: String = "",
+    val url: String = "",
     val imageUrl: String? = null
 )

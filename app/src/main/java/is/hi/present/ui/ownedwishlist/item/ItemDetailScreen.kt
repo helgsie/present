@@ -1,10 +1,15 @@
 package `is`.hi.present.ui.ownedwishlist.item
 
+import android.Manifest
+import android.graphics.Bitmap
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -21,14 +26,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
-import kotlinx.coroutines.flow.collectLatest
-import android.Manifest
-import android.graphics.Bitmap
-import android.net.Uri
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import `is`.hi.present.ui.ownedwishlist.create.saveBitmapToFile
-
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.ContentScale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +48,7 @@ fun ItemDetailScreen(
 
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var isEditing by rememberSaveable { mutableStateOf(false) }
+    var showImagePickerDialog by rememberSaveable { mutableStateOf(false) }
 
     var selectedImageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var selectedCameraBitmap by rememberSaveable { mutableStateOf<Bitmap?>(null) }
@@ -98,6 +103,40 @@ fun ItemDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { confirmDelete = false }) { Text("Hætta við") }
+            }
+        )
+    }
+    if (showImagePickerDialog) {
+        AlertDialog(
+            onDismissRequest = { showImagePickerDialog = false },
+            title = { Text("Velja mynd") },
+            text = { Text("Viltu velja mynd úr myndasafni eða taka nýja mynd?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showImagePickerDialog = false
+                        galleryLauncher.launch("image/*")
+                    }
+                ) {
+                    Text("Myndasafn")
+                }
+                TextButton(
+                    onClick = {
+                        showImagePickerDialog = false
+                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                ) {
+                    Text("Myndavél")
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = { showImagePickerDialog = false }
+                    ) {
+                        Text("Hætta við")
+                    }
+                }
             }
         )
     }
@@ -163,11 +202,14 @@ fun ItemDetailScreen(
         ) {
             when {
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                state.errorMessage != null -> Text(
+                state.errorMessage != null -> {
+                    Text(
                     state.errorMessage,
                     modifier = Modifier.align(Alignment.Center),
                     color = MaterialTheme.colorScheme.error
                 )
+            }
+
                 else -> Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -175,21 +217,107 @@ fun ItemDetailScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    if (state.errorMessage != null) {
+                        Surface(
+                            tonalElevation = 1.dp,
+                            shape = RoundedCornerShape(18.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Ekkert netsamband. Vistuð gögn eru birt.",
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(240.dp)
+                            .clickable(enabled = isEditing && !state.isLoading) {
+                                showImagePickerDialog = true
+                            },
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when {
+                                selectedImageUri != null -> {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(selectedImageUri),
+                                        contentDescription = "Selected gallery image",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+
+                                selectedCameraBitmap != null -> {
+                                    Image(
+                                        bitmap = selectedCameraBitmap!!.asImageBitmap(),
+                                        contentDescription = "Captured camera image",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+
+                                !state.imageUrl.isNullOrBlank() -> {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(state.imageUrl),
+                                        contentDescription = "Current item image",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+
+                                else -> {
+                                    Text(
+                                        text = if (isEditing) "Ýttu hér til að bæta við mynd" else "Engin mynd"
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (isEditing) {
+                        Text(
+                            text = "Ýttu á myndina til að breyta",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     OutlinedTextField(
                         value = state.name,
                         onValueChange = vm::onNameChange,
                         label = { Text("Nafn") },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = isEditing,
+                        readOnly = !isEditing,
+                        enabled = true,
                         singleLine = true
                     )
 
                     OutlinedTextField(
                         value = state.notes,
                         onValueChange = vm::onNotesChange,
-                        label = { Text("Nótur") },
+                        label = { Text("Lýsing") },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = isEditing
+                        readOnly = !isEditing,
+                        enabled = true
+                    )
+
+                    OutlinedTextField(
+                        value = state.url,
+                        onValueChange = vm::onUrlChange,
+                        label = { Text("Tengill") },
+                        modifier = Modifier.fillMaxWidth(),
+                        readOnly = !isEditing,
+                        enabled = true,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
                     )
 
                     OutlinedTextField(
@@ -197,72 +325,10 @@ fun ItemDetailScreen(
                         onValueChange = vm::onPriceChange,
                         label = { Text("Verð") },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = isEditing,
-                        singleLine = true
+                        readOnly = !isEditing,
+                        singleLine = true,
+                        enabled = true,
                     )
-                    if (isEditing) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                enabled = !state.isLoading,
-                                onClick = { galleryLauncher.launch("image/*") }
-                            ) {
-                                Text("Velja frá safni")
-                            }
-
-                            Button(
-                                enabled = !state.isLoading,
-                                onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }
-                            ) {
-                                Text("Taka mynd")
-                            }
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(140.dp)
-                            .padding(top = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        when {
-                            selectedImageUri != null -> {
-                                Image(
-                                    painter = rememberAsyncImagePainter(selectedImageUri.toString()),
-                                    contentDescription = "Selected gallery image",
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .aspectRatio(1f)
-                                )
-                            }
-
-                            selectedCameraBitmap != null -> {
-                                Image(
-                                    bitmap = selectedCameraBitmap!!.asImageBitmap(),
-                                    contentDescription = "Captured camera image",
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .aspectRatio(1f)
-                                )
-                            }
-
-                            // NOTE: if state.imageUri is a filename, you may need to convert it to a public URL.
-                            // If it's already a URL, this will display it.
-                            !state.imageUrl.isNullOrBlank() -> {
-                                Image(
-                                    painter = rememberAsyncImagePainter(state.imageUrl),
-                                    contentDescription = "Current item image",
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .aspectRatio(1f)
-                                )
-                            }
-
-                            else -> {
-                                Text("Engin mynd")
-                            }
-                        }
-                    }
                 }
             }
         }
