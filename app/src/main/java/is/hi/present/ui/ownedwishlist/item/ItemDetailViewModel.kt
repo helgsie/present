@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `is`.hi.present.BuildConfig
 import `is`.hi.present.data.repository.WishlistItemRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
 @HiltViewModel
 class ItemDetailViewModel @Inject constructor(
     private val itemRepo: WishlistItemRepository
@@ -34,7 +36,8 @@ class ItemDetailViewModel @Inject constructor(
                         notes = item.notes.orEmpty(),
                         url = item.url.orEmpty(),
                         priceText = item.price?.toInt()?.toString().orEmpty(),
-                        imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull()
+                      //Ana  
+                      imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull()
                     )
                 }
             }
@@ -49,8 +52,9 @@ class ItemDetailViewModel @Inject constructor(
                     notes = item.notes.orEmpty(),
                     url = item.url.orEmpty(),
                     priceText = item.price?.toInt()?.toString().orEmpty(),
-                    imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull(),
+                    //imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull(),
                     errorMessage = null
+                    imageUrl = item.imagePath?.let(::toPublicImageUrl)
                 )
             }
             .onFailure { e ->
@@ -59,6 +63,14 @@ class ItemDetailViewModel @Inject constructor(
                     errorMessage = e.message ?: "Tókst ekki að sækja gjöf"
                 )
             }
+        }
+    }
+
+    private fun toPublicImageUrl(path: String): String {
+        return if (path.startsWith("http://") || path.startsWith("https://")) {
+            path
+        } else {
+            "$STORAGE_URL$path"
         }
     }
 
@@ -77,10 +89,16 @@ class ItemDetailViewModel @Inject constructor(
             ?.toDoubleOrNull()
 
         val newImagePath =
-            if (selectedImageUri != null) {
-                itemRepo.uploadItemImage(context, wishlistId, selectedImageUri).getOrThrow()
-            } else {
-                s.imageUrl
+            when {
+                selectedImageUri != null -> {
+                    itemRepo.uploadItemImage(context, wishlistId, selectedImageUri).getOrThrow()
+                }
+                s.isImageRemoved -> {
+                    null
+                }
+                else -> {
+                    s.imageUrl?.removePrefix(STORAGE_URL)
+                }
             }
 
         itemRepo.updateWishlistItem(
@@ -113,6 +131,7 @@ class ItemDetailViewModel @Inject constructor(
             }
     }
 
+    //Ana
     fun uploadNewImage(
         context: Context,
         wishlistId: String,
@@ -134,9 +153,16 @@ class ItemDetailViewModel @Inject constructor(
             .onFailure { e ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message ?: "Tókst ekki að hlaða inn mynd"
+                    errorMessage = e.message ?: "Ekki tókst að hlaða inn mynd"
                 )
             }
+    }
+    
+    fun removeImage() {
+        _uiState.value = _uiState.value.copy(
+            imageUrl = null,
+            isImageRemoved = true
+        )
     }
 
     fun onNameChange(v: String) { _uiState.value = _uiState.value.copy(name = v) }
