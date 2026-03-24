@@ -160,6 +160,17 @@ class WishlistItemRepository @Inject constructor(
         filename
     }
 
+     fun getWishlistImage(imagePath: String?): Result<String?> = runCatching {
+        if (imagePath.isNullOrBlank()) return@runCatching null
+
+        if (imagePath.startsWith("http")) {
+            imagePath
+        } else {
+            supabase.storage.from("wishlist-images").publicUrl(imagePath)
+        }
+    }
+
+
     // ----- REMOTE-ONLY CLAIMS ------
     suspend fun getClaimsForItems(itemIds: List<String>): Result<List<ItemClaim>> = runCatching {
         if (itemIds.isEmpty()) return@runCatching emptyList()

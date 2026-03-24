@@ -27,25 +27,33 @@ class ItemDetailViewModel @Inject constructor(
     private val _effects = Channel<ItemDetailEffect>(Channel.Factory.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-
-
-    private fun toPublicImageUrl(path: String): String {
-        return if (path.startsWith("http://") || path.startsWith("https://")) {
-            path
-        } else {
-            "$STORAGE_URL$path"
+    fun load(itemId: String) {
+        viewModelScope.launch {
+            itemRepo.observeWishlistItem(itemId).collect { item ->
+                if (item != null) {
+                    _uiState.value = _uiState.value.copy(
+                        name = item.name,
+                        notes = item.notes.orEmpty(),
+                        url = item.url.orEmpty(),
+                        priceText = item.price?.toInt()?.toString().orEmpty(),
+                      //Ana  
+                      imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull()
+                    )
+                }
+            }
         }
-    }
-
-    fun load(itemId: String) = viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-        itemRepo.fetchWishlistItemRemoteById(itemId)
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            itemRepo.fetchWishlistItemRemoteById(itemId)
             .onSuccess { item ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     name = item.name,
                     notes = item.notes.orEmpty(),
+                    url = item.url.orEmpty(),
                     priceText = item.price?.toInt()?.toString().orEmpty(),
+                    //imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull(),
+                    errorMessage = null
                     imageUrl = item.imagePath?.let(::toPublicImageUrl)
                 )
             }
@@ -55,13 +63,22 @@ class ItemDetailViewModel @Inject constructor(
                     errorMessage = e.message ?: "Tókst ekki að sækja gjöf"
                 )
             }
+        }
+    }
+
+    private fun toPublicImageUrl(path: String): String {
+        return if (path.startsWith("http://") || path.startsWith("https://")) {
+            path
+        } else {
+            "$STORAGE_URL$path"
+        }
     }
 
     fun save(itemId: String, wishlistId: String, context: Context, selectedImageUri: Uri?
         ) = viewModelScope.launch {
         val s = _uiState.value
         if (s.name.trim().isBlank()) {
-            _uiState.value = s.copy(errorMessage = "Name má ekki vera tómt")
+            _uiState.value = s.copy(errorMessage = "Nafn má ekki vera tómt")
             return@launch
         }
 
@@ -114,6 +131,7 @@ class ItemDetailViewModel @Inject constructor(
             }
     }
 
+    //Ana
     fun uploadNewImage(
         context: Context,
         wishlistId: String,
@@ -129,16 +147,17 @@ class ItemDetailViewModel @Inject constructor(
             .onSuccess { filename ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    imageUrl = filename
+                    imageUrl = itemRepo.getWishlistImage(filename).getOrNull()
                 )
             }
             .onFailure { e ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message ?: "Tókst ekki að hlaða inn mynd"
+                    errorMessage = e.message ?: "Ekki tókst að hlaða inn mynd"
                 )
             }
     }
+    
     fun removeImage() {
         _uiState.value = _uiState.value.copy(
             imageUrl = null,
@@ -149,6 +168,8 @@ class ItemDetailViewModel @Inject constructor(
     fun onNameChange(v: String) { _uiState.value = _uiState.value.copy(name = v) }
     fun onNotesChange(v: String) { _uiState.value = _uiState.value.copy(notes = v) }
     fun onPriceChange(v: String) { _uiState.value = _uiState.value.copy(priceText = v) }
+    fun onUrlChange(v: String) { _uiState.value = _uiState.value.copy(url = v) }
+
     fun onImageSelected(uriString: String?) {
         _uiState.value = _uiState.value.copy(imageUrl = uriString)
     }
