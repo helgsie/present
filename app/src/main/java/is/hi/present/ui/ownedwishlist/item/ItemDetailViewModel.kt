@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `is`.hi.present.BuildConfig
 import `is`.hi.present.data.repository.WishlistItemRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
 @HiltViewModel
 class ItemDetailViewModel @Inject constructor(
     private val itemRepo: WishlistItemRepository
@@ -40,9 +42,11 @@ class ItemDetailViewModel @Inject constructor(
                         isLoading = false,
                         name = local.name,
                         notes = local.notes.orEmpty(),
+                        url = local.url.orEmpty(),
                         priceText = local.price?.toInt()?.toString().orEmpty(),
-                        imageUrl = local.imagePath,
+                        imageUrl = local.imagePath?.let(::toPublicImageUrl),
                         errorMessage = null
+                      //Ana
                     )
                 }
             }
@@ -50,6 +54,18 @@ class ItemDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             itemRepo.fetchWishlistItemRemoteById(itemId)
+                .onSuccess { item ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    name = item.name,
+                    notes = item.notes.orEmpty(),
+                    url = item.url.orEmpty(),
+                    priceText = item.price?.toInt()?.toString().orEmpty(),
+                    //imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull(),
+                    errorMessage = null
+                    imageUrl = item.imagePath?.let(::toPublicImageUrl)
+                )
+                }
                 .onFailure {
                     val local = itemRepo.getWishlistItemByIdLocal(itemId)
                     if (local == null) {
@@ -59,6 +75,12 @@ class ItemDetailViewModel @Inject constructor(
                         )
                     }
                 }
+
+    private fun toPublicImageUrl(path: String): String {
+        return if (path.startsWith("http://") || path.startsWith("https://")) {
+            path
+        } else {
+            "$STORAGE_URL$path"
         }
     }
 
@@ -66,7 +88,7 @@ class ItemDetailViewModel @Inject constructor(
         ) = viewModelScope.launch {
         val s = _uiState.value
         if (s.name.trim().isBlank()) {
-            _uiState.value = s.copy(errorMessage = "Name má ekki vera tómt")
+            _uiState.value = s.copy(errorMessage = "Nafn má ekki vera tómt")
             return@launch
         }
 
@@ -77,10 +99,16 @@ class ItemDetailViewModel @Inject constructor(
             ?.toDoubleOrNull()
 
         val newImagePath =
-            if (selectedImageUri != null) {
-                itemRepo.uploadItemImage(context, wishlistId, selectedImageUri).getOrThrow()
-            } else {
-                s.imageUrl
+            when {
+                selectedImageUri != null -> {
+                    itemRepo.uploadItemImage(context, wishlistId, selectedImageUri).getOrThrow()
+                }
+                s.isImageRemoved -> {
+                    null
+                }
+                else -> {
+                    s.imageUrl?.removePrefix(STORAGE_URL)
+                }
             }
 
         itemRepo.updateWishlistItem(
@@ -113,6 +141,7 @@ class ItemDetailViewModel @Inject constructor(
             }
     }
 
+    //Ana
     fun uploadNewImage(
         context: Context,
         wishlistId: String,
@@ -128,20 +157,29 @@ class ItemDetailViewModel @Inject constructor(
             .onSuccess { filename ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    imageUrl = filename
+                    imageUrl = itemRepo.getWishlistImage(filename).getOrNull()
                 )
             }
             .onFailure { e ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.message ?: "Tókst ekki að hlaða inn mynd"
+                    errorMessage = e.message ?: "Ekki tókst að hlaða inn mynd"
                 )
             }
+    }
+    
+    fun removeImage() {
+        _uiState.value = _uiState.value.copy(
+            imageUrl = null,
+            isImageRemoved = true
+        )
     }
 
     fun onNameChange(v: String) { _uiState.value = _uiState.value.copy(name = v) }
     fun onNotesChange(v: String) { _uiState.value = _uiState.value.copy(notes = v) }
     fun onPriceChange(v: String) { _uiState.value = _uiState.value.copy(priceText = v) }
+    fun onUrlChange(v: String) { _uiState.value = _uiState.value.copy(url = v) }
+
     fun onImageSelected(uriString: String?) {
         _uiState.value = _uiState.value.copy(imageUrl = uriString)
     }

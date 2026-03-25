@@ -3,6 +3,7 @@ package `is`.hi.present.ui.sharedwishlist.item
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `is`.hi.present.BuildConfig
 import `is`.hi.present.data.repository.AuthRepository
 import `is`.hi.present.data.repository.WishlistItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
 @HiltViewModel
 class SharedItemDetailViewModel @Inject constructor(
     private val itemRepo: WishlistItemRepository,
@@ -21,6 +23,13 @@ class SharedItemDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SharedItemDetailUiState())
     val uiState: StateFlow<SharedItemDetailUiState> = _uiState.asStateFlow()
 
+    private fun toPublicImageUrl(path: String): String {
+        return if (path.startsWith("http://") || path.startsWith("https://")) {
+            path
+        } else {
+            "$STORAGE_URL$path"
+        }
+    }
     fun load(itemId: String) {
         viewModelScope.launch {
             _uiState.update {
@@ -49,7 +58,7 @@ class SharedItemDetailViewModel @Inject constructor(
                             name = item.name,
                             notes = item.notes,
                             price = item.price,
-                            imagePath = item.imagePath,
+                            imagePath = item.imagePath?.let(::toPublicImageUrl),
                             isClaimed = claim != null,
                             isClaimedByMe = claim?.claimedBy == currentUserId,
                             errorMessage = null
