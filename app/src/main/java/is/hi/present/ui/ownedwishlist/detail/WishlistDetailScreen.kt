@@ -280,12 +280,10 @@ fun WishlistDetailScreen(
             )
         },
         floatingActionButton = {
-            if (state.isOwner) {
-                AddButton(
-                    onClick = { onCreateItem(wishlistId) },
-                    contentDescription = "Bæta við gjöf"
-                )
-            }
+            AddButton(
+                onClick = { onCreateItem(wishlistId) },
+                contentDescription = "Bæta við gjöf"
+            )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
@@ -338,17 +336,70 @@ fun WishlistDetailScreen(
                             }
 
                             state.errorMessage != null && state.items.isEmpty() -> {
-                                Column(
-                                    modifier = Modifier
-                                        .align(Alignment.Center)
-                                        .padding(24.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = state.errorMessage ?: "Óþekkt villa kom upp.",
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
+                                if (isOffline) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(16.dp)
+                                    ) {
+                                        if (isEditing) {
+                                            WishlistEditor(
+                                                title = title,
+                                                onTitleChange = { title = it },
+                                                description = description,
+                                                onDescriptionChange = { description = it }
+                                            )
+                                        } else {
+                                            WishlistInfoCard(
+                                                description = state.description
+                                            )
+                                        }
+
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .weight(1f),
+                                            verticalArrangement = Arrangement.Center,
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Surface(
+                                                shape = RoundedCornerShape(24.dp),
+                                                color = SoftCard,
+                                                tonalElevation = 1.dp
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.padding(
+                                                        horizontal = 24.dp,
+                                                        vertical = 20.dp
+                                                    ),
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    Text(
+                                                        text = "Engar vistaðar gjafir fundust fyrir þennan lista.",
+                                                        style = MaterialTheme.typography.titleMedium
+                                                    )
+                                                    Text(
+                                                        text = "Þú getur samt bætt við nýrri gjöf og hún vistast locally þar til netsamband kemur aftur.",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        modifier = Modifier.padding(top = 8.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Column(
+                                        modifier = Modifier
+                                            .align(Alignment.Center)
+                                            .padding(24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = state.errorMessage,
+                                            color = MaterialTheme.colorScheme.error,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
                                 }
                             }
 

@@ -7,10 +7,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `is`.hi.present.BuildConfig
 import `is`.hi.present.data.repository.WishlistItemRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,25 +29,32 @@ class ItemDetailViewModel @Inject constructor(
     private val _effects = Channel<ItemDetailEffect>(Channel.Factory.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
+    private var observeJob: Job? = null
+
     fun load(itemId: String) {
-        viewModelScope.launch {
-            itemRepo.observeWishlistItem(itemId).collect { item ->
-                if (item != null) {
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+            itemRepo.observeWishlistItemById(itemId).collectLatest { local ->
+                if (local != null) {
                     _uiState.value = _uiState.value.copy(
-                        name = item.name,
-                        notes = item.notes.orEmpty(),
-                        url = item.url.orEmpty(),
-                        priceText = item.price?.toInt()?.toString().orEmpty(),
-                      //Ana  
-                      imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull()
+                        isLoading = false,
+                        name = local.name,
+                        notes = local.notes.orEmpty(),
+                        url = local.url.orEmpty(),
+                        priceText = local.price?.toInt()?.toString().orEmpty(),
+                        imageUrl = local.imagePath?.let(::toPublicImageUrl),
+                        errorMessage = null
+                      //Ana
                     )
                 }
             }
         }
+
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             itemRepo.fetchWishlistItemRemoteById(itemId)
-            .onSuccess { item ->
+                .onSuccess { item ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     name = item.name,
@@ -56,15 +65,16 @@ class ItemDetailViewModel @Inject constructor(
                     errorMessage = null
                     imageUrl = item.imagePath?.let(::toPublicImageUrl)
                 )
-            }
-            .onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message ?: "Tókst ekki að sækja gjöf"
-                )
-            }
-        }
-    }
+                }
+                .onFailure {
+                    val local = itemRepo.getWishlistItemByIdLocal(itemId)
+                    if (local == null) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Ekkert netsamband eða tókst ekki að sækja gjöf"
+                        )
+                    }
+                }
 
     private fun toPublicImageUrl(path: String): String {
         return if (path.startsWith("http://") || path.startsWith("https://")) {
