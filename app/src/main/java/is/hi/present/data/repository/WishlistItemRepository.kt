@@ -39,7 +39,7 @@ class WishlistItemRepository @Inject constructor(
             .map { entities ->
                 entities.map { it.toDomain() } }
 
-    fun observeWishlistItem(itemId: String): Flow<WishlistItem?> =
+    fun observeWishlistItemById(itemId: String): Flow<WishlistItem?> =
         dao.observeItemById(itemId)
             .map { it?.toDomain() }
 
@@ -55,15 +55,24 @@ class WishlistItemRepository @Inject constructor(
     suspend fun refreshWishlistItems(wishlistId: String): Result<Unit> = runCatching {
         val remote = fetchRemoteItems(wishlistId)
         val remoteEntities = remote.map { it.toEntity() }
-
-        val pendingIds = pendingOpDao.getPendingWishlistItemIds(wishlistId).toSet()
         val localEntities = dao.getItemsByWishlistId(wishlistId)
 
+        val upsertIds = pendingOpDao.getPendingWishlistItemUpsertIds(wishlistId).toSet()
+        val deleteIds = pendingOpDao.getPendingWishlistItemDeleteIds(wishlistId).toSet()
+
+        val localById = localEntities.associateBy { it.id }
+        val remoteById = remoteEntities.associateBy { it.id }
+
         val merged = buildList {
-            addAll(remoteEntities)
-            localEntities
-                .filter { local -> local.id in pendingIds && remoteEntities.none { it.id == local.id } }
-                .forEach { add(it) }
+            val allIds = (remoteById.keys + localById.keys - deleteIds)
+
+            for (id in allIds) {
+                when (id) {
+                    in upsertIds if id in localById -> add(localById.getValue(id))
+                    in remoteById -> add(remoteById.getValue(id))
+                    in localById -> add(localById.getValue(id))
+                }
+            }
         }
 
         dao.replaceWishlistItems(wishlistId, merged)

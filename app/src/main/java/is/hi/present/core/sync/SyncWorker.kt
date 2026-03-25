@@ -19,6 +19,7 @@ class SyncWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
+            Log.d("SyncDebug", "SyncWorker started")
             val ownerId = authRepository.getCurrentUserId()
 
             if (ownerId == null) {

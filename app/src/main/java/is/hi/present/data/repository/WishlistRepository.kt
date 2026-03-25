@@ -60,15 +60,24 @@ class WishlistRepository @Inject constructor(
             .decodeList<WishlistDto>()
 
         val remoteEntities = remote.map { it.toEntity() }
-        val pendingIds = pendingOpDao.getPendingWishlistIds().toSet()
         val localEntities = wishlistDao.getWishlists(ownerId)
 
-        val mergedEntities = buildList {
-            addAll(remoteEntities)
+        val upsertIds = pendingOpDao.getPendingWishlistUpsertIds().toSet()
+        val deleteIds = pendingOpDao.getPendingWishlistDeleteIds().toSet()
 
-            localEntities
-                .filter { local -> local.id in pendingIds && remoteEntities.none { it.id == local.id } }
-                .forEach { add(it) }
+        val localById = localEntities.associateBy { it.id }
+        val remoteById = remoteEntities.associateBy { it.id }
+
+        val mergedEntities = buildList {
+            val allIds = (remoteById.keys + localById.keys - deleteIds)
+
+            for (id in allIds) {
+                when {
+                    id in upsertIds && id in localById -> add(localById.getValue(id))
+                    id in remoteById -> add(remoteById.getValue(id))
+                    id in localById -> add(localById.getValue(id))
+                }
+            }
         }
 
         wishlistDao.refreshWishlists(ownerId, mergedEntities)

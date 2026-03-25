@@ -37,10 +37,36 @@ interface PendingOpDao {
 
     @Query("""
     SELECT entityId FROM pending_ops
+    WHERE type IN ('WISHLIST_CREATE', 'WISHLIST_UPDATE')
+    """)
+    suspend fun getPendingWishlistUpsertIds(): List<String>
+
+    @Query("""
+    SELECT entityId FROM pending_ops
+    WHERE type = 'WISHLIST_DELETE'
+    """)
+    suspend fun getPendingWishlistDeleteIds(): List<String>
+
+    @Query("""
+    SELECT entityId FROM pending_ops
     WHERE type IN ('ITEM_CREATE','ITEM_UPDATE','ITEM_DELETE')
     AND parentId = :wishlistId
     """)
     suspend fun getPendingWishlistItemIds(wishlistId: String): List<String>
+
+    @Query("""
+    SELECT entityId FROM pending_ops
+    WHERE parentId = :wishlistId
+    AND type IN ('ITEM_CREATE', 'ITEM_UPDATE')
+""")
+    suspend fun getPendingWishlistItemUpsertIds(wishlistId: String): List<String>
+
+    @Query("""
+    SELECT entityId FROM pending_ops
+    WHERE parentId = :wishlistId
+    AND type = 'ITEM_DELETE'
+""")
+    suspend fun getPendingWishlistItemDeleteIds(wishlistId: String): List<String>
 
     @Query("DELETE FROM pending_ops WHERE entityId = :entityId")
     suspend fun deleteByEntityId(entityId: String)

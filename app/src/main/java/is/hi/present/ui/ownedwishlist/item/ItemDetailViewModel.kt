@@ -6,10 +6,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import `is`.hi.present.data.repository.WishlistItemRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -25,40 +27,39 @@ class ItemDetailViewModel @Inject constructor(
     private val _effects = Channel<ItemDetailEffect>(Channel.Factory.BUFFERED)
     val effects = _effects.receiveAsFlow()
 
-    fun load(itemId: String) = viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+    private var observeJob: Job? = null
 
-        // sækja fyrst local gögn
-        val local = itemRepo.getWishlistItemByIdLocal(itemId)
-        if (local != null) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                name = local.name,
-                notes = local.notes.orEmpty(),
-                priceText = local.price?.toInt()?.toString().orEmpty(),
-                imageUrl = local.imagePath
-            )
-        }
+    fun load(itemId: String) {
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-        // reyna svo að sækja frá remote
-        itemRepo.fetchWishlistItemRemoteById(itemId)
-            .onSuccess { item ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    name = item.name,
-                    notes = item.notes.orEmpty(),
-                    priceText = item.price?.toInt()?.toString().orEmpty(),
-                    imageUrl = item.imagePath
-                )
-            }
-            .onFailure {
-                if (local == null) {
+            itemRepo.observeWishlistItemById(itemId).collectLatest { local ->
+                if (local != null) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = "Ekkert netsamband eða tókst ekki að sækja gjöf"
+                        name = local.name,
+                        notes = local.notes.orEmpty(),
+                        priceText = local.price?.toInt()?.toString().orEmpty(),
+                        imageUrl = local.imagePath,
+                        errorMessage = null
                     )
                 }
             }
+        }
+
+        viewModelScope.launch {
+            itemRepo.fetchWishlistItemRemoteById(itemId)
+                .onFailure {
+                    val local = itemRepo.getWishlistItemByIdLocal(itemId)
+                    if (local == null) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Ekkert netsamband eða tókst ekki að sækja gjöf"
+                        )
+                    }
+                }
+        }
     }
 
     fun save(itemId: String, wishlistId: String, context: Context, selectedImageUri: Uri?

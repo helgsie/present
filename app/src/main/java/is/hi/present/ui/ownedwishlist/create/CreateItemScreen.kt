@@ -189,9 +189,9 @@ fun CreateItemScreen(
                         url = trimmedUrl,
                         price = parsedPrice,
                         selectedImageUri = imageUriToUpload,
-                        context = context
+                        context = context,
+                        onDone = onDone
                     )
-                    onDone()
                 },
             ) {
                 Text("Búa til")
