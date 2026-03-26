@@ -3,6 +3,7 @@ package `is`.hi.present.ui.ownedwishlist.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import `is`.hi.present.data.repository.WishlistItemRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -18,7 +19,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WishlistsViewModel @Inject constructor(
-    private val repo: WishlistRepository
+    private val repo: WishlistRepository,
+    private val itemRepo: WishlistItemRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WishlistsUiState())
@@ -47,14 +49,17 @@ class WishlistsViewModel @Inject constructor(
                         wishlists
                             .sortedByDescending { it.updatedAt }
                             .map { w ->
+                                val items = itemRepo.getWishlistItemsLocal(w.id)
                                 WishlistUi(
                                     id = w.id,
                                     title = w.title,
                                     description = w.description,
                                     iconKey = w.iconKey,
-                                    itemCount = 0,
+                                    itemCount = items.size,
                                     isShared = false,
-                                    previewImageUrls = emptyList()
+                                    previewImageUrls = items
+                                        .mapNotNull { itemRepo.getWishlistImage(it.imagePath).getOrNull() }
+                                        .take(3)
                                 )
                             }
                     }
