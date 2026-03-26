@@ -37,7 +37,8 @@ class WishlistItemRepository @Inject constructor(
     fun observeWishlistItems(wishlistId: String): Flow<List<WishlistItem>> =
         dao.observeItemsByWishlistId(wishlistId)
             .map { entities ->
-                entities.map { it.toDomain() } }
+                entities.map { it.toDomain() }
+            }
 
     fun observeWishlistItemById(itemId: String): Flow<WishlistItem?> =
         dao.observeItemById(itemId)
@@ -79,9 +80,10 @@ class WishlistItemRepository @Inject constructor(
     }
 
     // ----- REMOTE-ONLY FETCHES -----
-    suspend fun fetchWishlistItemsRemote(wishlistId: String): Result<List<WishlistItem>> = runCatching {
-        fetchRemoteItems(wishlistId).map { it.toEntity().toDomain() }
-    }
+    suspend fun fetchWishlistItemsRemote(wishlistId: String): Result<List<WishlistItem>> =
+        runCatching {
+            fetchRemoteItems(wishlistId).map { it.toEntity().toDomain() }
+        }
 
     suspend fun fetchWishlistItemRemoteById(itemId: String): Result<WishlistItem> = runCatching {
         val dto: WishlistItemDto = supabase
@@ -195,8 +197,37 @@ class WishlistItemRepository @Inject constructor(
         syncScheduler.enqueueOneTimeSync()
     }
 
+    suspend fun updateWishlistItemOrder(
+        wishlistId: String,
+        orderedItemIds: List<String>
+    ): Result<Unit> = runCatching {
+        orderedItemIds.forEachIndexed { index, itemId ->
+            supabase
+                .from("wishlist_items")
+                .update(
+                    {
+                        set("sort_order", index)
+                    }
+                ) {
+                    filter { eq("id", itemId) }
+                }
+        }
+
+        refreshWishlistItems(wishlistId).getOrThrow()
+    }
+
     suspend fun deleteWishlistItem(itemId: String): Result<Unit> = runCatching {
+
+        val dto: WishlistItemDto = supabase
+            .from("wishlist_items")
+            .select {
+                filter { eq("id", itemId) }
+                limit(1)
+            }
+            .decodeSingle()
+
         val existing = dao.getItemById(itemId) ?: error("Item not found")
+
 
         dao.deleteById(itemId)
 
@@ -239,7 +270,7 @@ class WishlistItemRepository @Inject constructor(
         supabase.storage.from("wishlist-images").upload(filename, bytes)
         filename
     }
-
+    //Ana
      fun getWishlistImage(imagePath: String?): Result<String?> = runCatching {
         if (imagePath.isNullOrBlank()) return@runCatching null
 
@@ -296,3 +327,4 @@ class WishlistItemRepository @Inject constructor(
         return result
     }
 }
+

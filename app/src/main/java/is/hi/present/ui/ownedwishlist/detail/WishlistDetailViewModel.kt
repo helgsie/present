@@ -47,6 +47,7 @@ class WishlistDetailViewModel @Inject constructor(
 
     private var observeJob: Job? = null
     private var currentWishlistId: String? = null
+    private var isReorderingLocally = false
 
     fun loadAll(wishlistId: String) {
         ensureObserver(wishlistId)
@@ -129,7 +130,7 @@ class WishlistDetailViewModel @Inject constructor(
                             isLoading = false,
                             title = wishlist.title,
                             description = wishlist.description,
-                            items = itemUi,
+                            items = if (isReorderingLocally) state.items else itemUi,
                             isOwner = true,
                             errorMessage = null
                         )
@@ -181,6 +182,47 @@ class WishlistDetailViewModel @Inject constructor(
                 )
             }
         }
+    }
+    fun onMoveItem(fromIndex: Int, toIndex: Int) {
+        val currentItems = _uiState.value.items
+
+        if (fromIndex !in currentItems.indices || toIndex !in currentItems.indices) return
+        if (fromIndex == toIndex) return
+
+        isReorderingLocally = true
+
+        val updatedItems = WishlistReorderUtils.moveItem(
+            items = currentItems,
+            fromIndex = fromIndex,
+            toIndex = toIndex
+        )
+
+        _uiState.update {
+            it.copy(items = updatedItems)
+        }
+    }
+
+    fun persistReorderedItems() = viewModelScope.launch {
+        val wishlistId = currentWishlistId ?: return@launch
+        val items = _uiState.value.items
+
+        _uiState.update { it.copy(errorMessage = null) }
+
+        itemRepo.updateWishlistItemOrder(
+            wishlistId = wishlistId,
+            orderedItemIds = items.map { it.id }
+        )
+            .onSuccess {
+                isReorderingLocally = false
+            }
+            .onFailure { error ->
+                isReorderingLocally = false
+                _uiState.update {
+                    it.copy(
+                        errorMessage = error.message ?: "Tókst ekki að vista röðun"
+                    )
+                }
+            }
     }
 
     // Býr til nýtt item og hleður mynd upp ef user valdi mynd
@@ -350,5 +392,63 @@ class WishlistDetailViewModel @Inject constructor(
                     errorMessage = error.message ?: "Tókst ekki að fjarlægja aðgang"
                 )
             }
+    }
+
+
+    // Sækir fresh detail gögn + claims og rebuildar item listann handvirkt
+    private suspend fun reloadDetailState(wishlistId: String) {
+        val wishlistResult = wishlistRepo.fetchWishlistRemoteById(wishlistId)
+        val itemsResult = itemRepo.fetchWishlistItemsRemote(wishlistId)
+
+        if (wishlistResult.isFailure || itemsResult.isFailure) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = "Ekki tókst að sækja óskalista."
+                )
+            }
+            return
+        }
+
+        val currentUserId = authRepo.getCurrentUserId()
+        val wishlist = wishlistResult.getOrThrow()
+        val items = itemsResult.getOrThrow()
+
+        if (wishlist.ownerId != currentUserId) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    title = "",
+                    description = "",
+                    items = emptyList(),
+                    isOwner = false,
+                    errorMessage = "Þessi skjár er aðeins fyrir eigin óskalista."
+                )
+            }
+            return
+        }
+
+        val itemUi = items.map { item ->
+            WishlistItemUi(
+                id = item.id,
+                name = item.name,
+                notes = item.notes,
+                price = item.price,
+                imagePath = item.imagePath?.let(::toPublicImageUrl),
+                isClaimed = false,
+                isClaimedByMe = false
+            )
+        }
+
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                title = wishlist.title,
+                description = wishlist.description,
+                items = if (isReorderingLocally) it.items else itemUi,
+                isOwner = true,
+                errorMessage = null
+            )
+        }
     }
 }

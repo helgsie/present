@@ -61,6 +61,35 @@ class ItemDetailViewModel @Inject constructor(
                         notes = item.notes.orEmpty(),
                         url = item.url.orEmpty(),
                         priceText = item.price?.toInt()?.toString().orEmpty(),
+                        //imageUrl = item.imagePath?.let(::toPublicImageUrl)
+                      //Ana  
+                        imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull()
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            itemRepo.fetchWishlistItemRemoteById(itemId)
+            .onSuccess { item ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    name = item.name,
+                    notes = item.notes.orEmpty(),
+                    url = item.url.orEmpty(),
+                    priceText = item.price?.toInt()?.toString().orEmpty(),
+                    imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull(),
+                    errorMessage = null,
+                    //imageUrl = item.imagePath?.let(::toPublicImageUrl)
+                )
+            }
+            .onFailure { e ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message ?: "Tókst ekki að sækja gjöf"
+                )
+            }
+
                         imageUrl = item.imagePath?.let(::toPublicImageUrl),
                         errorMessage = null
                     )

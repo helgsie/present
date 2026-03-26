@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+//import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -58,8 +58,10 @@ import `is`.hi.present.ui.ownedwishlist.components.WishlistEditor
 import `is`.hi.present.core.theme.SoftCard
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-
+import androidx.compose.foundation.lazy.itemsIndexed
 @OptIn(ExperimentalMaterial3Api::class)
+
+
 @Composable
 fun WishlistDetailScreen(
     wishlistId: String,
@@ -472,12 +474,29 @@ fun WishlistDetailScreen(
                                         }
                                     }
 
-                                    items(
+//                                    items(
+//                                        items = state.items,
+//                                        key = { _, item -> item.id }
+//                                    ) {item ->
+//                                        WishlistItemCard(
+//                                            w = item,
+//                                            onClick = { onOpenItem(item.id) }
+//                                        )
+//                                    }
+
+                                    itemsIndexed(
                                         items = state.items,
-                                        key = { it.id }
-                                    ) { item ->
-                                        WishlistItemCard(
-                                            w = item,
+                                        key = { _, item -> item.id }
+                                    ) { index, item ->
+                                        ReorderableWishlistRow(
+                                            item = item,
+                                            index = index,
+                                            onMove = { fromIndex, toIndex ->
+                                                vm.onMoveItem(fromIndex, toIndex)
+                                            },
+                                            onDragEnd = {
+                                                vm.persistReorderedItems()
+                                            },
                                             onClick = { onOpenItem(item.id) }
                                         )
                                     }
