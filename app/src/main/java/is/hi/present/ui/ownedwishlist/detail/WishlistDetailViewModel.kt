@@ -47,6 +47,7 @@ class WishlistDetailViewModel @Inject constructor(
 
     private var observeJob: Job? = null
     private var currentWishlistId: String? = null
+    private var isReorderingLocally = false
 
     fun loadAll(wishlistId: String) {
         ensureObserver(wishlistId)
@@ -130,7 +131,7 @@ class WishlistDetailViewModel @Inject constructor(
                             isLoading = false,
                             title = wishlist.title,
                             description = wishlist.description,
-                            items = itemUi,
+                            items = if (isReorderingLocally) state.items else itemUi,
                             isOwner = true,
                             errorMessage = null
                         )
@@ -182,6 +183,47 @@ class WishlistDetailViewModel @Inject constructor(
                 )
             }
         }
+    }
+    fun onMoveItem(fromIndex: Int, toIndex: Int) {
+        val currentItems = _uiState.value.items
+
+        if (fromIndex !in currentItems.indices || toIndex !in currentItems.indices) return
+        if (fromIndex == toIndex) return
+
+        isReorderingLocally = true
+
+        val updatedItems = WishlistReorderUtils.moveItem(
+            items = currentItems,
+            fromIndex = fromIndex,
+            toIndex = toIndex
+        )
+
+        _uiState.update {
+            it.copy(items = updatedItems)
+        }
+    }
+
+    fun persistReorderedItems() = viewModelScope.launch {
+        val wishlistId = currentWishlistId ?: return@launch
+        val items = _uiState.value.items
+
+        _uiState.update { it.copy(errorMessage = null) }
+
+        itemRepo.updateWishlistItemOrder(
+            wishlistId = wishlistId,
+            orderedItemIds = items.map { it.id }
+        )
+            .onSuccess {
+                isReorderingLocally = false
+            }
+            .onFailure { error ->
+                isReorderingLocally = false
+                _uiState.update {
+                    it.copy(
+                        errorMessage = error.message ?: "Tókst ekki að vista röðun"
+                    )
+                }
+            }
     }
 
     // Býr til nýtt item og hleður mynd upp ef user valdi mynd
@@ -394,7 +436,7 @@ class WishlistDetailViewModel @Inject constructor(
                 isLoading = false,
                 title = wishlist.title,
                 description = wishlist.description,
-                items = itemUi,
+                items = if (isReorderingLocally) it.items else itemUi,
                 isOwner = true,
                 errorMessage = null
             )

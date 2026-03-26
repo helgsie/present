@@ -36,8 +36,9 @@ class ItemDetailViewModel @Inject constructor(
                         notes = item.notes.orEmpty(),
                         url = item.url.orEmpty(),
                         priceText = item.price?.toInt()?.toString().orEmpty(),
+                        //imageUrl = item.imagePath?.let(::toPublicImageUrl)
                       //Ana  
-                      imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull()
+                        imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull()
                     )
                 }
             }
@@ -52,9 +53,9 @@ class ItemDetailViewModel @Inject constructor(
                     notes = item.notes.orEmpty(),
                     url = item.url.orEmpty(),
                     priceText = item.price?.toInt()?.toString().orEmpty(),
-                    //imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull(),
-                    errorMessage = null
-                    imageUrl = item.imagePath?.let(::toPublicImageUrl)
+                    imageUrl = itemRepo.getWishlistImage(item.imagePath).getOrNull(),
+                    errorMessage = null,
+                    //imageUrl = item.imagePath?.let(::toPublicImageUrl)
                 )
             }
             .onFailure { e ->
