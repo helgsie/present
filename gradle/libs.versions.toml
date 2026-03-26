@@ -1,6 +1,8 @@
 [versions]
 agp = "9.1.0"
 coilCompose = "2.7.0"
+hiltCompiler = "1.3.0"
+hiltWork = "1.3.0"
 kotlinxSerializationJson = "1.10.0"
 ktor = "3.4.0"
 material3 = "1.4.0"
@@ -23,12 +25,16 @@ hilt = "2.59.2"
 hiltNavCompose = "1.3.0"
 foundation = "1.10.3"
 ui = "1.10.3"
+workRuntimeKtx = "2.11.1"
 
 [libraries]
 androidx-compose-material = { module = "androidx.compose.material:material" }
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "hiltCompiler" }
+androidx-hilt-work = { module = "androidx.hilt:hilt-work", version.ref = "hiltWork" }
 androidx-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

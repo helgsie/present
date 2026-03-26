@@ -16,6 +16,7 @@ data class WishlistDto(
 
 @Serializable
 data class WishlistInsert(
+    val id: String,
     val title: String,
     val description: String? = null,
     @SerialName("owner_id") val ownerId: String,

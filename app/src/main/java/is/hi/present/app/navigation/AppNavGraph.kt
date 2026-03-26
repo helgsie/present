@@ -94,6 +94,8 @@ private fun AppNav(
     pendingJoinToken: String?,
     clearPendingJoinToken: () -> Unit,
 ) {
+    val wishlistsViewModel: WishlistsViewModel = hiltViewModel()
+
     val startDestination: AppRoute = remember(userId, pendingJoinToken) {
         when {
             !pendingJoinToken.isNullOrBlank() -> AppRoute.JoinWishlist(pendingJoinToken)
@@ -109,10 +111,9 @@ private fun AppNav(
         entryProvider = entryProvider {
 
             entry<AppRoute.Wishlists> {
-                val vm: WishlistsViewModel = hiltViewModel()
                 WishlistsScreen(
                     ownerId = userId,
-                    vm = vm,
+                    vm = wishlistsViewModel,
                     onLogout = {
                         authViewModel.signOut()
                     },
@@ -128,6 +129,7 @@ private fun AppNav(
             entry<AppRoute.CreateWishlist> {
                 CreateWishlistScreen(
                     ownerId = userId,
+                    vm = wishlistsViewModel,
                     onBack = { backStack.removeLastOrNull() },
                     onDone = { backStack.removeLastOrNull() }
                 )

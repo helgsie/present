@@ -17,7 +17,7 @@ import `is`.hi.present.ui.ownedwishlist.list.WishlistsViewModel
 @Composable
 fun CreateWishlistScreen(
     ownerId: String,
-    vm: WishlistsViewModel = hiltViewModel(),
+    vm: WishlistsViewModel,
     onBack: () -> Unit,
     onDone: () -> Unit,
 ) {
@@ -90,6 +90,12 @@ fun CreateWishlistScreen(
                     Spacer(Modifier.width(10.dp))
                 }
                 Text("Búa til")
+                state.errorMessage?.let { msg ->
+                    Text(
+                        text = msg,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

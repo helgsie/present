@@ -6,6 +6,7 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.rpc
+import `is`.hi.present.core.local.dao.PendingOpDao
 import `is`.hi.present.data.dto.CreateShareLinkArgs
 import `is`.hi.present.data.dto.JoinByTokenArgs
 import `is`.hi.present.data.dto.RemoveSharedUserArgs
@@ -13,20 +14,28 @@ import `is`.hi.present.data.dto.SharedWithEmailRow
 import `is`.hi.present.data.dto.WishlistCardDto
 import `is`.hi.present.data.dto.WishlistDto
 import `is`.hi.present.data.dto.WishlistIdArgs
-import `is`.hi.present.data.dto.WishlistInsert
+import `is`.hi.present.core.sync.SyncManager
+import `is`.hi.present.core.sync.SyncScheduler
 import `is`.hi.present.data.dto.WishlistShareRow
 import `is`.hi.present.core.local.dao.WishlistDao
+import `is`.hi.present.core.local.entity.PendingOpEntity
+import `is`.hi.present.core.local.entity.WishlistEntity
+import `is`.hi.present.data.dto.PendingWishlistPayload
 import `is`.hi.present.data.mapper.toDomain
 import `is`.hi.present.data.mapper.toEntity
 import `is`.hi.present.domain.Wishlist
 import `is`.hi.present.ui.components.WishlistIcon
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
+import java.util.UUID
 import javax.inject.Inject
 
 class WishlistRepository @Inject constructor(
     private val wishlistDao: WishlistDao,
-    private val supabase: SupabaseClient
+    private val pendingOpDao: PendingOpDao,
+    private val supabase: SupabaseClient,
+    private val syncScheduler: SyncScheduler
 ){
     // ------- READS FROM ROOM ---------
     fun observeWishlists(ownerId: String): Flow<List<Wishlist>> =
@@ -50,15 +59,28 @@ class WishlistRepository @Inject constructor(
             }
             .decodeList<WishlistDto>()
 
-        val entities = remote.map { it.toEntity() }
-        if (entities.isEmpty()) {
-            val cached = wishlistDao.getWishlists(ownerId)
-            if (cached.isEmpty()) {
-                wishlistDao.deleteByOwnerId(ownerId)
+        val remoteEntities = remote.map { it.toEntity() }
+        val localEntities = wishlistDao.getWishlists(ownerId)
+
+        val upsertIds = pendingOpDao.getPendingWishlistUpsertIds().toSet()
+        val deleteIds = pendingOpDao.getPendingWishlistDeleteIds().toSet()
+
+        val localById = localEntities.associateBy { it.id }
+        val remoteById = remoteEntities.associateBy { it.id }
+
+        val mergedEntities = buildList {
+            val allIds = (remoteById.keys + localById.keys - deleteIds)
+
+            for (id in allIds) {
+                when {
+                    id in upsertIds && id in localById -> add(localById.getValue(id))
+                    id in remoteById -> add(remoteById.getValue(id))
+                    id in localById -> add(localById.getValue(id))
+                }
             }
-            return@runCatching
         }
-        wishlistDao.refreshWishlists(ownerId, entities)
+
+        wishlistDao.refreshWishlists(ownerId, mergedEntities)
     }
 
     suspend fun refreshWishlistById(wishlistId: String): Result<Unit> = runCatching {
@@ -130,15 +152,40 @@ class WishlistRepository @Inject constructor(
         description: String? = null,
         icon: WishlistIcon
     ): Result<Unit> = runCatching {
-        supabase.postgrest["wishlists"].insert(
-            WishlistInsert(
-                title = title,
-                description = description,
-                ownerId = ownerId,
-                iconKey = icon.key
+        val id = UUID.randomUUID().toString()
+        val now = System.currentTimeMillis()
+
+        val entity = WishlistEntity(
+            id = id,
+            ownerId = ownerId,
+            title = title,
+            description = description,
+            iconKey = icon.key,
+            createdAt = now,
+            updatedAt = now
+        )
+
+        wishlistDao.upsert(entity)
+
+        val payload = PendingWishlistPayload(
+            id = id,
+            ownerId = ownerId,
+            title = title,
+            description = description,
+            iconKey = icon.key
+        )
+
+        pendingOpDao.insert(
+            PendingOpEntity(
+                type = SyncManager.WISHLIST_CREATE,
+                entityId = id,
+                parentId = null,
+                payloadJson = Json.encodeToString(payload),
+                createdAt = System.currentTimeMillis()
             )
         )
-        refreshWishlists(ownerId).getOrThrow()
+
+        syncScheduler.enqueueOneTimeSync()
     }
 
     suspend fun updateWishlist(
@@ -147,38 +194,61 @@ class WishlistRepository @Inject constructor(
         description: String? = null,
         icon: WishlistIcon
     ): Result<Unit> = runCatching {
-        val userId = supabase.auth.currentUserOrNull()?.id ?: error("not signed in")
+        val existing = wishlistDao.getWishlistById(wishlistId) ?: error("Wishlist not found")
+        val updated = existing.copy(
+            title = title,
+            description = description,
+            iconKey = icon.key,
+            updatedAt = System.currentTimeMillis()
+        )
 
-        supabase
-            .from("wishlists")
-            .update (
-                {
-                    set("title", title)
-                    set("description", description)
-                    set("icon_key", icon.key)
-                }
-            ) {
-                filter {
-                    eq("id", wishlistId)
-                    eq("owner_id", userId)
-                }
-            }
-        refreshWishlists(userId).getOrThrow()
+        wishlistDao.upsert(updated)
+
+        val payload = PendingWishlistPayload(
+            id = updated.id,
+            ownerId = updated.ownerId,
+            title = updated.title,
+            description = updated.description,
+            iconKey = updated.iconKey
+        )
+
+        pendingOpDao.insert(
+            PendingOpEntity(
+                type = SyncManager.WISHLIST_UPDATE,
+                entityId = updated.id,
+                parentId = null,
+                payloadJson = Json.encodeToString(payload),
+                createdAt = System.currentTimeMillis()
+            )
+        )
+
+        syncScheduler.enqueueOneTimeSync()
     }
 
-    suspend fun deleteWishlist(wishlistId: String):
-        Result<Unit> = runCatching {
-        val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not signed in")
+    suspend fun deleteWishlist(wishlistId: String): Result<Unit> = runCatching {
+        val existing = wishlistDao.getWishlistById(wishlistId) ?: error("Wishlist not found")
 
-        supabase
-            .from("wishlists")
-            .delete {
-                filter {
-                    eq("id", wishlistId)
-                    eq("owner_id", userId)
-                }
-            }
-        refreshWishlists(userId).getOrThrow()
+        wishlistDao.deleteById(wishlistId)
+
+        val payload = PendingWishlistPayload(
+            id = existing.id,
+            ownerId = existing.ownerId,
+            title = existing.title,
+            description = existing.description,
+            iconKey = existing.iconKey
+        )
+
+        pendingOpDao.insert(
+            PendingOpEntity(
+                type = SyncManager.WISHLIST_DELETE,
+                entityId = existing.id,
+                parentId = null,
+                payloadJson = Json.encodeToString(payload),
+                createdAt = System.currentTimeMillis()
+            )
+        )
+
+        syncScheduler.enqueueOneTimeSync()
     }
 
     // ---- SHARE LINK -----

@@ -52,7 +52,7 @@ class SharedWishlistViewModel @Inject constructor(
                         title = dto.title,
                         description = dto.description,
                         iconKey = dto.iconKey,
-                        itemCount = dto.itemCount.toInt(),
+                        itemCount = dto.itemCount,
                         isShared = dto.isShared,
                         previewImageUrls = dto.previewImageUrls.mapNotNull(::toPublicImageUrl)
                     )

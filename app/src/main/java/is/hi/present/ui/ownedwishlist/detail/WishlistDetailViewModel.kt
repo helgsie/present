@@ -54,7 +54,6 @@ class WishlistDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             refreshInternal(wishlistId, fromUser = false)
-            reloadDetailState(wishlistId)
         }
     }
 
@@ -234,7 +233,8 @@ class WishlistDetailViewModel @Inject constructor(
         url: String? = null,
         price: Double? = null,
         selectedImageUri: Uri? = null,
-        context: Context
+        context: Context,
+        onDone: (() -> Unit)? = null
     ) = viewModelScope.launch {
         if (name.isBlank()) {
             _uiState.value = _uiState.value.copy(errorMessage = "Gefa þarf gjöf nafn")
@@ -243,30 +243,38 @@ class WishlistDetailViewModel @Inject constructor(
 
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-        val imageUrl = selectedImageUri?.let { uri ->
-            itemRepo.uploadItemImage(context, wishlistId, uri).getOrThrow()
-        }
+        try {
+            val imageUrl = selectedImageUri?.let { uri ->
+                itemRepo.uploadItemImage(context, wishlistId, uri).getOrThrow()
+            }
 
-        itemRepo.createWishlistItem(
-            wishlistId = wishlistId,
-            name = name.trim(),
-            notes = notes?.trim()?.takeIf { it.isNotBlank() },
-            url = url?.trim()?.takeIf { it.isNotBlank() },
-            price = price,
-            imagePath = imageUrl
-        )
-            .onSuccess {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = null
-                )
-            }
-            .onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message ?: "Tókst ekki að búa til item"
-                )
-            }
+            itemRepo.createWishlistItem(
+                wishlistId = wishlistId,
+                name = name.trim(),
+                notes = notes?.trim()?.takeIf { it.isNotBlank() },
+                url = url?.trim()?.takeIf { it.isNotBlank() },
+                price = price,
+                imagePath = imageUrl
+            )
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = null
+                    )
+                    onDone?.invoke()
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Tókst ekki að vista gjöf"
+                    )
+                }
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = "Tókst ekki að hlaða upp mynd"
+            )
+        }
     }
 
 
@@ -385,6 +393,7 @@ class WishlistDetailViewModel @Inject constructor(
                 )
             }
     }
+
 
     // Sækir fresh detail gögn + claims og rebuildar item listann handvirkt
     private suspend fun reloadDetailState(wishlistId: String) {

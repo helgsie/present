@@ -8,9 +8,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import `is`.hi.present.core.local.AppDatabase
-import javax.inject.Singleton
+import `is`.hi.present.core.local.dao.PendingOpDao
 import `is`.hi.present.core.local.dao.WishlistDao
 import `is`.hi.present.core.local.dao.WishlistItemDao
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -37,4 +38,9 @@ object DatabaseModule {
     @Provides
     fun provideWishlistItemDao(db: AppDatabase): WishlistItemDao =
         db.wishlistItemDao()
+
+    @Provides
+    fun providePendingOpDao(db: AppDatabase): PendingOpDao {
+        return db.pendingOpDao()
+    }
 }
