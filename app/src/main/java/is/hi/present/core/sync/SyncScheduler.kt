@@ -1,7 +1,6 @@
 package `is`.hi.present.core.sync
 
 import android.content.Context
-import android.util.Log
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -21,7 +20,6 @@ class SyncScheduler @Inject constructor(
 ) {
 
     fun enqueueOneTimeSync() {
-        Log.d("SyncDebug", "enqueueOneTimeSync called")
 
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)

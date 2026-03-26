@@ -1,6 +1,5 @@
 package `is`.hi.present.core.sync
 
-import android.util.Log
 import `is`.hi.present.core.local.dao.PendingOpDao
 import `is`.hi.present.core.local.entity.PendingOpEntity
 import `is`.hi.present.data.dto.PendingWishlistItemPayload
@@ -34,7 +33,6 @@ class SyncManager @Inject constructor(
     }
 
     suspend fun replayPendingOps(): Result<Unit> = runCatching {
-        Log.d("SyncDebug", "replayPendingOps started")
         val ops = pendingOpDao.getAllOrdered()
             .sortedWith(compareBy<PendingOpEntity> { syncPriority(it.type) }.thenBy { it.createdAt })
 
@@ -48,14 +46,12 @@ class SyncManager @Inject constructor(
                     ITEM_UPDATE -> replayItemUpdate(op)
                     ITEM_DELETE -> replayItemDelete(op)
                     else -> {
-                        Log.w(TAG, "Unknown pending op type: ${op.type}. Leaving it pending.")
                         continue
                     }
                 }
 
                 pendingOpDao.deleteById(op.id)
             } catch (t: Throwable) {
-                Log.e(TAG, "Failed replaying pending op id=${op.id}, type=${op.type}", t)
                 throw t
             }
         }
@@ -63,7 +59,6 @@ class SyncManager @Inject constructor(
 
     private suspend fun replayWishlistCreate(op: PendingOpEntity) {
         val payload = decodeWishlistPayload(op)
-        Log.d("SyncDebug", "Replaying WISHLIST_CREATE for ${payload.id}")
 
         supabase.from("wishlists").insert(
             WishlistInsert(
@@ -78,7 +73,6 @@ class SyncManager @Inject constructor(
 
     private suspend fun replayWishlistUpdate(op: PendingOpEntity) {
         val payload = decodeWishlistPayload(op)
-        Log.d("SyncDebug", "Replaying WISHLIST_UPDATE for ${payload.id}")
 
         supabase
             .from("wishlists")
@@ -98,7 +92,6 @@ class SyncManager @Inject constructor(
 
     private suspend fun replayWishlistDelete(op: PendingOpEntity) {
         val payload = decodeWishlistPayload(op)
-        Log.d("SyncDebug", "Replaying WISHLIST_DELETE for ${payload.id}")
 
         supabase
             .from("wishlists")
@@ -112,7 +105,6 @@ class SyncManager @Inject constructor(
 
     private suspend fun replayItemCreate(op: PendingOpEntity) {
         val payload = decodeWishlistItemPayload(op)
-        Log.d("SyncDebug", "Replaying ITEM_CREATE for ${payload.id}")
 
         supabase.from("wishlist_items").insert(
             WishlistItemInsert(
@@ -131,7 +123,6 @@ class SyncManager @Inject constructor(
 
     private suspend fun replayItemUpdate(op: PendingOpEntity) {
         val payload = decodeWishlistItemPayload(op)
-        Log.d("SyncDebug", "Replaying ITEM_UPDATE for ${payload.id}")
 
         supabase
             .from("wishlist_items")
@@ -155,7 +146,6 @@ class SyncManager @Inject constructor(
 
     private suspend fun replayItemDelete(op: PendingOpEntity) {
         val payload = decodeWishlistItemPayload(op)
-        Log.d("SyncDebug", "Replaying ITEM_DELETE for ${payload.id}")
 
         supabase
             .from("wishlist_items")
