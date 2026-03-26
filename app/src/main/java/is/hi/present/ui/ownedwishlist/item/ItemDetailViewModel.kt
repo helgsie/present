@@ -53,36 +53,28 @@ class ItemDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            itemRepo.fetchWishlistItemRemoteById(itemId)
-            .onSuccess { item ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    name = item.name,
-                    notes = item.notes.orEmpty(),
-                    url = item.url.orEmpty(),
-                    priceText = item.price?.toInt()?.toString().orEmpty(),
-                    imageUrl = item.imagePath?.let(::toPublicImageUrl),
-                    errorMessage = null,
-                )
-            }
-            
-            .onFailure { e ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = e.message ?: "Tókst ekki að sækja gjöf",
-                )
-            }
-            .onFailure {
-                val local = itemRepo.getWishlistItemByIdLocal(itemId)
-                if (local == null) {
+            val local = itemRepo.getWishlistItemByIdLocal(itemId)
+            if (local == null) {
+                val result = runCatching { itemRepo.fetchWishlistItemRemoteById(itemId).getOrThrow() }
+
+                result.onSuccess { item ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        name = item.name,
+                        notes = item.notes.orEmpty(),
+                        url = item.url.orEmpty(),
+                        priceText = item.price?.toInt()?.toString().orEmpty(),
+                        imageUrl = item.imagePath?.let(::toPublicImageUrl),
+                        errorMessage = null
+                    )
+                }.onFailure {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorMessage = "Ekkert netsamband eða tókst ekki að sækja gjöf"
                     )
                 }
             }
-    }
+        }
 }
 
     private fun toPublicImageUrl(path: String): String {
