@@ -28,9 +28,6 @@ class AuthRepository @Inject constructor(
         email: String,
         password: String
     ): UserInfo {
-        // signUpWith creates the account but may throw even on success (e.g. when the
-        // Supabase client can't parse a session-less response). Swallow that and sign
-        // in explicitly so we always end up with a valid session.
         runCatching {
             supabase.auth.signUpWith(Email) {
                 this.email = email
@@ -47,8 +44,6 @@ class AuthRepository @Inject constructor(
 
         val user = supabase.auth.currentUserOrNull()
             ?: throw Exception("Failed to get signed-up user")
-
-        // upsert so a retry after a partial failure doesn't hit a duplicate key error
         supabase.postgrest["profiles"].upsert(
             mapOf(
                 "id" to user.id,
@@ -107,6 +102,14 @@ class AuthRepository @Inject constructor(
             .decodeList<Profile>()
 
         return result.firstOrNull()
+    }
+    suspend fun getProfiles(userIds: List<String>): List<Profile> {
+        if (userIds.isEmpty()) return emptyList()
+        return supabase.postgrest["profiles"]
+            .select {
+                filter { isIn("id", userIds) }
+            }
+            .decodeList<Profile>()
     }
     private suspend fun deleteAuthUser(userId: String) {
         val accessToken = getAccessToken()

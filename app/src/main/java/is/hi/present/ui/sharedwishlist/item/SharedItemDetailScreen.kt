@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -24,6 +25,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Surface
+import `is`.hi.present.core.theme.MintCream
+import `is`.hi.present.core.theme.TextPrimary
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -161,6 +164,19 @@ fun SharedItemDetailScreen(
                             }
 
                             state.isClaimedByMe -> {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MintCream,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "Þú hefur tekið þessa gjöf frá.",
+                                        modifier = Modifier.padding(12.dp),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = TextPrimary
+                                    )
+                                }
+                                Spacer(Modifier.height(8.dp))
                                 Button(
                                     onClick = { vm.release(itemId) }
                                 ) {
@@ -174,7 +190,10 @@ fun SharedItemDetailScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = "Þessi gjöf hefur þegar verið tekin frá.",
+                                        text = if (!state.claimedByName.isNullOrBlank())
+                                            "Þessi gjöf hefur þegar verið tekin frá af ${state.claimedByName}."
+                                        else
+                                            "Þessi gjöf hefur þegar verið tekin frá.",
                                         modifier = Modifier.padding(12.dp),
                                         style = MaterialTheme.typography.bodyMedium
                                     )

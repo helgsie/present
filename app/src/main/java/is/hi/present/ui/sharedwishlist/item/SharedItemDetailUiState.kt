@@ -11,5 +11,6 @@ data class SharedItemDetailUiState(
     val imagePath: String? = null,
 
     val isClaimed: Boolean = false,
-    val isClaimedByMe: Boolean = false
+    val isClaimedByMe: Boolean = false,
+    val claimedByName: String? = null
 )

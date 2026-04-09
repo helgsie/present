@@ -45,13 +45,28 @@ fun ReleaseClaimButton(
 }
 
 @Composable
-fun ClaimedBadge() {
+fun ClaimedBadge(claimerName: String? = null) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = BlushPink.copy(alpha = 0.55f)
     ) {
         Text(
-            text = "Frátekið",
+            text = if (!claimerName.isNullOrBlank()) "Frátekið af $claimerName" else "Frátekið",
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = TextPrimary
+        )
+    }
+}
+
+@Composable
+fun ClaimedByMeBadge() {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MintCream
+    ) {
+        Text(
+            text = "Frátekið af þér",
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             style = MaterialTheme.typography.labelMedium,
             color = TextPrimary
