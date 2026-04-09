@@ -265,7 +265,7 @@ fun ItemDetailScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(240.dp)
+                            .aspectRatio(3f / 4f)
                             .clickable(enabled = isEditing && !state.isLoading) {
                                 showImagePickerDialog = true
                             },
