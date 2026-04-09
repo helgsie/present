@@ -7,6 +7,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
@@ -27,18 +28,31 @@ class AuthRepository @Inject constructor(
         email: String,
         password: String
     ): UserInfo {
-        supabase.auth.signUpWith(Email) {
-            this.email = email
-            this.password = password
+        // signUpWith creates the account but may throw even on success (e.g. when the
+        // Supabase client can't parse a session-less response). Swallow that and sign
+        // in explicitly so we always end up with a valid session.
+        runCatching {
+            supabase.auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+            }
         }
+
+        if (supabase.auth.currentUserOrNull() == null) {
+            supabase.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
+        }
+
         val user = supabase.auth.currentUserOrNull()
             ?: throw Exception("Failed to get signed-up user")
 
-        supabase.postgrest["profiles"].insert(
+        // upsert so a retry after a partial failure doesn't hit a duplicate key error
+        supabase.postgrest["profiles"].upsert(
             mapOf(
                 "id" to user.id,
                 "display_name" to email,
-                "email" to email,
             )
         )
         return user
@@ -122,6 +136,17 @@ class AuthRepository @Inject constructor(
         deleteAuthUser(userId)
         supabase.auth.signOut()
 
+    }
+    suspend fun updateDisplayName(name: String): Result<Unit> = runCatching {
+        val userId = getCurrentUserId()
+            ?: throw IllegalStateException("User not logged in")
+        supabase
+            .from("profiles")
+            .update({
+                set("display_name", name)
+            }) {
+                filter { eq("id", userId) }
+            }
     }
 
 }

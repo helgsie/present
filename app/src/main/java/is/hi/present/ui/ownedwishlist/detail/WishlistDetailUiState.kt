@@ -9,7 +9,9 @@ data class WishlistItemUi(
     val price: Double? = null,
     val imagePath: String? = null,
     val isClaimed: Boolean = false,
-    val isClaimedByMe: Boolean = false
+    val isClaimedByMe: Boolean = false,
+    val claimedByUserEmail: String? = null,
+    val claimedByUserName: String? = null
 )
 data class WishlistDetailUiState(
     val isLoading: Boolean = true,
