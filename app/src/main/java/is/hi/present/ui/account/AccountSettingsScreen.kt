@@ -2,35 +2,44 @@ package `is`.hi.present.ui.account
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import `is`.hi.present.ui.auth.AuthUiState
@@ -47,6 +56,16 @@ fun AccountSettingsScreen(
     var showConfirm by remember { mutableStateOf(false) }
     val authState by viewModel.authUiState.collectAsStateWithLifecycle()
     val email by viewModel.currentUserEmail.collectAsStateWithLifecycle()
+    val currentDisplayName by viewModel.currentDisplayName.collectAsStateWithLifecycle()
+
+    var displayName by remember { mutableStateOf("") }
+    var isEditing by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(currentDisplayName) {
+        if (!isEditing) displayName = currentDisplayName
+    }
 
     Scaffold(
         topBar = {
@@ -71,6 +90,17 @@ fun AccountSettingsScreen(
             verticalArrangement = Arrangement.Top
         ) {
 
+            if (currentDisplayName.isNotBlank()) {
+                Text(
+                    text = "Hæ, $currentDisplayName!",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(16.dp))
+            }
+
             // Status / error
             when (authState) {
                 is AuthUiState.DeleteLoading -> Text("Deleting account...")
@@ -81,6 +111,85 @@ fun AccountSettingsScreen(
                 )
                 else -> Unit
             }
+
+            // Display name
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Nafn",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = { if (it.length <= 30) displayName = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = isEditing,
+                        trailingIcon = {
+                            if (isSaving) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else if (isEditing) {
+                                Row {
+                                    IconButton(onClick = {
+                                        displayName = currentDisplayName
+                                        isEditing = false
+                                        error = null
+                                    }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Hætta við")
+                                    }
+                                    IconButton(onClick = {
+                                        val trimmed = displayName.trim()
+                                        if (trimmed.isBlank()) {
+                                            error = "Nafn má ekki vera tómt"
+                                            return@IconButton
+                                        }
+                                        isSaving = true
+                                        error = null
+                                        viewModel.updateDisplayName(trimmed) { result ->
+                                            isSaving = false
+                                            if (result.isSuccess) {
+                                                isEditing = false
+                                            } else {
+                                                error = "Tókst ekki að vista nafn"
+                                            }
+                                        }
+                                    }) {
+                                        Icon(Icons.Default.Check, contentDescription = "Vista")
+                                    }
+                                }
+                            } else {
+                                IconButton(onClick = { isEditing = true }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Breyta nafni")
+                                }
+                            }
+                        }
+                    )
+
+                    error?.let {
+                        Spacer(Modifier.height(6.dp))
+                        Text(it, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
 
             Card(
                 modifier = Modifier.fillMaxWidth(),

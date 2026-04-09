@@ -30,6 +30,7 @@ class AuthViewModel @Inject constructor(
         const val PREF_ACCESS_TOKEN = "accessToken"
         const val PREF_USER_ID = "userId"
         const val PREF_USER_EMAIL = "userEmail"
+        const val PREF_DISPLAY_NAME = "displayName"
     }
 
     private val _authStatus = MutableStateFlow<AuthStatus>(AuthStatus.Loading)
@@ -37,6 +38,9 @@ class AuthViewModel @Inject constructor(
 
     private val _currentUserEmail = MutableStateFlow<String?>(null)
     val currentUserEmail: StateFlow<String?> = _currentUserEmail.asStateFlow()
+
+    private val _currentDisplayName = MutableStateFlow("")
+    val currentDisplayName: StateFlow<String> = _currentDisplayName.asStateFlow()
 
     init {
         resolveAuthStatus()
@@ -50,6 +54,7 @@ class AuthViewModel @Inject constructor(
             val cachedUserId = sharedPref.getStringData(PREF_USER_ID)
             if (!cachedUserId.isNullOrBlank()) {
                 _currentUserEmail.value = sharedPref.getStringData(PREF_USER_EMAIL)
+                _currentDisplayName.value = sharedPref.getStringData(PREF_DISPLAY_NAME) ?: ""
                 _authStatus.value = AuthStatus.LoggedIn(cachedUserId)
                 return@launch
             }
@@ -60,6 +65,8 @@ class AuthViewModel @Inject constructor(
                 if (!userId.isNullOrBlank()) {
                     sharedPref.saveStringData(PREF_USER_ID, userId)
                     _authStatus.value = AuthStatus.LoggedIn(userId)
+                    runCatching { repo.getProfile(userId) }
+                        .getOrNull()?.let { _currentDisplayName.value = it.display_name }
                 } else {
                     _authStatus.value = AuthStatus.LoggedOut
                 }
@@ -92,6 +99,7 @@ class AuthViewModel @Inject constructor(
     private fun clearCachedAuth() {
         sharedPref.clearPreferences()
         _currentUserEmail.value = null
+        _currentDisplayName.value = ""
     }
 
     private suspend fun clearLocalDatabase() {
@@ -123,7 +131,7 @@ class AuthViewModel @Inject constructor(
                 saveUserId(userId)
                 saveUserEmail(user.email)
                 syncScheduler.rescheduleAllSync()
-                _authStatus.value = AuthStatus.LoggedIn(userId)
+                _authStatus.value = AuthStatus.LoggedIn(userId, isNewUser = true)
                 _authUiState.value = AuthUiState.Success("Registered user successfully")
             } catch (e: Exception) {
                 _authUiState.value = AuthUiState.Error("Sign up failed: ${e.message}")
@@ -150,7 +158,11 @@ class AuthViewModel @Inject constructor(
                 }
 
                 saveUserEmail(user.email)
-                repo.getProfile(user.id)
+                runCatching { repo.getProfile(user.id) }
+                    .getOrNull()?.let {
+                        _currentDisplayName.value = it.display_name
+                        sharedPref.saveStringData(PREF_DISPLAY_NAME, it.display_name)
+                    }
                 saveToken()
                 saveUserId(user.id)
                 syncScheduler.rescheduleAllSync()
@@ -198,5 +210,26 @@ class AuthViewModel @Inject constructor(
 
     fun resetAuthState() {
         _authUiState.value = AuthUiState.Idle
+    }
+
+    fun onProfileSetupComplete() {
+        val current = _authStatus.value
+        if (current is AuthStatus.LoggedIn) {
+            _authStatus.value = AuthStatus.LoggedIn(current.userId, isNewUser = false)
+        }
+    }
+
+    fun updateDisplayName(
+        name: String,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = repo.updateDisplayName(name)
+            if (result.isSuccess) {
+                _currentDisplayName.value = name
+                sharedPref.saveStringData(PREF_DISPLAY_NAME, name)
+            }
+            onResult(result)
+        }
     }
 }

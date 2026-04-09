@@ -22,6 +22,7 @@ import `is`.hi.present.ui.sharedwishlist.list.SharedWishlistScreen
 import `is`.hi.present.ui.sharedwishlist.item.SharedItemDetailScreen
 import `is`.hi.present.ui.ownedwishlist.item.ItemDetailScreen
 import `is`.hi.present.ui.ownedwishlist.invite.CreateTokenScreen
+import `is`.hi.present.ui.auth.SetupProfileScreen
 import `is`.hi.present.ui.ownedwishlist.list.WishlistsViewModel
 
 @Composable
@@ -45,13 +46,20 @@ fun AppNavGraphNav3(
         }
 
         is AuthStatus.LoggedIn -> {
-            key(status.userId) {
-                AppNav(
-                    authViewModel = authViewModel,
-                    userId = status.userId,
-                    pendingJoinToken = pendingJoinToken,
-                    clearPendingJoinToken = { pendingJoinToken = null }
+            if (status.isNewUser) {
+                SetupProfileScreen(
+                    viewModel = authViewModel,
+                    onDone = { authViewModel.onProfileSetupComplete() }
                 )
+            } else {
+                key(status.userId) {
+                    AppNav(
+                        authViewModel = authViewModel,
+                        userId = status.userId,
+                        pendingJoinToken = pendingJoinToken,
+                        clearPendingJoinToken = { pendingJoinToken = null }
+                    )
+                }
             }
         }
     }
