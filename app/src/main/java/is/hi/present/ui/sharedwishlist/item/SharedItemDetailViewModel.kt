@@ -50,6 +50,10 @@ class SharedItemDetailViewModel @Inject constructor(
                         .getOrElse { emptyList() }
 
                     val claim = claims.firstOrNull()
+                    val isClaimedByMe = claim?.claimedBy == currentUserId
+                    val claimedByName = if (claim != null && !isClaimedByMe) {
+                        authRepo.getProfile(claim.claimedBy)?.display_name
+                    } else null
 
                     _uiState.update {
                         it.copy(
@@ -60,7 +64,8 @@ class SharedItemDetailViewModel @Inject constructor(
                             price = item.price,
                             imagePath = item.imagePath?.let(::toPublicImageUrl),
                             isClaimed = claim != null,
-                            isClaimedByMe = claim?.claimedBy == currentUserId,
+                            isClaimedByMe = isClaimedByMe,
+                            claimedByName = claimedByName,
                             errorMessage = null
                         )
                     }

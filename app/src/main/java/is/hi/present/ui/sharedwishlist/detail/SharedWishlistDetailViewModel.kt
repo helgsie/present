@@ -78,6 +78,13 @@ class SharedWishlistDetailViewModel @Inject constructor(
 
             val claimByItemId = claims.associateBy { it.itemId }
 
+            val otherClaimerIds = claims
+                .map { it.claimedBy }
+                .filter { it != currentUserId }
+                .distinct()
+            val profiles = authRepo.getProfiles(otherClaimerIds)
+            val profileByUserId = profiles.associateBy { it.id }
+
             _uiState.update {
                 it.copy(
                     isLoading = false,
@@ -85,6 +92,7 @@ class SharedWishlistDetailViewModel @Inject constructor(
                     description = wishlist.description,
                     items = items.map { item ->
                         val claim = claimByItemId[item.id]
+                        val isClaimedByMe = claim?.claimedBy == currentUserId
                         WishlistItemUi(
                             id = item.id,
                             name = item.name,
@@ -92,8 +100,9 @@ class SharedWishlistDetailViewModel @Inject constructor(
                             price = item.price,
                             imagePath = item.imagePath?.let(::toPublicImageUrl),
                             isClaimed = claim != null,
-                            isClaimedByMe = claim?.claimedBy == currentUserId,
-                            claimedByUserName = claim?.claimedBy
+                            isClaimedByMe = isClaimedByMe,
+                            claimedByUserName = if (isClaimedByMe) null
+                                else claim?.claimedBy?.let { profileByUserId[it]?.display_name }
                         )
                     }
                 )

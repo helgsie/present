@@ -19,6 +19,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +42,7 @@ import `is`.hi.present.ui.components.WishlistItemCard
 import `is`.hi.present.ui.sharedwishlist.components.ClaimButton
 import `is`.hi.present.ui.sharedwishlist.components.ReleaseClaimButton
 import `is`.hi.present.ui.sharedwishlist.components.ClaimedBadge
+import `is`.hi.present.ui.sharedwishlist.components.ClaimedByMeBadge
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +56,7 @@ fun SharedWishlistDetailScreen(
 
     var showMenu by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
+    var showOnlyMyClaims by remember { mutableStateOf(false) }
 
     LaunchedEffect(wishlistId) {
         vm.load(wishlistId)
@@ -151,6 +154,11 @@ fun SharedWishlistDetailScreen(
                 }
 
                 else -> {
+                    val visibleItems = if (showOnlyMyClaims)
+                        state.items.filter { it.isClaimedByMe }
+                    else
+                        state.items
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
@@ -168,8 +176,16 @@ fun SharedWishlistDetailScreen(
                             }
                         }
 
+                        item {
+                            FilterChip(
+                                selected = showOnlyMyClaims,
+                                onClick = { showOnlyMyClaims = !showOnlyMyClaims },
+                                label = { Text("Frátekið af mér") }
+                            )
+                        }
+
                         items(
-                            items = state.items,
+                            items = visibleItems,
                             key = { it.id }
                         ) { item ->
                             WishlistItemCard(
@@ -184,13 +200,14 @@ fun SharedWishlistDetailScreen(
                                         }
 
                                         item.isClaimedByMe -> {
+                                            ClaimedByMeBadge()
                                             ReleaseClaimButton(
                                                 onClick = { vm.releaseClaim(wishlistId, item.id) }
                                             )
                                         }
 
                                         else -> {
-                                            ClaimedBadge()
+                                            ClaimedBadge(claimerName = item.claimedByUserName)
                                         }
                                     }
                                 }
