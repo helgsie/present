@@ -89,6 +89,7 @@ class WishlistDetailViewModel @Inject constructor(
                             notes = item.notes,
                             price = item.price,
                             imagePath = item.imagePath?.let(::toPublicImageUrl),
+                            category = item.category,
                             isClaimed = false,
                             isClaimedByMe = false
                         )
@@ -232,6 +233,7 @@ class WishlistDetailViewModel @Inject constructor(
         notes: String? = null,
         url: String? = null,
         price: Double? = null,
+        category: String? = null,
         selectedImageUri: Uri? = null,
         context: Context,
         onDone: (() -> Unit)? = null
@@ -254,7 +256,8 @@ class WishlistDetailViewModel @Inject constructor(
                 notes = notes?.trim()?.takeIf { it.isNotBlank() },
                 url = url?.trim()?.takeIf { it.isNotBlank() },
                 price = price,
-                imagePath = imageUrl
+                imagePath = imageUrl,
+                category = category
             )
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(

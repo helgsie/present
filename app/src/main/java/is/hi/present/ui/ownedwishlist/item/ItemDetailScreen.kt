@@ -33,6 +33,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.icons.filled.Add
+import `is`.hi.present.ui.ownedwishlist.components.CATEGORY_ICON
+import `is`.hi.present.ui.ownedwishlist.components.CategoryPickerSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +52,7 @@ fun ItemDetailScreen(
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var isEditing by rememberSaveable { mutableStateOf(false) }
     var showImagePickerDialog by rememberSaveable { mutableStateOf(false) }
+    var showCategorySheet by remember { mutableStateOf(false) }
 
     var selectedImageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var selectedCameraBitmap by rememberSaveable { mutableStateOf<Bitmap?>(null) }
@@ -319,8 +323,61 @@ fun ItemDetailScreen(
                         )
                     }
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        if (isEditing) {
+                            AssistChip(
+                                onClick = { showCategorySheet = true },
+                                label = { Text(state.category ?: "Bæta við flokk") },
+                                leadingIcon = {
+                                    val icon = state.category?.let { CATEGORY_ICON[it] }
+                                        ?: Icons.Default.Add
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(AssistChipDefaults.IconSize)
+                                    )
+                                },
+                                trailingIcon = if (state.category != null) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(AssistChipDefaults.IconSize)
+                                        )
+                                    }
+                                } else null
+                            )
+                        } else {
+                            state.category?.let { cat ->
+                                SuggestionChip(
+                                    onClick = {},
+                                    label = { Text(cat) },
+                                    icon = {
+                                        CATEGORY_ICON[cat]?.let { icon ->
+                                            Icon(
+                                                imageVector = icon,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(SuggestionChipDefaults.IconSize)
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    if (showCategorySheet) {
+                        CategoryPickerSheet(
+                            selected = state.category,
+                            onSelect = { vm.onCategoryChange(it) },
+                            onDismiss = { showCategorySheet = false }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     OutlinedTextField(
                         value = state.name,
@@ -361,6 +418,7 @@ fun ItemDetailScreen(
                         singleLine = true,
                         enabled = true,
                     )
+
                 }
             }
         }
