@@ -25,10 +25,10 @@ import javax.inject.Inject
 private const val STORAGE_URL = "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/wishlist-images/"
 
 private fun toPublicImageUrl(path: String): String {
-    return if (path.startsWith("http://") || path.startsWith("https://")) {
-        path
-    } else {
-        "$STORAGE_URL$path"
+    return when {
+        path.startsWith("http://") || path.startsWith("https://") -> path
+        path.startsWith("pending://") -> "file://${path.removePrefix("pending://")}"
+        else -> "$STORAGE_URL$path"
     }
 }
 
@@ -350,24 +350,21 @@ class WishlistDetailViewModel @Inject constructor(
 
     // Hleður lista af þeim sem hafa aðgang að wishlist
     fun onSharedWith(wishlistId: String) = viewModelScope.launch {
-        _uiState.value = _uiState.value.copy(
-            isLoading = true,
-            errorMessage = null
-        )
+        _uiState.value = _uiState.value.copy(sharedWithError = null)
 
-        wishlistRepo.getSharedWithEmails(wishlistId)
-            .onSuccess { emails ->
+        wishlistRepo.getSharedWithUsers(wishlistId)
+            .onSuccess { users ->
                 _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    sharedWithEmails = emails,
-                    errorMessage = null
+                    sharedWithUsers = users,
+                    sharedWithError = null
                 )
             }
-            .onFailure { error ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = error.message ?: "Failed to load shared users"
-                )
+            .onFailure {
+                if (_uiState.value.sharedWithUsers.isEmpty()) {
+                    _uiState.value = _uiState.value.copy(
+                        sharedWithError = "Ekkert netsamband. Ekki hægt að sækja þátttakendur."
+                    )
+                }
             }
     }
 

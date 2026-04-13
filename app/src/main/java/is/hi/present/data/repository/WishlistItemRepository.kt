@@ -201,31 +201,40 @@ class WishlistItemRepository @Inject constructor(
         wishlistId: String,
         orderedItemIds: List<String>
     ): Result<Unit> = runCatching {
+        val now = System.currentTimeMillis()
+
         orderedItemIds.forEachIndexed { index, itemId ->
-            supabase
-                .from("wishlist_items")
-                .update(
-                    {
-                        set("sort_order", index)
-                    }
-                ) {
-                    filter { eq("id", itemId) }
-                }
+            val existing = dao.getItemById(itemId) ?: return@forEachIndexed
+            val updated = existing.copy(sortOrder = index, updatedAt = now)
+            dao.upsert(updated)
+
+            val payload = PendingWishlistItemPayload(
+                id = updated.id,
+                wishlistId = updated.wishlistId,
+                name = updated.name,
+                notes = updated.notes,
+                url = updated.url,
+                price = updated.price,
+                imagePath = updated.imagePath,
+                category = updated.category,
+                sortOrder = updated.sortOrder
+            )
+
+            pendingOpDao.insert(
+                PendingOpEntity(
+                    type = SyncManager.ITEM_UPDATE,
+                    entityId = updated.id,
+                    parentId = updated.wishlistId,
+                    payloadJson = Json.encodeToString(payload),
+                    createdAt = now
+                )
+            )
         }
 
-        refreshWishlistItems(wishlistId).getOrThrow()
+        syncScheduler.enqueueOneTimeSync()
     }
 
     suspend fun deleteWishlistItem(itemId: String): Result<Unit> = runCatching {
-
-        val dto: WishlistItemDto = supabase
-            .from("wishlist_items")
-            .select {
-                filter { eq("id", itemId) }
-                limit(1)
-            }
-            .decodeSingle()
-
         val existing = dao.getItemById(itemId) ?: error("Item not found")
 
 
@@ -254,6 +263,31 @@ class WishlistItemRepository @Inject constructor(
         )
 
         syncScheduler.enqueueOneTimeSync()
+    }
+
+    // ---- LOCAL MEDIA -----
+    suspend fun saveImageLocally(
+        context: Context,
+        imageUri: Uri,
+        wishlistId: String
+    ): Result<String> = runCatching {
+        val inputStream = context.contentResolver.openInputStream(imageUri)
+            ?: throw IllegalArgumentException("Cannot open image stream")
+        val bytes = inputStream.readBytes()
+        val filename = "pending_image_${wishlistId}_${System.currentTimeMillis()}.jpg"
+        val file = java.io.File(context.filesDir, filename)
+        file.writeBytes(bytes)
+        "pending://${file.absolutePath}"
+    }
+
+    suspend fun uploadItemImageFromPath(
+        wishlistId: String,
+        localPath: String
+    ): Result<String> = runCatching {
+        val bytes = java.io.File(localPath).readBytes()
+        val filename = "wishlist_${wishlistId}_${System.currentTimeMillis()}.jpg"
+        supabase.storage.from("wishlist-images").upload(filename, bytes)
+        filename
     }
 
     // ---- REMOTE-ONLY MEDIA -----

@@ -47,7 +47,7 @@ fun ReorderableWishlistRow(
                 translationY = dragOffsetY
             }
             .zIndex(if (isDragging) 1f else 0f)
-            .pointerInput(item.id, currentIndex) {
+            .pointerInput(item.id) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = {
                         isDragging = true

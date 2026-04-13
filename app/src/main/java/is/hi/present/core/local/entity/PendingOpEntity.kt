@@ -22,4 +22,5 @@ object PendingOpType {
     const val ITEM_CREATE = "ITEM_CREATE"
     const val ITEM_UPDATE = "ITEM_UPDATE"
     const val ITEM_DELETE = "ITEM_DELETE"
+    const val PROFILE_UPDATE = "PROFILE_UPDATE"
 }

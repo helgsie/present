@@ -40,10 +40,11 @@ data class WishlistIdArgs(
 )
 
 @Serializable
-data class SharedWithEmailRow(
+data class SharedWithRow(
     @SerialName("user_id")
     val userId: String,
-    val email: String,
+    @SerialName("email")
+    val displayName: String,
     val role: String? = null
 )
 

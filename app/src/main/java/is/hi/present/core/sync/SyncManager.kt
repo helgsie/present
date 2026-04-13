@@ -2,10 +2,12 @@ package `is`.hi.present.core.sync
 
 import `is`.hi.present.core.local.dao.PendingOpDao
 import `is`.hi.present.core.local.entity.PendingOpEntity
+import `is`.hi.present.data.dto.PendingProfilePayload
 import `is`.hi.present.data.dto.PendingWishlistItemPayload
 import `is`.hi.present.data.dto.PendingWishlistPayload
 import `is`.hi.present.data.dto.WishlistInsert
 import `is`.hi.present.data.dto.WishlistItemInsert
+import `is`.hi.present.data.repository.AuthRepository
 import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistRepository
 import io.github.jan.supabase.SupabaseClient
@@ -19,6 +21,7 @@ class SyncManager @Inject constructor(
     private val pendingOpDao: PendingOpDao,
     private val wishlistRepository: WishlistRepository,
     private val wishlistItemRepository: WishlistItemRepository,
+    private val authRepository: AuthRepository,
     private val supabase: SupabaseClient
 ) {
 
@@ -45,6 +48,7 @@ class SyncManager @Inject constructor(
                     ITEM_CREATE -> replayItemCreate(op)
                     ITEM_UPDATE -> replayItemUpdate(op)
                     ITEM_DELETE -> replayItemDelete(op)
+                    PROFILE_UPDATE -> replayProfileUpdate(op)
                     else -> {
                         continue
                     }
@@ -124,6 +128,13 @@ class SyncManager @Inject constructor(
     private suspend fun replayItemUpdate(op: PendingOpEntity) {
         val payload = decodeWishlistItemPayload(op)
 
+        val resolvedImagePath = if (payload.imagePath?.startsWith("pending://") == true) {
+            val localPath = payload.imagePath.removePrefix("pending://")
+            wishlistItemRepository.uploadItemImageFromPath(payload.wishlistId, localPath).getOrThrow()
+        } else {
+            payload.imagePath
+        }
+
         supabase
             .from("wishlist_items")
             .update(
@@ -132,7 +143,7 @@ class SyncManager @Inject constructor(
                     set("notes", payload.notes)
                     set("url", payload.url)
                     set("price", payload.price)
-                    set("image_path", payload.imagePath)
+                    set("image_path", resolvedImagePath)
                     set("category", payload.category)
                     set("sort_order", payload.sortOrder)
                 }
@@ -157,6 +168,12 @@ class SyncManager @Inject constructor(
             }
     }
 
+    private suspend fun replayProfileUpdate(op: PendingOpEntity) {
+        val json = op.payloadJson ?: error("Missing payloadJson for op id=${op.id}")
+        val payload = Json.decodeFromString<PendingProfilePayload>(json)
+        authRepository.updateDisplayName(payload.displayName).getOrThrow()
+    }
+
     private fun decodeWishlistPayload(op: PendingOpEntity): PendingWishlistPayload {
         val json = op.payloadJson ?: error("Missing payloadJson for op id=${op.id}, type=${op.type}")
         return Json.decodeFromString<PendingWishlistPayload>(json)
@@ -174,6 +191,7 @@ class SyncManager @Inject constructor(
         WISHLIST_UPDATE -> 3
         ITEM_CREATE -> 4
         ITEM_UPDATE -> 5
+        PROFILE_UPDATE -> 6
         else -> 99
     }
 
@@ -186,5 +204,6 @@ class SyncManager @Inject constructor(
         const val ITEM_CREATE = "ITEM_CREATE"
         const val ITEM_UPDATE = "ITEM_UPDATE"
         const val ITEM_DELETE = "ITEM_DELETE"
+        const val PROFILE_UPDATE = "PROFILE_UPDATE"
     }
 }

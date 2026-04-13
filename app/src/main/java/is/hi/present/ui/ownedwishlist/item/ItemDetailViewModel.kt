@@ -78,10 +78,10 @@ class ItemDetailViewModel @Inject constructor(
 }
 
     private fun toPublicImageUrl(path: String): String {
-        return if (path.startsWith("http://") || path.startsWith("https://")) {
-            path
-        } else {
-            "$STORAGE_URL$path"
+        return when {
+            path.startsWith("http://") || path.startsWith("https://") -> path
+            path.startsWith("pending://") -> "file://${path.removePrefix("pending://")}"
+            else -> "$STORAGE_URL$path"
         }
     }
 
@@ -105,7 +105,19 @@ class ItemDetailViewModel @Inject constructor(
 
         val newImagePath = when {
             selectedImageUri != null -> {
-                itemRepo.uploadItemImage(context, wishlistId, selectedImageUri).getOrThrow()
+                val uploadResult = itemRepo.uploadItemImage(context, wishlistId, selectedImageUri)
+                if (uploadResult.isSuccess) {
+                    uploadResult.getOrThrow()
+                } else {
+                    itemRepo.saveImageLocally(context, selectedImageUri, wishlistId)
+                        .getOrElse {
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                errorMessage = "Tókst ekki að vista mynd"
+                            )
+                            return@launch
+                        }
+                }
             }
             s.isImageRemoved -> {
                 null

@@ -10,7 +10,7 @@ import `is`.hi.present.core.local.dao.PendingOpDao
 import `is`.hi.present.data.dto.CreateShareLinkArgs
 import `is`.hi.present.data.dto.JoinByTokenArgs
 import `is`.hi.present.data.dto.RemoveSharedUserArgs
-import `is`.hi.present.data.dto.SharedWithEmailRow
+import `is`.hi.present.data.dto.SharedWithRow
 import `is`.hi.present.data.dto.WishlistCardDto
 import `is`.hi.present.data.dto.WishlistDto
 import `is`.hi.present.data.dto.WishlistIdArgs
@@ -51,13 +51,9 @@ class WishlistRepository @Inject constructor(
         wishlistDao.getWishlistById(wishlistId)?.toDomain()
     // ------ SYNCING ROOM WITH DATA FROM REMOTE -------
     suspend fun refreshWishlists(ownerId: String): Result<Unit> = runCatching {
-        val remote = supabase
-            .from("wishlists")
-            .select {
-                filter { eq("owner_id", ownerId) }
-                order("updated_at", order = Order.DESCENDING)
-            }
-            .decodeList<WishlistDto>()
+        val remote = supabase.postgrest
+            .rpc("get_my_wishlist_cards")
+            .decodeList<WishlistCardDto>()
 
         val remoteEntities = remote.map { it.toEntity() }
         val localEntities = wishlistDao.getWishlists(ownerId)
@@ -275,13 +271,13 @@ class WishlistRepository @Inject constructor(
             .decodeAs()
     }
 
-    suspend fun getSharedWithEmails(wishlistId: String): Result<List<SharedWithEmailRow>> = runCatching {
+    suspend fun getSharedWithUsers(wishlistId: String): Result<List<SharedWithRow>> = runCatching {
         supabase.postgrest
             .rpc(
                 "shared_with_emails",
                 parameters = WishlistIdArgs(wishlistId)
             )
-            .decodeAs<List<SharedWithEmailRow>>()
+            .decodeAs<List<SharedWithRow>>()
     }
 
     suspend fun removeFromWishlist(
