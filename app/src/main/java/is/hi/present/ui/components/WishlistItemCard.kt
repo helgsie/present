@@ -99,6 +99,20 @@ fun WishlistItemCard(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+
+                if (!w.category.isNullOrBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = SoftSurfaceVariant
+                    ) {
+                        Text(
+                            text = w.category,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.width(10.dp))

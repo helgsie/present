@@ -8,6 +8,7 @@ data class WishlistItemUi(
     val notes: String? = null,
     val price: Double? = null,
     val imagePath: String? = null,
+    val category: String? = null,
     val isClaimed: Boolean = false,
     val isClaimedByMe: Boolean = false,
     val claimedByUserEmail: String? = null,

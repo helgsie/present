@@ -16,6 +16,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -24,6 +25,9 @@ import android.Manifest
 import android.content.Context
 import androidx.core.net.toUri
 import `is`.hi.present.ui.ownedwishlist.detail.WishlistDetailViewModel
+import `is`.hi.present.ui.ownedwishlist.components.CATEGORY_ICON
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import `is`.hi.present.ui.ownedwishlist.components.CategoryPickerSheet
 import java.io.File
 import java.io.FileOutputStream
 
@@ -43,6 +47,8 @@ fun CreateItemScreen(
     var priceText by rememberSaveable { mutableStateOf("") }
     var selectedImageUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var selectedCameraBitmap by rememberSaveable { mutableStateOf<Bitmap?>(null) }
+    var selectedCategory by rememberSaveable { mutableStateOf<String?>(null) }
+    var showCategorySheet by remember { mutableStateOf(false) }
 
     val trimmedName = name.trim()
     val trimmedNotes = notes.trim().ifBlank { null }
@@ -132,6 +138,43 @@ fun CreateItemScreen(
                 isError = priceText.isNotBlank() && parsedPrice == null,
             )
 
+            Box {
+                OutlinedTextField(
+                    value = selectedCategory ?: "",
+                    onValueChange = {},
+                    label = { Text("Flokkur (valkvæð)") },
+                    placeholder = { Text("Enginn flokkur") },
+                    readOnly = true,
+                    leadingIcon = {
+                        selectedCategory?.let { cat ->
+                            CATEGORY_ICON[cat]?.let { icon ->
+                                Icon(imageVector = icon, contentDescription = null)
+                            }
+                        }
+                    },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Velja flokk"
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showCategorySheet = true }
+                )
+            }
+
+            if (showCategorySheet) {
+                CategoryPickerSheet(
+                    selected = selectedCategory,
+                    onSelect = { selectedCategory = it },
+                    onDismiss = { showCategorySheet = false }
+                )
+            }
+
             // Buttons for images/photos
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { galleryLauncher.launch("image/*") }) {
@@ -188,6 +231,7 @@ fun CreateItemScreen(
                         notes = trimmedNotes,
                         url = trimmedUrl,
                         price = parsedPrice,
+                        category = selectedCategory,
                         selectedImageUri = imageUriToUpload,
                         context = context,
                         onDone = onDone

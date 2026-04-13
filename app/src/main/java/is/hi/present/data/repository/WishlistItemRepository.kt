@@ -158,7 +158,8 @@ class WishlistItemRepository @Inject constructor(
         name: String,
         notes: String?,
         price: Double?,
-        imagePath: String?
+        imagePath: String?,
+        category: String? = null
     ): Result<Unit> = runCatching {
         val existing = dao.getItemById(itemId) ?: error("Item not found")
 
@@ -167,6 +168,7 @@ class WishlistItemRepository @Inject constructor(
             notes = notes,
             price = price,
             imagePath = imagePath,
+            category = category,
             updatedAt = System.currentTimeMillis()
         )
 

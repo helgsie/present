@@ -46,6 +46,7 @@ class ItemDetailViewModel @Inject constructor(
                         url = local.url.orEmpty(),
                         priceText = local.price?.toInt()?.toString().orEmpty(),
                         imageUrl = local.imagePath?.let(::toPublicImageUrl),
+                        category = local.category,
                         errorMessage = null
                     )
                 }
@@ -65,6 +66,7 @@ class ItemDetailViewModel @Inject constructor(
                         url = item.url.orEmpty(),
                         priceText = item.price?.toInt()?.toString().orEmpty(),
                         imageUrl = item.imagePath?.let(::toPublicImageUrl),
+                        category = item.category,
                         errorMessage = null
                     )
                 }.onFailure {
@@ -132,7 +134,8 @@ class ItemDetailViewModel @Inject constructor(
             name = s.name.trim(),
             notes = s.notes.trim().ifBlank { null },
             price = price,
-            imagePath = newImagePath
+            imagePath = newImagePath,
+            category = s.category
         )
             .onSuccess {
                 _effects.send(ItemDetailEffect.NavigateBack)
@@ -206,6 +209,10 @@ class ItemDetailViewModel @Inject constructor(
 
     fun onUrlChange(v: String) {
         _uiState.value = _uiState.value.copy(url = v)
+    }
+
+    fun onCategoryChange(v: String?) {
+        _uiState.value = _uiState.value.copy(category = v)
     }
 
     fun onImageSelected(uriString: String?) {
