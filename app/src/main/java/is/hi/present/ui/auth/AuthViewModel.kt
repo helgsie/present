@@ -12,7 +12,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import `is`.hi.present.core.local.AppDatabase
+import `is`.hi.present.core.local.dao.PendingOpDao
+import `is`.hi.present.core.local.entity.PendingOpEntity
+import `is`.hi.present.core.local.entity.PendingOpType
+import `is`.hi.present.core.sync.SyncManager
 import `is`.hi.present.core.sync.SyncScheduler
+import `is`.hi.present.data.dto.PendingProfilePayload
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,7 +26,9 @@ class AuthViewModel @Inject constructor(
     private val repo: AuthRepository,
     private val sharedPref: SharedPreferenceHelper,
     private val appDatabase: AppDatabase,
-    private val syncScheduler: SyncScheduler
+    private val syncScheduler: SyncScheduler,
+    private val syncManager: SyncManager,
+    private val pendingOpDao: PendingOpDao
 ) : ViewModel() {
 
     private val _authUiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
@@ -180,6 +188,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _authUiState.value = AuthUiState.SignOutLoading
 
+            runCatching { syncManager.replayPendingOps() }
             runCatching { repo.signOut() }
             runCatching { clearLocalDatabase() }
             runCatching { syncScheduler.cancelAllSync() }
@@ -224,12 +233,26 @@ class AuthViewModel @Inject constructor(
         onResult: (Result<Unit>) -> Unit
     ) {
         viewModelScope.launch {
-            val result = repo.updateDisplayName(name)
-            if (result.isSuccess) {
-                _currentDisplayName.value = name
-                sharedPref.saveStringData(PREF_DISPLAY_NAME, name)
+            val userId = repo.getCurrentUserId() ?: run {
+                onResult(Result.failure(IllegalStateException("Not logged in")))
+                return@launch
             }
-            onResult(result)
+
+            _currentDisplayName.value = name
+            sharedPref.saveStringData(PREF_DISPLAY_NAME, name)
+
+            val payload = PendingProfilePayload(userId = userId, displayName = name)
+            pendingOpDao.insert(
+                PendingOpEntity(
+                    type = PendingOpType.PROFILE_UPDATE,
+                    entityId = userId,
+                    parentId = null,
+                    payloadJson = Json.encodeToString(payload),
+                    createdAt = System.currentTimeMillis()
+                )
+            )
+            syncScheduler.enqueueOneTimeSync()
+            onResult(Result.success(Unit))
         }
     }
 }

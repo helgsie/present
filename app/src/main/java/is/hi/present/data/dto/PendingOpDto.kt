@@ -23,3 +23,9 @@ data class PendingWishlistItemPayload(
     val category: String?,
     val sortOrder: Int?
 )
+
+@Serializable
+data class PendingProfilePayload(
+    val userId: String,
+    val displayName: String
+)

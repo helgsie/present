@@ -15,7 +15,7 @@ import `is`.hi.present.core.local.entity.PendingOpEntity
         WishlistItemEntity::class,
         PendingOpEntity::class
    ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

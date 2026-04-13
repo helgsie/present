@@ -1,5 +1,6 @@
 package `is`.hi.present.data.mapper
 
+import `is`.hi.present.data.dto.WishlistCardDto
 import `is`.hi.present.data.dto.WishlistDto
 import `is`.hi.present.core.local.entity.WishlistEntity
 import `is`.hi.present.domain.Wishlist
@@ -15,6 +16,19 @@ fun WishlistDto.toEntity(): WishlistEntity =
         createdAt = Instant.parse(createdAt).toEpochMilli(),
         updatedAt = Instant.parse(updatedAt).toEpochMilli()
     )
+
+fun WishlistCardDto.toEntity(): WishlistEntity =
+    WishlistEntity(
+        id = id,
+        ownerId = ownerId,
+        title = title,
+        description = description,
+        iconKey = iconKey,
+        isShared = isShared,
+        createdAt = Instant.parse(createdAt).toEpochMilli(),
+        updatedAt = Instant.parse(updatedAt).toEpochMilli()
+    )
+
 fun WishlistDto.toDomain(): Wishlist = Wishlist(
     id = id,
     title = title,
@@ -32,6 +46,7 @@ fun WishlistEntity.toDomain(): Wishlist =
         title = title,
         description = description,
         iconKey = iconKey,
+        isShared = isShared,
         createdAt = createdAt,
         updatedAt = updatedAt
     )

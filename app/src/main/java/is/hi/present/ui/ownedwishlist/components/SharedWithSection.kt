@@ -38,11 +38,11 @@ fun SharedWithSection(
             title = { Text("Deilt með") },
             text = {
                 when {
-                    state.isLoading -> {
-                        Text("Hleð þátttakendum...")
+                    state.sharedWithError != null -> {
+                        Text(state.sharedWithError)
                     }
 
-                    state.sharedWithEmails.isEmpty() -> {
+                    state.sharedWithUsers.isEmpty() -> {
                         Text("Engir þátttakendur enn")
                     }
 
@@ -50,13 +50,13 @@ fun SharedWithSection(
                         Column(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            state.sharedWithEmails.forEach { sharedUser ->
+                            state.sharedWithUsers.forEach { sharedUser ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(sharedUser.email)
+                                    Text(sharedUser.displayName)
 
                                     TextButton(
                                         onClick = {

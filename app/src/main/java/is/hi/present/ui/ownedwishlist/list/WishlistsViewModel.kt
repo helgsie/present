@@ -56,7 +56,7 @@ class WishlistsViewModel @Inject constructor(
                                     description = w.description,
                                     iconKey = w.iconKey,
                                     itemCount = items.size,
-                                    isShared = false,
+                                    isShared = w.isShared,
                                     previewImageUrls = items
                                         .mapNotNull { itemRepo.getWishlistImage(it.imagePath).getOrNull() }
                                         .take(3)

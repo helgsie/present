@@ -1,6 +1,6 @@
 package `is`.hi.present.ui.ownedwishlist.detail
 
-import `is`.hi.present.data.dto.SharedWithEmailRow
+import `is`.hi.present.data.dto.SharedWithRow
 
 data class WishlistItemUi(
     val id: String,
@@ -18,7 +18,8 @@ data class WishlistDetailUiState(
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
     val offlineBanner: String? = null,
-    val sharedWithEmails: List<SharedWithEmailRow> = emptyList(),
+    val sharedWithUsers: List<SharedWithRow> = emptyList(),
+    val sharedWithError: String? = null,
     val title: String = "",
     val description: String? = null,
     val items: List<WishlistItemUi> = emptyList(),
