@@ -126,7 +126,7 @@ fun AccountSettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "Nafn",
+                        text = "Notandanafn",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

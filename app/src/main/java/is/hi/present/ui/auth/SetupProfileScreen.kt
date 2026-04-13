@@ -66,7 +66,7 @@ fun SetupProfileScreen(
                     if (it.length <= 30) displayName = it
                     error = null
                 },
-                label = { Text("Birtingarnafn") },
+                label = { Text("Notandanafn") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 isError = error != null,
