@@ -16,22 +16,17 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -47,9 +42,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.components.AddButton
-import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
 import android.content.res.Configuration
+import `is`.hi.present.ui.components.WishlistsHeaderScreen
 import `is`.hi.present.ui.ownedwishlist.detail.WishlistDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +61,7 @@ fun WishlistsScreen(
     onOpenWishlist: (wishlistId: String) -> Unit,
     onSelectWishlists: () -> Unit,
     selectedSegmentIndex: Int = 0,
+    embeddedInHeaderScreen: Boolean = false,
 ) {
     LaunchedEffect(ownerId) {
         wishlistVm.loadWishlists(ownerId)
@@ -93,101 +89,13 @@ fun WishlistsScreen(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val columns = if (isLandscape) 4 else 2
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(
-                        enabled = isEditMode,
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = dismissEditMode
-                    )
-            ) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = "Óskalistar",
-                            modifier = Modifier.alpha(dimmedAlpha)
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground,
-                        actionIconContentColor = MaterialTheme.colorScheme.onBackground
-                    ),
-                    actions = {
-                        IconButton(onClick = {
-                            if (isEditMode) {
-                                dismissEditMode()
-                            } else {
-                                onAccountSettings()
-                            }
-                        }) {
-                            Icon(
-                                Icons.Filled.AccountCircle,
-                                contentDescription = "Account Settings",
-                                modifier = Modifier.alpha(dimmedAlpha)
-                            )
-                        }
-                        IconButton(onClick = {
-                            if (isEditMode) {
-                                dismissEditMode()
-                            } else {
-                                onLogout()
-                            }
-                        }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ExitToApp,
-                                contentDescription = "Logout",
-                                modifier = Modifier.alpha(dimmedAlpha)
-                            )
-                        }
-                    }
-                )
-            }
-        },
-        floatingActionButton = {
-            Box(modifier = Modifier.alpha(dimmedAlpha)) {
-                AddButton(
-                    onClick = {
-                        if (isEditMode) {
-                            dismissEditMode()
-                        } else {
-                            onCreateWishlist()
-                        }
-                    },
-                    contentDescription = "Create wishlist"
-                )
-            }
-        }
-    ) { padding ->
+    val screenContent: @Composable (PaddingValues) -> Unit = { padding ->
         Column(
             modifier = modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
         ) {
-            Segments(
-                selectedIndex = selectedSegmentIndex,
-                onSelectedChange = { index ->
-                    if (isEditMode) {
-                        dismissEditMode()
-                    } else {
-                        when (index) {
-                            0 -> onSelectWishlists()
-                            1 -> onOpenSharedWishlists()
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .alpha(dimmedAlpha)
-            )
-
             PullToRefreshBox(
                 isRefreshing = state.isRefreshing,
                 onRefresh = {
@@ -348,6 +256,46 @@ fun WishlistsScreen(
                     }
                 }
             }
+        }
+    }
+
+    if (embeddedInHeaderScreen) {
+        screenContent(PaddingValues())
+    } else {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                WishlistsHeaderScreen(
+                    selectedSegmentIndex = selectedSegmentIndex,
+                    onSelectedChange = { index ->
+                        when (index) {
+                            0 -> onSelectWishlists()
+                            1 -> onOpenSharedWishlists()
+                        }
+                    },
+                    onAccountSettings = onAccountSettings,
+                    onLogout = onLogout,
+                    title = "Óskalistar",
+                    isEditMode = isEditMode,
+                    onDismissEditMode = dismissEditMode
+                )
+            },
+            floatingActionButton = {
+                Box(modifier = Modifier.alpha(dimmedAlpha)) {
+                    AddButton(
+                        onClick = {
+                            if (isEditMode) {
+                                dismissEditMode()
+                            } else {
+                                onCreateWishlist()
+                            }
+                        },
+                        contentDescription = "Create wishlist"
+                    )
+                }
+            }
+        ) { padding ->
+            screenContent(padding)
         }
     }
 }

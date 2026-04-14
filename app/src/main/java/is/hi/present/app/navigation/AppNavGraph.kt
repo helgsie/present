@@ -1,9 +1,14 @@
 package `is`.hi.present.app.navigation
 
 import androidx.compose.runtime.*
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import androidx.navigation3.runtime.NavKey
 import `is`.hi.present.ui.account.AccountSettingsScreen
 import `is`.hi.present.ui.auth.AuthStatus
 import `is`.hi.present.ui.auth.AuthViewModel
@@ -25,6 +30,15 @@ import `is`.hi.present.ui.ownedwishlist.invite.CreateTokenScreen
 import `is`.hi.present.ui.auth.SetupProfileScreen
 import `is`.hi.present.ui.ownedwishlist.detail.WishlistDetailViewModel
 import `is`.hi.present.ui.ownedwishlist.list.WishlistsViewModel
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import `is`.hi.present.ui.components.AddButton
+import `is`.hi.present.ui.components.WishlistsHeaderScreen
 
 @Composable
 fun AppNavGraphNav3(
@@ -121,18 +135,13 @@ private fun AppNav(
         entryProvider = entryProvider {
 
             entry<AppRoute.Wishlists> {
-                WishlistsScreen(
-                    ownerId = userId,
-                    wishlistVm = wishlistsViewModel,
-                    detailVm = wishlistDetailViewModel,
-                    onLogout = {
-                        authViewModel.signOut()
-                    },
-                    onAccountSettings = { backStack.add(AppRoute.AccountSettings) },
-                    onCreateWishlist = { backStack.add(AppRoute.CreateWishlist) },
-                    onOpenSharedWishlists = { backStack.add(AppRoute.SharedWishlists) },
-                    onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
-                    onSelectWishlists = { },
+                WishlistsTabsRoute(
+                    initialSelectedSegmentIndex = 0,
+                    userId = userId,
+                    authViewModel = authViewModel,
+                    wishlistsViewModel = wishlistsViewModel,
+                    wishlistDetailViewModel = wishlistDetailViewModel,
+                    backStack = backStack
                 )
             }
 
@@ -212,14 +221,13 @@ private fun AppNav(
             }
 
             entry<AppRoute.SharedWishlists> {
-                SharedWishlistScreen(
-                    onAddSharedWishlist = { backStack.add(AppRoute.AddSharedWishlist) },
-                    onOpenWishlist = { id -> backStack.add(AppRoute.SharedWishlistDetail(id)) },
-                    onSelectWishlists = { backStack.add(AppRoute.Wishlists) },
-                    onLogout = { authViewModel.signOut() },
-                    onAccountSettings = { backStack.add(AppRoute.AccountSettings) },
-                    selectedSegmentIndex = 1,
-                    onOpenSharedWishlists = { }
+                WishlistsTabsRoute(
+                    initialSelectedSegmentIndex = 1,
+                    userId = userId,
+                    authViewModel = authViewModel,
+                    wishlistsViewModel = wishlistsViewModel,
+                    wishlistDetailViewModel = wishlistDetailViewModel,
+                    backStack = backStack
                 )
             }
 
@@ -229,6 +237,106 @@ private fun AppNav(
                     onJoined = { backStack.removeLastOrNull() }
                 )
             }
+        },
+        transitionSpec = {
+            slideInHorizontally(
+                initialOffsetX = { it },
+                animationSpec = tween(250)
+            ) togetherWith slideOutHorizontally(
+                targetOffsetX = { -it },
+                animationSpec = tween(250)
+            )
+        },
+        popTransitionSpec = {
+            slideInHorizontally(
+                initialOffsetX = { -it },
+                animationSpec = tween(250)
+            ) togetherWith slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = tween(250)
+            )
+        },
+        predictivePopTransitionSpec = {
+            slideInHorizontally(
+                initialOffsetX = { -it },
+                animationSpec = tween(250)
+            ) togetherWith slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = tween(250)
+            )
         }
     )
+}
+
+@Composable
+private fun WishlistsTabsRoute(
+    initialSelectedSegmentIndex: Int,
+    userId: String,
+    authViewModel: AuthViewModel,
+    wishlistsViewModel: WishlistsViewModel,
+    wishlistDetailViewModel: WishlistDetailViewModel,
+    backStack: androidx.navigation3.runtime.NavBackStack<NavKey>
+) {
+    var selectedSegmentIndex by rememberSaveable { mutableIntStateOf(initialSelectedSegmentIndex) }
+
+    Scaffold(
+        topBar = {
+            WishlistsHeaderScreen(
+                selectedSegmentIndex = selectedSegmentIndex,
+                onSelectedChange = { selectedSegmentIndex = it },
+                onAccountSettings = { backStack.add(AppRoute.AccountSettings) },
+                onLogout = { authViewModel.signOut() },
+                title = "Óskalistar"
+            )
+        },
+        floatingActionButton = {
+            AddButton(
+                onClick = {
+                    if (selectedSegmentIndex == 0) {
+                        backStack.add(AppRoute.CreateWishlist)
+                    } else {
+                        backStack.add(AppRoute.AddSharedWishlist)
+                    }
+                },
+                contentDescription = if (selectedSegmentIndex == 0) {
+                    "Create wishlist"
+                } else {
+                    "Add shared wishlist"
+                }
+            )
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            if (selectedSegmentIndex == 0) {
+                WishlistsScreen(
+                    ownerId = userId,
+                    wishlistVm = wishlistsViewModel,
+                    detailVm = wishlistDetailViewModel,
+                    onLogout = { authViewModel.signOut() },
+                    onAccountSettings = { backStack.add(AppRoute.AccountSettings) },
+                    onCreateWishlist = { backStack.add(AppRoute.CreateWishlist) },
+                    onOpenSharedWishlists = { },
+                    onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
+                    onSelectWishlists = { },
+                    selectedSegmentIndex = selectedSegmentIndex,
+                    embeddedInHeaderScreen = true
+                )
+            } else {
+                SharedWishlistScreen(
+                    onAddSharedWishlist = { backStack.add(AppRoute.AddSharedWishlist) },
+                    onOpenWishlist = { id -> backStack.add(AppRoute.SharedWishlistDetail(id)) },
+                    onSelectWishlists = { },
+                    onLogout = { authViewModel.signOut() },
+                    onAccountSettings = { backStack.add(AppRoute.AccountSettings) },
+                    selectedSegmentIndex = selectedSegmentIndex,
+                    onOpenSharedWishlists = { },
+                    embeddedInHeaderScreen = true
+                )
+            }
+        }
+    }
 }
