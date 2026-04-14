@@ -5,17 +5,17 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,7 +31,6 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,13 +40,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
-import `is`.hi.present.R
-import `is`.hi.present.core.theme.BlushPink
-import `is`.hi.present.core.theme.MintAccent
+import coil.compose.AsyncImage
 import `is`.hi.present.core.theme.SoftCard
 import `is`.hi.present.core.theme.SoftSurfaceVariant
-import `is`.hi.present.core.theme.TextSecondary
 import `is`.hi.present.ui.ownedwishlist.list.WishlistUi
 
 @Composable
@@ -69,8 +64,10 @@ fun WishlistCard(
         label = "shakeOffset"
     )
 
-    val cardShape = RoundedCornerShape(28.dp)
-    val imageShape = RoundedCornerShape(22.dp)
+    val cardShape = RoundedCornerShape(22.dp)
+    val mediaShape = RoundedCornerShape(18.dp)
+    val cardPadding = 14.dp
+    val sectionSpacing = 8.dp
 
     Box {
         ElevatedCard(
@@ -85,124 +82,115 @@ fun WishlistCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.padding(cardPadding),
+                verticalArrangement = Arrangement.spacedBy(sectionSpacing)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
+                WishlistCardMedia(
+                    imageUrls = w.previewImageUrls,
+                    iconKey = w.iconKey,
+                    mediaShape = mediaShape
+                )
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    WishlistPreviewGrid(
-                        imageUrls = w.previewImageUrls,
-                        modifier = Modifier.fillMaxWidth()
+                    WishlistCardText(
+                        title = w.title,
+                        isShared = w.isShared
                     )
 
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(12.dp)
-                            .offset(x = (20).dp, y = -20.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        color = SoftSurfaceVariant
-                    ) {
-                        Text(
-                            text = "${w.itemCount} ${if (w.itemCount == 1) "Hlutur" else "Hlutir"}",                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(SoftSurfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val icon = WishlistIcon.Companion.fromKey(w.iconKey).toImageVector()
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null
-                        )
-                    }
-
-                    Spacer(Modifier.width(10.dp))
-
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = w.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        if (!w.description.isNullOrBlank()) {
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = w.description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (w.isShared) {
-                        MintAccent.copy(alpha = 0.45f)
-                    } else {
-                        BlushPink.copy(alpha = 0.45f)
-                    }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (w.isShared) Icons.Default.People else Icons.Default.Lock,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = if (w.isShared) "Deilt" else "Einka",
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
+                    ItemCountText(itemCount = w.itemCount)
                 }
             }
         }
 
-        if (isEditMode && showLeaveButton && onLeaveClick != null) {
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 8.dp, y = (-8).dp)
-                    .offset(x = shakeOffset.dp)
-                    .size(30.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.error,
-                tonalElevation = 4.dp
-            ) {
-                IconButton(onClick = onLeaveClick) {
-                    Icon(
-                        imageVector = Icons.Default.Remove,
-                        contentDescription = "Fara úr óskalista",
-                        tint = MaterialTheme.colorScheme.onError,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-            }
+        WishlistLeaveButton(
+            isVisible = isEditMode && showLeaveButton,
+            shakeOffset = shakeOffset,
+            onClick = onLeaveClick
+        )
+    }
+}
+
+@Composable
+private fun WishlistCardMedia(
+    imageUrls: List<String>,
+    iconKey: String?,
+    mediaShape: RoundedCornerShape
+) {
+    Box(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        WishlistPreviewGrid(
+            imageUrls = imageUrls,
+            iconKey = iconKey,
+            modifier = Modifier.fillMaxWidth(),
+            shape = mediaShape
+        )
+    }
+}
+
+@Composable
+private fun ItemCountText(itemCount: Int) {
+    Text(
+        text = "$itemCount ${if (itemCount == 1) "Gjöf" else "Gjafir"}",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
+private fun WishlistCardText(
+    title: String,
+    isShared: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (!isShared) Icons.Default.Lock else Icons.Default.People,
+            contentDescription = if (!isShared) "Einka" else "Deilt",
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(Modifier.width(6.dp))
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.WishlistLeaveButton(
+    isVisible: Boolean,
+    shakeOffset: Float,
+    onClick: (() -> Unit)?
+) {
+    if (!isVisible || onClick == null) return
+
+    androidx.compose.material3.Surface(
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .offset(x = 8.dp, y = (-8).dp)
+            .offset(x = shakeOffset.dp)
+            .size(30.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.error,
+        tonalElevation = 4.dp
+    ) {
+        IconButton(onClick = onClick) {
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = "Fara úr óskalista",
+                tint = MaterialTheme.colorScheme.onError,
+                modifier = Modifier.size(14.dp)
+            )
         }
     }
 }
@@ -210,82 +198,98 @@ fun WishlistCard(
 @Composable
 private fun WishlistPreviewGrid(
     imageUrls: List<String>,
-    modifier: Modifier = Modifier
+    iconKey: String?,
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(22.dp)
 ) {
-    val shape = RoundedCornerShape(22.dp)
     val images = imageUrls.take(4)
+    val gridSpacing = 3.dp
+    val hasImages = images.isNotEmpty()
+    val backgroundColor = if (hasImages) MaterialTheme.colorScheme.surface else SoftSurfaceVariant
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(1f)
             .clip(shape)
+            .background(backgroundColor),
+        contentAlignment = Alignment.Center
     ) {
-        when (images.size) {
-            0 -> {
-                Image(
-                    painter = rememberAsyncImagePainter(R.drawable.ic_item_placeholder),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
+        if (!hasImages) {
+            val icon = WishlistIcon.fromKey(iconKey).toImageVector()
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            val previewSlots = List(4) { index -> images.getOrNull(index) }
 
-            1 -> {
-                Image(
-                    painter = rememberAsyncImagePainter(images[0]),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            2 -> {
-                Row(modifier = Modifier.fillMaxSize()) {
-                    images.forEach { url ->
-                        Image(
-                            painter = rememberAsyncImagePainter(url),
-                            contentDescription = null,
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(gridSpacing)
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(gridSpacing)
+                ) {
+                    previewSlots.take(2).forEach { imageUrl ->
+                        PreviewGridSlot(
+                            imageUrl = imageUrl,
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                                .fillMaxHeight()
                         )
                     }
                 }
-            }
 
-            else -> {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Row(modifier = Modifier.weight(1f)) {
-                        images.take(2).forEach { url ->
-                            Image(
-                                painter = rememberAsyncImagePainter(url),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                    }
-                    Row(modifier = Modifier.weight(1f)) {
-                        images.drop(2).take(2).forEach { url ->
-                            Image(
-                                painter = rememberAsyncImagePainter(url),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                        if (images.size == 3) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(gridSpacing)
+                ) {
+                    previewSlots.drop(2).forEach { imageUrl ->
+                        PreviewGridSlot(
+                            imageUrl = imageUrl,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                        )
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun PreviewGridSlot(
+    imageUrl: String?,
+    modifier: Modifier = Modifier
+) {
+    if (imageUrl == null) {
+        Box(
+            modifier = modifier.background(SoftSurfaceVariant)
+        )
+    } else {
+        NetworkImage(
+            imageUrl = imageUrl,
+            modifier = modifier,
+            contentScale = ContentScale.Crop
+        )
+    }
+}
+
+@Composable
+private fun NetworkImage(
+    imageUrl: String,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop
+) {
+    AsyncImage(
+        model = imageUrl,
+        contentDescription = null,
+        modifier = modifier,
+        contentScale = contentScale
+    )
 }
