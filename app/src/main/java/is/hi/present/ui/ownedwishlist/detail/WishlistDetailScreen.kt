@@ -11,7 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-//import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +57,8 @@ import `is`.hi.present.ui.ownedwishlist.components.SharedWithSection
 import `is`.hi.present.ui.components.WishlistItemCard
 import `is`.hi.present.ui.components.WishlistInfoCard
 import `is`.hi.present.ui.ownedwishlist.components.WishlistEditor
+import `is`.hi.present.ui.ownedwishlist.components.IconPickerButton
+import `is`.hi.present.ui.components.WishlistIcon
 import `is`.hi.present.core.theme.SoftCard
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -83,10 +87,11 @@ fun WishlistDetailScreen(
     var shareCode by remember { mutableStateOf<String?>(null) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var isEditing by rememberSaveable { mutableStateOf(false) }
+    var selectedCategoryFilter by rememberSaveable { mutableStateOf<String?>(null) }
 
     var title by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
-    var iconKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedWishlistIcon by rememberSaveable { mutableStateOf(WishlistIcon.FAVORITE) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     var lastSnackbarMessage by remember { mutableStateOf<String?>(null) }
@@ -236,7 +241,7 @@ fun WishlistDetailScreen(
                                 onClick = {
                                     title = state.title
                                     description = state.description.orEmpty()
-                                    iconKey = state.iconKey
+                                    selectedWishlistIcon = WishlistIcon.fromKey(state.iconKey)
                                     isEditing = true
                                 }
                             ) {
@@ -270,7 +275,7 @@ fun WishlistDetailScreen(
                                         wishlistId = wishlistId,
                                         title = title.trim(),
                                         description = description.trim().ifBlank { null },
-                                        iconKey = iconKey ?: state.iconKey
+                                        iconKey = selectedWishlistIcon.key
                                     )
                                 }
                             ) {
@@ -350,6 +355,11 @@ fun WishlistDetailScreen(
                                                 onTitleChange = { title = it },
                                                 description = description,
                                                 onDescriptionChange = { description = it }
+                                            )
+                                            IconPickerButton(
+                                                selectedIcon = selectedWishlistIcon,
+                                                onSelected = { selectedWishlistIcon = it },
+                                                modifier = Modifier.fillMaxWidth()
                                             )
                                         } else {
                                             WishlistInfoCard(
@@ -454,6 +464,15 @@ fun WishlistDetailScreen(
                             }
 
                             else -> {
+                                val categories = state.items
+                                    .mapNotNull { it.category }
+                                    .distinct()
+                                    .sorted()
+                                val displayedItems = if (selectedCategoryFilter != null)
+                                    state.items.filter { it.category == selectedCategoryFilter }
+                                else
+                                    state.items
+
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(16.dp),
@@ -467,10 +486,34 @@ fun WishlistDetailScreen(
                                                 description = description,
                                                 onDescriptionChange = { description = it }
                                             )
+                                            IconPickerButton(
+                                                selectedIcon = selectedWishlistIcon,
+                                                onSelected = { selectedWishlistIcon = it },
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
                                         } else {
                                             WishlistInfoCard(
                                                 description = state.description
                                             )
+                                        }
+                                    }
+
+                                    if (categories.isNotEmpty()) {
+                                        item {
+                                            LazyRow(
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                items(categories) { cat ->
+                                                    FilterChip(
+                                                        selected = selectedCategoryFilter == cat,
+                                                        onClick = {
+                                                            selectedCategoryFilter =
+                                                                if (selectedCategoryFilter == cat) null else cat
+                                                        },
+                                                        label = { Text(cat) }
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
 
@@ -485,7 +528,7 @@ fun WishlistDetailScreen(
 //                                    }
 
                                     itemsIndexed(
-                                        items = state.items,
+                                        items = displayedItems,
                                         key = { _, item -> item.id }
                                     ) { index, item ->
                                         ReorderableWishlistRow(

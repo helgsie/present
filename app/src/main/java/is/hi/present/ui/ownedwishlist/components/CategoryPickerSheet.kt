@@ -7,6 +7,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -19,6 +23,10 @@ fun CategoryPickerSheet(
     onSelect: (String?) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var customText by remember {
+        mutableStateOf(if (selected != null && selected !in ITEM_CATEGORIES) selected else "")
+    }
+
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Text(
             text = "Veldu flokk",
@@ -77,6 +85,34 @@ fun CategoryPickerSheet(
                         )
                     }
                 }
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = customText,
+                onValueChange = { customText = it },
+                label = { Text("Nafn á flokk") },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+            Button(
+                onClick = {
+                    val trimmed = customText.trim()
+                    if (trimmed.isNotBlank()) {
+                        onSelect(trimmed)
+                        onDismiss()
+                    }
+                },
+                enabled = customText.isNotBlank()
+            ) {
+                Text("Bæta við")
             }
         }
 

@@ -7,6 +7,7 @@ data class SharedItemDetailUiState(
     val id: String = "",
     val name: String = "",
     val notes: String? = null,
+    val url: String? = null,
     val price: Double? = null,
     val imagePath: String? = null,
 
