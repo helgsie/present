@@ -119,14 +119,14 @@ fun CreateItemScreen(
             OutlinedTextField(
                 value = notes,
                 onValueChange = { notes = it },
-                label = { Text("Lýsing (valkvæð)") },
+                label = { Text("Lýsing (valkvætt)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
-                label = { Text("Hlekkur (valkvæð)") },
+                label = { Text("Hlekkur (valkvætt)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -142,7 +142,7 @@ fun CreateItemScreen(
                 OutlinedTextField(
                     value = selectedCategory ?: "",
                     onValueChange = {},
-                    label = { Text("Flokkur (valkvæð)") },
+                    label = { Text("Flokkur (valkvætt)") },
                     placeholder = { Text("Enginn flokkur") },
                     readOnly = true,
                     leadingIcon = {

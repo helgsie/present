@@ -17,11 +17,9 @@ val ITEM_CATEGORIES = listOf(
     "Bækur",
     "Raftæki",
     "Leikföng",
-    "Íþróttir",
     "Húsgögn",
-    "Fegurð",
+    "Snyrtivörur",
     "Skart",
-    "Annað"
 )
 
 val CATEGORY_ICON: Map<String, ImageVector> = mapOf(
@@ -29,9 +27,7 @@ val CATEGORY_ICON: Map<String, ImageVector> = mapOf(
     "Bækur" to Icons.Default.AutoStories,
     "Raftæki" to Icons.Default.Devices,
     "Leikföng" to Icons.Default.Toys,
-    "Íþróttir" to Icons.Default.FitnessCenter,
     "Húsgögn" to Icons.Default.Chair,
-    "Fegurð" to Icons.Default.Spa,
+    "Snyrtivörur" to Icons.Default.Spa,
     "Skart" to Icons.Default.Diamond,
-    "Annað" to Icons.Default.Category
 )

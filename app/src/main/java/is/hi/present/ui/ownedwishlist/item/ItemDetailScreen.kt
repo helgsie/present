@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.rememberAsyncImagePainter
@@ -34,8 +35,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.ui.platform.LocalUriHandler
 import `is`.hi.present.ui.ownedwishlist.components.CATEGORY_ICON
 import `is`.hi.present.ui.ownedwishlist.components.CategoryPickerSheet
+import java.net.URI
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +53,7 @@ fun ItemDetailScreen(
 ) {
     val state = vm.uiState.collectAsState().value
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
 
 
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
@@ -379,45 +386,89 @@ fun ItemDetailScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
-                        value = state.name,
-                        onValueChange = vm::onNameChange,
-                        label = { Text("Nafn") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = !isEditing,
-                        enabled = true,
-                        singleLine = true
-                    )
+                    if (isEditing) {
+                        OutlinedTextField(
+                            value = state.name,
+                            onValueChange = vm::onNameChange,
+                            label = { Text("Nafn") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
 
-                    OutlinedTextField(
-                        value = state.notes,
-                        onValueChange = vm::onNotesChange,
-                        label = { Text("Lýsing") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = !isEditing,
-                        enabled = true
-                    )
+                        OutlinedTextField(
+                            value = state.notes,
+                            onValueChange = vm::onNotesChange,
+                            label = { Text("Lýsing") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
-                    OutlinedTextField(
-                        value = state.url,
-                        onValueChange = vm::onUrlChange,
-                        label = { Text("Tengill") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = !isEditing,
-                        enabled = true,
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-                    )
+                        OutlinedTextField(
+                            value = state.url,
+                            onValueChange = vm::onUrlChange,
+                            label = { Text("Tengill") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+                        )
 
-                    OutlinedTextField(
-                        value = state.priceText,
-                        onValueChange = vm::onPriceChange,
-                        label = { Text("Verð") },
-                        modifier = Modifier.fillMaxWidth(),
-                        readOnly = !isEditing,
-                        singleLine = true,
-                        enabled = true,
-                    )
+                        OutlinedTextField(
+                            value = state.priceText,
+                            onValueChange = vm::onPriceChange,
+                            label = { Text("Verð") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    } else {
+                        val iskFormatter = remember {
+                            NumberFormat.getCurrencyInstance(Locale.forLanguageTag("is-IS")).apply {
+                                maximumFractionDigits = 0
+                                minimumFractionDigits = 0
+                            }
+                        }
+
+                        Text(
+                            text = state.name,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        state.priceText.toDoubleOrNull()?.let { price ->
+                            Text(
+                                text = iskFormatter.format(price),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        if (state.notes.isNotBlank()) {
+                            Text(
+                                text = state.notes,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        if (state.url.isNotBlank()) {
+                            val displayHost = runCatching {
+                                URI(state.url).host?.removePrefix("www.") ?: state.url
+                            }.getOrElse { state.url }
+                            SuggestionChip(
+                                onClick = {
+                                    val target = if (state.url.startsWith("http")) state.url
+                                               else "https://${state.url}"
+                                    runCatching { uriHandler.openUri(target) }
+                                },
+                                label = { Text(displayHost) },
+                                icon = {
+                                    Icon(
+                                        Icons.Default.OpenInNew,
+                                        contentDescription = "Opna tengil",
+                                        modifier = Modifier.size(SuggestionChipDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        }
+                    }
 
                 }
             }
