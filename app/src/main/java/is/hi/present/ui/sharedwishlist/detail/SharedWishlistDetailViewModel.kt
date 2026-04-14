@@ -99,7 +99,6 @@ class SharedWishlistDetailViewModel @Inject constructor(
                             notes = item.notes,
                             price = item.price,
                             imagePath = item.imagePath?.let(::toPublicImageUrl),
-                            category = item.category,
                             isClaimed = claim != null,
                             isClaimedByMe = isClaimedByMe,
                             claimedByUserName = if (isClaimedByMe) null

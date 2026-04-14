@@ -194,17 +194,15 @@ fun SharedWishlistDetailScreen(
                                         label = { Text("Frátekið af mér") }
                                     )
                                 }
-                                if (categories.isNotEmpty()) {
-                                    items(categories) { cat ->
-                                        FilterChip(
-                                            selected = selectedCategoryFilter == cat,
-                                            onClick = {
-                                                selectedCategoryFilter =
-                                                    if (selectedCategoryFilter == cat) null else cat
-                                            },
-                                            label = { Text(cat) }
-                                        )
-                                    }
+                                items(categories) { cat ->
+                                    FilterChip(
+                                        selected = selectedCategoryFilter == cat,
+                                        onClick = {
+                                            selectedCategoryFilter =
+                                                if (selectedCategoryFilter == cat) null else cat
+                                        },
+                                        label = { Text(cat) }
+                                    )
                                 }
                             }
                         }

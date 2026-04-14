@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -63,8 +62,10 @@ import `is`.hi.present.ui.components.WishlistIcon
 import `is`.hi.present.core.theme.SoftCard
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-
+import androidx.compose.foundation.lazy.itemsIndexed
 @OptIn(ExperimentalMaterial3Api::class)
+
+
 @Composable
 fun WishlistDetailScreen(
     wishlistId: String,

@@ -57,7 +57,6 @@ class SyncManager @Inject constructor(
 
                 pendingOpDao.deleteById(op.id)
             } catch (t: Throwable) {
-                Log.e(TAG, "Failed to replay op id=${op.id} type=${op.type}: ${t.message}", t)
                 if (firstError == null) firstError = t
             }
         }

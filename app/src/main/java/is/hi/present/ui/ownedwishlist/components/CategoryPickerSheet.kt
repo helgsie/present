@@ -98,7 +98,7 @@ fun CategoryPickerSheet(
             OutlinedTextField(
                 value = customText,
                 onValueChange = { customText = it },
-                label = { Text("Nafn á flokk") },
+                label = { Text("Búa til flokk?") },
                 singleLine = true,
                 modifier = Modifier.weight(1f)
             )
