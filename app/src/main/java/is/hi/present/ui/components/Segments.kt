@@ -14,8 +14,8 @@ fun Segments(
     onSelectedChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val options = listOf("Mínir", "Deilt")
-    val selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+    val options = listOf("Mínir", "Ekki mínir")
+    val selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
     val selectedContentColor = MaterialTheme.colorScheme.onSurface
     val unselectedContainerColor = Color.Transparent
     val unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant

@@ -59,7 +59,7 @@ class WishlistsViewModel @Inject constructor(
                                     isShared = w.isShared,
                                     previewImageUrls = items
                                         .mapNotNull { itemRepo.getWishlistImage(it.imagePath).getOrNull() }
-                                        .take(3)
+                                        .take(4)
                                 )
                             }
                     }

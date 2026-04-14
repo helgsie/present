@@ -87,6 +87,7 @@ fun WishlistCard(
             ) {
                 WishlistCardMedia(
                     imageUrls = w.previewImageUrls,
+                    itemCount = w.itemCount,
                     iconKey = w.iconKey,
                     mediaShape = mediaShape
                 )
@@ -115,6 +116,7 @@ fun WishlistCard(
 @Composable
 private fun WishlistCardMedia(
     imageUrls: List<String>,
+    itemCount: Int,
     iconKey: String?,
     mediaShape: RoundedCornerShape
 ) {
@@ -123,6 +125,7 @@ private fun WishlistCardMedia(
     ) {
         WishlistPreviewGrid(
             imageUrls = imageUrls,
+            itemCount = itemCount,
             iconKey = iconKey,
             modifier = Modifier.fillMaxWidth(),
             shape = mediaShape
@@ -198,21 +201,24 @@ private fun BoxScope.WishlistLeaveButton(
 @Composable
 private fun WishlistPreviewGrid(
     imageUrls: List<String>,
+    itemCount: Int,
     iconKey: String?,
     modifier: Modifier = Modifier,
     shape: RoundedCornerShape = RoundedCornerShape(22.dp)
 ) {
+    val totalCount = itemCount
     val images = imageUrls.take(4)
+    val visibleSlotCount = totalCount.coerceAtMost(4)
+    val extraCount = (totalCount - 4).coerceAtLeast(0)
     val gridSpacing = 3.dp
     val hasImages = images.isNotEmpty()
-    val backgroundColor = if (hasImages) MaterialTheme.colorScheme.surface else SoftSurfaceVariant
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(1f)
             .clip(shape)
-            .background(backgroundColor),
+            .background(if (hasImages) MaterialTheme.colorScheme.surface else SoftSurfaceVariant),
         contentAlignment = Alignment.Center
     ) {
         if (!hasImages) {
@@ -224,7 +230,12 @@ private fun WishlistPreviewGrid(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
-            val previewSlots = List(4) { index -> images.getOrNull(index) }
+            val previewSlots = List(4) { index ->
+                when {
+                    index >= visibleSlotCount -> null
+                    else -> images.getOrNull(index)
+                }
+            }
 
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -258,6 +269,24 @@ private fun WishlistPreviewGrid(
                     }
                 }
             }
+            if (extraCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                        .background(
+                            color = SoftSurfaceVariant,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "+$extraCount",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
         }
     }
 }
@@ -269,7 +298,9 @@ private fun PreviewGridSlot(
 ) {
     if (imageUrl == null) {
         Box(
-            modifier = modifier.background(SoftSurfaceVariant)
+            modifier = modifier
+                .fillMaxSize()
+                .background(SoftSurfaceVariant)
         )
     } else {
         NetworkImage(
