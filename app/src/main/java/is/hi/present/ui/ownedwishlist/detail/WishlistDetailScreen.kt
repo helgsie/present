@@ -527,21 +527,38 @@ fun WishlistDetailScreen(
 //                                        )
 //                                    }
 
-                                    itemsIndexed(
-                                        items = displayedItems,
-                                        key = { _, item -> item.id }
-                                    ) { index, item ->
-                                        ReorderableWishlistRow(
-                                            item = item,
-                                            index = index,
-                                            onMove = { fromIndex, toIndex ->
-                                                vm.onMoveItem(fromIndex, toIndex)
-                                            },
-                                            onDragEnd = {
-                                                vm.persistReorderedItems()
-                                            },
-                                            onClick = { onOpenItem(item.id) }
-                                        )
+                                    if (displayedItems.isEmpty() && selectedCategoryFilter != null) {
+                                        item {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 48.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = "Engar gjafir passa við valinn flokk.",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        itemsIndexed(
+                                            items = displayedItems,
+                                            key = { _, item -> item.id }
+                                        ) { index, item ->
+                                            ReorderableWishlistRow(
+                                                item = item,
+                                                index = index,
+                                                onMove = { fromIndex, toIndex ->
+                                                    vm.onMoveItem(fromIndex, toIndex)
+                                                },
+                                                onDragEnd = {
+                                                    vm.persistReorderedItems()
+                                                },
+                                                onClick = { onOpenItem(item.id) }
+                                            )
+                                        }
                                     }
                                 }
                             }

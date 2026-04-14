@@ -20,7 +20,7 @@ data class PendingWishlistItemPayload(
     val url: String?,
     val price: Double?,
     val imagePath: String?,
-    val category: String?,
+    val category: String? = null,
     val sortOrder: Int?
 )
 
