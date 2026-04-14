@@ -6,6 +6,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -51,7 +52,8 @@ fun WishlistCard(
     onClick: () -> Unit,
     isEditMode: Boolean = false,
     showLeaveButton: Boolean = false,
-    onLeaveClick: (() -> Unit)? = null
+    onLeaveClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null
 ) {
     val shakeTransition = rememberInfiniteTransition(label = "shake")
     val shakeOffset by shakeTransition.animateFloat(
@@ -69,38 +71,66 @@ fun WishlistCard(
     val cardPadding = 14.dp
     val sectionSpacing = 8.dp
 
-    Box {
-        ElevatedCard(
-            onClick = onClick,
-            shape = cardShape,
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = SoftCard
-            ),
-            elevation = CardDefaults.elevatedCardElevation(
-                defaultElevation = 6.dp
-            ),
-            modifier = Modifier.fillMaxWidth()
+    val cardContent: @Composable () -> Unit = {
+        Column(
+            modifier = Modifier.padding(cardPadding),
+            verticalArrangement = Arrangement.spacedBy(sectionSpacing)
         ) {
+            WishlistCardMedia(
+                imageUrls = w.previewImageUrls,
+                itemCount = w.itemCount,
+                iconKey = w.iconKey,
+                mediaShape = mediaShape
+            )
+
             Column(
-                modifier = Modifier.padding(cardPadding),
-                verticalArrangement = Arrangement.spacedBy(sectionSpacing)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                WishlistCardMedia(
-                    imageUrls = w.previewImageUrls,
-                    itemCount = w.itemCount,
-                    iconKey = w.iconKey,
-                    mediaShape = mediaShape
+                WishlistCardText(
+                    title = w.title,
+                    isShared = w.isShared
                 )
 
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    WishlistCardText(
-                        title = w.title,
-                        isShared = w.isShared
-                    )
+                ItemCountText(itemCount = w.itemCount)
+            }
+        }
+    }
 
-                    ItemCountText(itemCount = w.itemCount)
+    Box {
+        if (onLongClick == null) {
+            ElevatedCard(
+                onClick = onClick,
+                shape = cardShape,
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = SoftCard
+                ),
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = 6.dp
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                cardContent()
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongClick
+                    )
+            ) {
+                ElevatedCard(
+                    shape = cardShape,
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = SoftCard
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(
+                        defaultElevation = 6.dp
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    cardContent()
                 }
             }
         }
@@ -206,10 +236,9 @@ private fun WishlistPreviewGrid(
     modifier: Modifier = Modifier,
     shape: RoundedCornerShape = RoundedCornerShape(22.dp)
 ) {
-    val totalCount = itemCount
     val images = imageUrls.take(4)
-    val visibleSlotCount = totalCount.coerceAtMost(4)
-    val extraCount = (totalCount - 4).coerceAtLeast(0)
+    val visibleSlotCount = itemCount.coerceAtMost(4)
+    val extraCount = (itemCount - 4).coerceAtLeast(0)
     val gridSpacing = 3.dp
     val hasImages = images.isNotEmpty()
 

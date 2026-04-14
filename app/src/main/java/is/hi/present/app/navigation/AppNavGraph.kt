@@ -23,6 +23,7 @@ import `is`.hi.present.ui.sharedwishlist.item.SharedItemDetailScreen
 import `is`.hi.present.ui.ownedwishlist.item.ItemDetailScreen
 import `is`.hi.present.ui.ownedwishlist.invite.CreateTokenScreen
 import `is`.hi.present.ui.auth.SetupProfileScreen
+import `is`.hi.present.ui.ownedwishlist.detail.WishlistDetailViewModel
 import `is`.hi.present.ui.ownedwishlist.list.WishlistsViewModel
 
 @Composable
@@ -103,6 +104,7 @@ private fun AppNav(
     clearPendingJoinToken: () -> Unit,
 ) {
     val wishlistsViewModel: WishlistsViewModel = hiltViewModel()
+    val wishlistDetailViewModel: WishlistDetailViewModel = hiltViewModel()
 
     val startDestination: AppRoute = remember(userId, pendingJoinToken) {
         when {
@@ -121,16 +123,16 @@ private fun AppNav(
             entry<AppRoute.Wishlists> {
                 WishlistsScreen(
                     ownerId = userId,
-                    vm = wishlistsViewModel,
+                    wishlistVm = wishlistsViewModel,
+                    detailVm = wishlistDetailViewModel,
                     onLogout = {
                         authViewModel.signOut()
                     },
-                    onCreateWishlist = { backStack.add(AppRoute.CreateWishlist) },
-                    onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
                     onAccountSettings = { backStack.add(AppRoute.AccountSettings) },
+                    onCreateWishlist = { backStack.add(AppRoute.CreateWishlist) },
                     onOpenSharedWishlists = { backStack.add(AppRoute.SharedWishlists) },
+                    onOpenWishlist = { id -> backStack.add(AppRoute.WishlistDetail(id)) },
                     onSelectWishlists = { },
-                    selectedSegmentIndex = 0,
                 )
             }
 

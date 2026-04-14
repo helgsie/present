@@ -1,6 +1,8 @@
 package `is`.hi.present.ui.ownedwishlist.list
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,8 +37,12 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,13 +50,15 @@ import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
 import android.content.res.Configuration
+import `is`.hi.present.ui.ownedwishlist.detail.WishlistDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishlistsScreen(
     modifier: Modifier = Modifier,
     ownerId: String,
-    vm: WishlistsViewModel,
+    wishlistVm: WishlistsViewModel,
+    detailVm: WishlistDetailViewModel,
     onLogout: () -> Unit,
     onAccountSettings: () -> Unit,
     onCreateWishlist: () -> Unit,
@@ -60,11 +68,26 @@ fun WishlistsScreen(
     selectedSegmentIndex: Int = 0,
 ) {
     LaunchedEffect(ownerId) {
-        vm.loadWishlists(ownerId)
+        wishlistVm.loadWishlists(ownerId)
     }
 
-    val state by vm.uiState.collectAsStateWithLifecycle()
+    val state by wishlistVm.uiState.collectAsStateWithLifecycle()
     val pullState = rememberPullToRefreshState()
+
+    var isEditMode by remember { mutableStateOf(false) }
+    var wishlistToDelete by remember { mutableStateOf<String?>(null) }
+
+    val dismissEditMode = {
+        isEditMode = false
+        wishlistToDelete = null
+    }
+    val dimmedAlpha = if (isEditMode) 0.45f else 1f
+
+    LaunchedEffect(state.wishlists) {
+        if (state.wishlists.isEmpty() && isEditMode) {
+            dismissEditMode()
+        }
+    }
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -73,34 +96,72 @@ fun WishlistsScreen(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text("Óskalistarnir mínir") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    actionIconContentColor = MaterialTheme.colorScheme.onBackground
-                ),
-                actions = {
-                    IconButton(onClick = onAccountSettings) {
-                        Icon(
-                            Icons.Filled.AccountCircle,
-                            contentDescription = "Account Settings"
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        enabled = isEditMode,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = dismissEditMode
+                    )
+            ) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "Óskalistar",
+                            modifier = Modifier.alpha(dimmedAlpha)
                         )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        actionIconContentColor = MaterialTheme.colorScheme.onBackground
+                    ),
+                    actions = {
+                        IconButton(onClick = {
+                            if (isEditMode) {
+                                dismissEditMode()
+                            } else {
+                                onAccountSettings()
+                            }
+                        }) {
+                            Icon(
+                                Icons.Filled.AccountCircle,
+                                contentDescription = "Account Settings",
+                                modifier = Modifier.alpha(dimmedAlpha)
+                            )
+                        }
+                        IconButton(onClick = {
+                            if (isEditMode) {
+                                dismissEditMode()
+                            } else {
+                                onLogout()
+                            }
+                        }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = "Logout",
+                                modifier = Modifier.alpha(dimmedAlpha)
+                            )
+                        }
                     }
-                    IconButton(onClick = onLogout) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Logout"
-                        )
-                    }
-                }
-            )
+                )
+            }
         },
         floatingActionButton = {
-            AddButton(
-                onClick = onCreateWishlist,
-                contentDescription = "Create wishlist"
-            )
+            Box(modifier = Modifier.alpha(dimmedAlpha)) {
+                AddButton(
+                    onClick = {
+                        if (isEditMode) {
+                            dismissEditMode()
+                        } else {
+                            onCreateWishlist()
+                        }
+                    },
+                    contentDescription = "Create wishlist"
+                )
+            }
         }
     ) { padding ->
         Column(
@@ -112,22 +173,25 @@ fun WishlistsScreen(
             Segments(
                 selectedIndex = selectedSegmentIndex,
                 onSelectedChange = { index ->
-                    when (index) {
-                        0 -> onSelectWishlists()
-                        1 -> onOpenSharedWishlists()
+                    if (isEditMode) {
+                        dismissEditMode()
+                    } else {
+                        when (index) {
+                            0 -> onSelectWishlists()
+                            1 -> onOpenSharedWishlists()
+                        }
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .alpha(dimmedAlpha)
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             PullToRefreshBox(
                 isRefreshing = state.isRefreshing,
                 onRefresh = {
-                    vm.refresh(ownerId)
+                    wishlistVm.refresh(ownerId)
                 },
                 state = pullState,
                 modifier = Modifier
@@ -142,7 +206,7 @@ fun WishlistsScreen(
                 ) {
                     state.offlineDialog?.let { dialog ->
                         AlertDialog(
-                            onDismissRequest = { vm.consumeOfflineDialog() },
+                            onDismissRequest = { wishlistVm.consumeOfflineDialog() },
                             icon = {
                                 Icon(
                                     imageVector = Icons.Default.WifiOff,
@@ -156,7 +220,7 @@ fun WishlistsScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    TextButton(onClick = { vm.consumeOfflineDialog() }) {
+                                    TextButton(onClick = { wishlistVm.consumeOfflineDialog() }) {
                                         Text("OK")
                                     }
                                 }
@@ -208,7 +272,7 @@ fun WishlistsScreen(
                                             color = MaterialTheme.colorScheme.error,
                                         )
                                         Spacer(Modifier.height(12.dp))
-                                        Button(onClick = { vm.refresh(ownerId) }) {
+                                        Button(onClick = { wishlistVm.refresh(ownerId) }) {
                                             Text("Reyna aftur")
                                         }
                                     }
@@ -222,22 +286,61 @@ fun WishlistsScreen(
                                 }
 
                                 else -> {
-                                    LazyVerticalGrid(
-                                        columns = GridCells.Fixed(columns),
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentPadding = PaddingValues(16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        items(
-                                            items = state.wishlists,
-                                            key = { it.id }
-                                        ) { w ->
-                                            WishlistCard(
-                                                w = w,
-                                                onClick = { onOpenWishlist(w.id) }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clickable(
+                                                enabled = isEditMode,
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                                onClick = dismissEditMode
                                             )
+                                    ) {
+                                        LazyVerticalGrid(
+                                            columns = GridCells.Fixed(columns),
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentPadding = PaddingValues(16.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                                        ) {
+                                            items(
+                                                items = state.wishlists,
+                                                key = { it.id }
+                                            ) { w ->
+                                                WishlistCard(
+                                                    w = w,
+                                                    onClick = {
+                                                        if (!isEditMode) {
+                                                            onOpenWishlist(w.id)
+                                                        }
+                                                    },
+                                                    isEditMode = isEditMode,
+                                                    showLeaveButton = true,
+                                                    onLeaveClick = { wishlistToDelete = w.id },
+                                                    onLongClick = { isEditMode = true }
+                                                )
+                                            }
                                         }
+                                    }
+                                    if (wishlistToDelete != null) {
+                                        AlertDialog(
+                                            onDismissRequest = dismissEditMode,
+                                            confirmButton = {
+                                                TextButton(onClick = {
+                                                    detailVm.deleteWishlist(wishlistToDelete!!)
+                                                    dismissEditMode()
+                                                }) {
+                                                    Text("Eyða")
+                                                }
+                                            },
+                                            dismissButton = {
+                                                TextButton(onClick = dismissEditMode) {
+                                                    Text("Hætta við")
+                                                }
+                                            },
+                                            title = { Text("Ertu viss þú viljir eyða?") },
+                                            text = { Text("Óskalistanum verður eytt ef þú heldur áfram.") }
+                                        )
                                     }
                                 }
                             }
