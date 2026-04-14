@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -57,6 +59,7 @@ fun SharedWishlistDetailScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
     var showOnlyMyClaims by remember { mutableStateOf(false) }
+    var selectedCategoryFilter by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(wishlistId) {
         vm.load(wishlistId)
@@ -154,10 +157,14 @@ fun SharedWishlistDetailScreen(
                 }
 
                 else -> {
-                    val visibleItems = if (showOnlyMyClaims)
-                        state.items.filter { it.isClaimedByMe }
-                    else
-                        state.items
+                    val categories = state.items
+                        .mapNotNull { it.category }
+                        .distinct()
+                        .sorted()
+
+                    val visibleItems = state.items
+                        .let { if (showOnlyMyClaims) it.filter { item -> item.isClaimedByMe } else it }
+                        .let { if (selectedCategoryFilter != null) it.filter { item -> item.category == selectedCategoryFilter } else it }
 
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -177,41 +184,76 @@ fun SharedWishlistDetailScreen(
                         }
 
                         item {
-                            FilterChip(
-                                selected = showOnlyMyClaims,
-                                onClick = { showOnlyMyClaims = !showOnlyMyClaims },
-                                label = { Text("Frátekið af mér") }
-                            )
-                        }
-
-                        items(
-                            items = visibleItems,
-                            key = { it.id }
-                        ) { item ->
-                            WishlistItemCard(
-                                w = item,
-                                onClick = { onOpenItem(item.id) },
-                                trailingContent = {
-                                    when {
-                                        !item.isClaimed -> {
-                                            ClaimButton(
-                                                onClick = { vm.claimItem(wishlistId, item.id) }
-                                            )
-                                        }
-
-                                        item.isClaimedByMe -> {
-                                            ClaimedByMeBadge()
-                                            ReleaseClaimButton(
-                                                onClick = { vm.releaseClaim(wishlistId, item.id) }
-                                            )
-                                        }
-
-                                        else -> {
-                                            ClaimedBadge(claimerName = item.claimedByUserName)
-                                        }
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                item {
+                                    FilterChip(
+                                        selected = showOnlyMyClaims,
+                                        onClick = { showOnlyMyClaims = !showOnlyMyClaims },
+                                        label = { Text("Frátekið af mér") }
+                                    )
+                                }
+                                if (categories.isNotEmpty()) {
+                                    items(categories) { cat ->
+                                        FilterChip(
+                                            selected = selectedCategoryFilter == cat,
+                                            onClick = {
+                                                selectedCategoryFilter =
+                                                    if (selectedCategoryFilter == cat) null else cat
+                                            },
+                                            label = { Text(cat) }
+                                        )
                                     }
                                 }
-                            )
+                            }
+                        }
+
+                        if (visibleItems.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 48.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Engar gjafir passa við valinn flokk.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        } else {
+                            items(
+                                items = visibleItems,
+                                key = { it.id }
+                            ) { item ->
+                                WishlistItemCard(
+                                    w = item,
+                                    onClick = { onOpenItem(item.id) },
+                                    trailingContent = {
+                                        when {
+                                            !item.isClaimed -> {
+                                                ClaimButton(
+                                                    onClick = { vm.claimItem(wishlistId, item.id) }
+                                                )
+                                            }
+
+                                            item.isClaimedByMe -> {
+                                                ClaimedByMeBadge()
+                                                ReleaseClaimButton(
+                                                    onClick = { vm.releaseClaim(wishlistId, item.id) }
+                                                )
+                                            }
+
+                                            else -> {
+                                                ClaimedBadge(claimerName = item.claimedByUserName)
+                                            }
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }

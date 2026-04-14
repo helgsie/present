@@ -10,6 +10,7 @@ import `is`.hi.present.data.dto.WishlistItemInsert
 import `is`.hi.present.data.repository.AuthRepository
 import `is`.hi.present.data.repository.WishlistItemRepository
 import `is`.hi.present.data.repository.WishlistRepository
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import javax.inject.Inject
@@ -39,6 +40,8 @@ class SyncManager @Inject constructor(
         val ops = pendingOpDao.getAllOrdered()
             .sortedWith(compareBy<PendingOpEntity> { syncPriority(it.type) }.thenBy { it.createdAt })
 
+        var firstError: Throwable? = null
+
         for (op in ops) {
             try {
                 when (op.type) {
@@ -49,16 +52,17 @@ class SyncManager @Inject constructor(
                     ITEM_UPDATE -> replayItemUpdate(op)
                     ITEM_DELETE -> replayItemDelete(op)
                     PROFILE_UPDATE -> replayProfileUpdate(op)
-                    else -> {
-                        continue
-                    }
+                    else -> continue
                 }
 
                 pendingOpDao.deleteById(op.id)
             } catch (t: Throwable) {
-                throw t
+                Log.e(TAG, "Failed to replay op id=${op.id} type=${op.type}: ${t.message}", t)
+                if (firstError == null) firstError = t
             }
         }
+
+        firstError?.let { throw it }
     }
 
     private suspend fun replayWishlistCreate(op: PendingOpEntity) {
