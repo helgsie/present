@@ -64,6 +64,7 @@ class SharedItemDetailViewModel @Inject constructor(
                             url = item.url,
                             price = item.price,
                             imagePath = item.imagePath?.let(::toPublicImageUrl),
+                            category = item.category,
                             isClaimed = claim != null,
                             isClaimedByMe = isClaimedByMe,
                             claimedByName = claimedByName,

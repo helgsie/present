@@ -16,7 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +52,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
 import `is`.hi.present.R
+import `is`.hi.present.ui.ownedwishlist.components.CATEGORY_ICON
 import java.net.URI
 import java.text.NumberFormat
 import java.util.Locale
@@ -166,6 +167,22 @@ fun SharedItemDetailScreen(
                                 text = iskFormatter.format(price),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        state.category?.let { cat ->
+                            SuggestionChip(
+                                onClick = {},
+                                label = { Text(cat) },
+                                icon = {
+                                    CATEGORY_ICON[cat]?.let { icon ->
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(SuggestionChipDefaults.IconSize)
+                                        )
+                                    }
+                                }
                             )
                         }
 

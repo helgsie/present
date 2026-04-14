@@ -10,6 +10,7 @@ data class SharedItemDetailUiState(
     val url: String? = null,
     val price: Double? = null,
     val imagePath: String? = null,
+    val category: String? = null,
 
     val isClaimed: Boolean = false,
     val isClaimedByMe: Boolean = false,
