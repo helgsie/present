@@ -69,7 +69,7 @@ fun WishlistCard(
     val cardShape = RoundedCornerShape(22.dp)
     val mediaShape = RoundedCornerShape(18.dp)
     val cardPadding = 14.dp
-    val sectionSpacing = 8.dp
+    val sectionSpacing = 6.dp
 
     val cardContent: @Composable () -> Unit = {
         Column(
@@ -84,14 +84,17 @@ fun WishlistCard(
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 WishlistCardText(
                     title = w.title,
-                    isShared = w.isShared
+                    isShared = w.isShared,
+                    ownerDisplayName = w.ownerDisplayName
                 )
-
-                ItemCountText(itemCount = w.itemCount)
+                SharedWishlistOwnerText(
+                    ownerDisplayName = if (w.isShared) w.ownerDisplayName else null
+                )
+                WishlistItemCountText(itemCount = w.itemCount)
             }
         }
     }
@@ -163,32 +166,53 @@ private fun WishlistCardMedia(
     }
 }
 
+
 @Composable
-private fun ItemCountText(itemCount: Int) {
+private fun SharedWishlistOwnerText(
+    ownerDisplayName: String?
+) {
+    if (ownerDisplayName.isNullOrBlank()) return
+    Text(
+        text = ownerDisplayName,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun WishlistItemCountText(itemCount: Int) {
     Text(
         text = "$itemCount ${if (itemCount == 1) "Gjöf" else "Gjafir"}",
         style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
     )
 }
 
 @Composable
 private fun WishlistCardText(
     title: String,
-    isShared: Boolean
+    isShared: Boolean,
+    ownerDisplayName: String?
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = if (!isShared) Icons.Default.Lock else Icons.Default.People,
-            contentDescription = if (!isShared) "Einka" else "Deilt",
-            modifier = Modifier.size(14.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        val showIcon = ownerDisplayName.isNullOrBlank()
 
-        Spacer(Modifier.width(6.dp))
+        if (showIcon) {
+            Icon(
+                imageVector = if (!isShared) Icons.Default.Lock else Icons.Default.People,
+                contentDescription = if (!isShared) "Einka" else "Deilt",
+                modifier = Modifier.size(12.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.width(4.dp))
+        }
 
         Text(
             text = title,
