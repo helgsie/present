@@ -12,6 +12,7 @@ import `is`.hi.present.data.dto.JoinByTokenArgs
 import `is`.hi.present.data.dto.RemoveSharedUserArgs
 import `is`.hi.present.data.dto.SharedWithRow
 import `is`.hi.present.data.dto.WishlistCardDto
+import `is`.hi.present.data.dto.WishlistDetailDto
 import `is`.hi.present.data.dto.WishlistDto
 import `is`.hi.present.data.dto.WishlistIdArgs
 import `is`.hi.present.core.sync.SyncManager
@@ -21,6 +22,7 @@ import `is`.hi.present.core.local.dao.WishlistDao
 import `is`.hi.present.core.local.entity.PendingOpEntity
 import `is`.hi.present.core.local.entity.WishlistEntity
 import `is`.hi.present.data.dto.PendingWishlistPayload
+import `is`.hi.present.data.dto.WishlistDetailArgs
 import `is`.hi.present.data.mapper.toDomain
 import `is`.hi.present.data.mapper.toEntity
 import `is`.hi.present.domain.Wishlist
@@ -80,24 +82,16 @@ class WishlistRepository @Inject constructor(
     }
 
     suspend fun refreshWishlistById(wishlistId: String): Result<Unit> = runCatching {
-        val dto: WishlistDto = supabase
-            .from("wishlists")
-            .select {
-                filter { eq("id", wishlistId) }
-                limit(1)
-            }
+        val dto: WishlistDetailDto = supabase.postgrest
+            .rpc("get_my_wishlist_detail", WishlistDetailArgs(wishlistId))
             .decodeSingle()
         wishlistDao.upsert(dto.toEntity())
     }
 
     // ----- REMOTE HELPERS -----
     suspend fun fetchWishlistRemoteById(wishlistId: String): Result<Wishlist> = runCatching {
-        val dto: WishlistDto = supabase
-            .from("wishlists")
-            .select {
-                filter { eq("id", wishlistId) }
-                limit(1)
-            }
+        val dto: WishlistDetailDto = supabase.postgrest
+            .rpc("get_my_wishlist_detail", WishlistDetailArgs(wishlistId))
             .decodeSingle()
         dto.toEntity().toDomain()
     }
@@ -142,9 +136,12 @@ class WishlistRepository @Inject constructor(
             "currentUser=${user?.id}"
         )
 
-        supabase.postgrest
+        val cards = supabase.postgrest
             .rpc("get_shared_wishlist_cards")
             .decodeList<WishlistCardDto>()
+
+        android.util.Log.d("WishlistRepository", "shared cards size=${cards.size} cards=$cards")
+        cards
     }
 
     // ---- WRITES ------

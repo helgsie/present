@@ -40,6 +40,12 @@ data class WishlistIdArgs(
 )
 
 @Serializable
+data class WishlistDetailArgs(
+    @SerialName("p_wishlist_id")
+    val wishlistId: String
+)
+
+@Serializable
 data class SharedWithRow(
     @SerialName("user_id")
     val userId: String,
@@ -84,4 +90,16 @@ data class WishlistCardDto(
     val isShared: Boolean,
     @SerialName("preview_image_urls")
     val previewImageUrls: List<String> = emptyList()
+)
+
+@Serializable
+data class WishlistDetailDto(
+    val id: String,
+    @SerialName("owner_id") val ownerId: String,
+    val title: String,
+    val description: String?,
+    @SerialName("icon_key") val iconKey: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("is_shared") val isShared: Boolean
 )

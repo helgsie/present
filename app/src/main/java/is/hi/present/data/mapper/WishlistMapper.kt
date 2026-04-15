@@ -3,6 +3,7 @@ package `is`.hi.present.data.mapper
 import `is`.hi.present.data.dto.WishlistCardDto
 import `is`.hi.present.data.dto.WishlistDto
 import `is`.hi.present.core.local.entity.WishlistEntity
+import `is`.hi.present.data.dto.WishlistDetailDto
 import `is`.hi.present.domain.Wishlist
 import java.time.Instant
 
@@ -49,4 +50,16 @@ fun WishlistEntity.toDomain(): Wishlist =
         isShared = isShared,
         createdAt = createdAt,
         updatedAt = updatedAt
+    )
+
+fun WishlistDetailDto.toEntity(): WishlistEntity =
+    WishlistEntity(
+        id = id,
+        ownerId = ownerId,
+        title = title,
+        description = description,
+        iconKey = iconKey,
+        isShared = isShared,
+        createdAt = Instant.parse(createdAt).toEpochMilli(),
+        updatedAt = Instant.parse(updatedAt).toEpochMilli()
     )

@@ -106,6 +106,7 @@ class WishlistDetailViewModel @Inject constructor(
                                 description = "",
                                 items = emptyList(),
                                 isOwner = false,
+                                isShared = false,
                                 errorMessage = state.errorMessage
                             )
                         }
@@ -120,6 +121,7 @@ class WishlistDetailViewModel @Inject constructor(
                                 description = "",
                                 items = emptyList(),
                                 isOwner = false,
+                                isShared = false,
                                 errorMessage = "Þessi skjár er aðeins fyrir eigin óskalista."
                             )
                         }
@@ -133,6 +135,7 @@ class WishlistDetailViewModel @Inject constructor(
                             description = wishlist.description,
                             items = if (isReorderingLocally) state.items else itemUi,
                             isOwner = true,
+                            isShared = wishlist.isShared,
                             errorMessage = null
                         )
                     }
@@ -422,6 +425,7 @@ class WishlistDetailViewModel @Inject constructor(
                     description = "",
                     items = emptyList(),
                     isOwner = false,
+                    isShared = false,
                     errorMessage = "Þessi skjár er aðeins fyrir eigin óskalista."
                 )
             }
@@ -447,6 +451,7 @@ class WishlistDetailViewModel @Inject constructor(
                 description = wishlist.description,
                 items = if (isReorderingLocally) it.items else itemUi,
                 isOwner = true,
+                isShared = wishlist.isShared,
                 errorMessage = null
             )
         }

@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.ownedwishlist.components.SharedWithDialog
-import `is`.hi.present.ui.components.WishlistItemCard
 import `is`.hi.present.ui.components.WishlistInfoCard
 import `is`.hi.present.ui.ownedwishlist.components.WishlistEditor
 import `is`.hi.present.ui.ownedwishlist.components.IconPickerButton
@@ -421,7 +420,9 @@ fun WishlistDetailScreen(
                                             )
                                         } else {
                                             WishlistInfoCard(
-                                                description = state.description
+                                                description = state.description,
+                                                isShared = state.isShared,
+                                                itemCount = state.items.size
                                             )
                                         }
 
@@ -488,7 +489,9 @@ fun WishlistDetailScreen(
                                         )
                                     } else {
                                         WishlistInfoCard(
-                                            description = state.description
+                                            description = state.description,
+                                            isShared = state.isShared,
+                                            itemCount = state.items.size
                                         )
                                     }
 
@@ -533,8 +536,8 @@ fun WishlistDetailScreen(
 
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                                    contentPadding = PaddingValues(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 96.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     item {
                                         if (isEditing) {
@@ -550,9 +553,16 @@ fun WishlistDetailScreen(
                                                 modifier = Modifier.fillMaxWidth()
                                             )
                                         } else {
-                                            WishlistInfoCard(
-                                                description = state.description
-                                            )
+                                            Column(
+                                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                WishlistInfoCard(
+                                                    description = state.description,
+                                                    isShared = state.isShared,
+                                                    itemCount = state.items.size
+                                                )
+                                                androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(bottom = 4.dp))
+                                            }
                                         }
                                     }
 
@@ -574,16 +584,6 @@ fun WishlistDetailScreen(
                                             }
                                         }
                                     }
-
-//                                    items(
-//                                        items = state.items,
-//                                        key = { _, item -> item.id }
-//                                    ) {item ->
-//                                        WishlistItemCard(
-//                                            w = item,
-//                                            onClick = { onOpenItem(item.id) }
-//                                        )
-//                                    }
 
                                     if (displayedItems.isEmpty() && selectedCategoryFilter != null) {
                                         item {
@@ -627,3 +627,4 @@ fun WishlistDetailScreen(
         }
     }
 }
+

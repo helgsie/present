@@ -56,7 +56,11 @@ class SharedWishlistDetailViewModel @Inject constructor(
                 )
             }
 
-            val wishlistResult = wishlistRepo.fetchWishlistRemoteById(wishlistId)
+            val wishlistResult = wishlistRepo.fetchSharedWishlistCards()
+                .map { cards ->
+                    cards.firstOrNull { it.id == wishlistId }
+                        ?: error("Óskalisti fannst ekki.")
+                }
             val itemsResult = itemRepo.fetchWishlistItemsRemote(wishlistId)
 
             if (wishlistResult.isFailure || itemsResult.isFailure) {

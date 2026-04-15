@@ -25,6 +25,7 @@ data class WishlistDetailUiState(
     val description: String? = null,
     val items: List<WishlistItemUi> = emptyList(),
     val isOwner: Boolean = false,
+    val isShared: Boolean = false,
     val iconKey: String = "favorite",
     val isSavingOrder: Boolean = false
 ) {
