@@ -136,6 +136,12 @@ class WishlistRepository @Inject constructor(
     }
 
     suspend fun fetchSharedWishlistCards(): Result<List<WishlistCardDto>> = runCatching {
+        val user = supabase.auth.currentUserOrNull()
+        android.util.Log.d(
+            "WishlistRepository",
+            "currentUser=${user?.id}"
+        )
+
         supabase.postgrest
             .rpc("get_shared_wishlist_cards")
             .decodeList<WishlistCardDto>()

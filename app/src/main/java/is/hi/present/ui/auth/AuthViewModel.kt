@@ -19,6 +19,7 @@ import `is`.hi.present.core.sync.SyncManager
 import `is`.hi.present.core.sync.SyncScheduler
 import `is`.hi.present.data.dto.PendingProfilePayload
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 @HiltViewModel
@@ -39,6 +40,8 @@ class AuthViewModel @Inject constructor(
         const val PREF_USER_ID = "userId"
         const val PREF_USER_EMAIL = "userEmail"
         const val PREF_DISPLAY_NAME = "displayName"
+        const val SESSION_RESTORE_ATTEMPTS = 10
+        const val SESSION_RESTORE_DELAY_MS = 250L
     }
 
     private val _authStatus = MutableStateFlow<AuthStatus>(AuthStatus.Loading)
@@ -58,32 +61,51 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _authStatus.value = AuthStatus.Loading
 
-            // cached auth session þegar offline
             val cachedUserId = sharedPref.getStringData(PREF_USER_ID)
+            val cachedEmail = sharedPref.getStringData(PREF_USER_EMAIL)
+            val cachedDisplayName = sharedPref.getStringData(PREF_DISPLAY_NAME) ?: ""
+
             if (!cachedUserId.isNullOrBlank()) {
-                _currentUserEmail.value = sharedPref.getStringData(PREF_USER_EMAIL)
-                _currentDisplayName.value = sharedPref.getStringData(PREF_DISPLAY_NAME) ?: ""
-                _authStatus.value = AuthStatus.LoggedIn(cachedUserId)
-                return@launch
+                _currentUserEmail.value = cachedEmail
+                _currentDisplayName.value = cachedDisplayName
             }
 
-            // reyna að tengjast Supabase
             try {
-                val userId = repo.getCurrentUserId()
-                if (!userId.isNullOrBlank()) {
-                    sharedPref.saveStringData(PREF_USER_ID, userId)
-                    _authStatus.value = AuthStatus.LoggedIn(userId)
-                    runCatching { repo.getProfile(userId) }
-                        .getOrNull()?.let { _currentDisplayName.value = it.display_name }
+                val liveUserId = awaitLiveUserIdOrNull()
+
+                if (!liveUserId.isNullOrBlank()) {
+                    sharedPref.saveStringData(PREF_USER_ID, liveUserId)
+                    _authStatus.value = AuthStatus.LoggedIn(liveUserId)
+                    _currentUserEmail.value = cachedEmail
+
+                    runCatching { repo.getProfile(liveUserId) }
+                        .getOrNull()?.let {
+                            _currentDisplayName.value = it.display_name
+                            sharedPref.saveStringData(PREF_DISPLAY_NAME, it.display_name)
+                        }
+                } else if (!cachedUserId.isNullOrBlank()) {
+                    _authStatus.value = AuthStatus.LoggedIn(cachedUserId)
                 } else {
                     _authStatus.value = AuthStatus.LoggedOut
                 }
             } catch (_: Exception) {
-                _authStatus.value = AuthStatus.LoggedOut
+                if (!cachedUserId.isNullOrBlank()) {
+                    _authStatus.value = AuthStatus.LoggedIn(cachedUserId)
+                } else {
+                    _authStatus.value = AuthStatus.LoggedOut
+                }
             }
         }
     }
 
+    private suspend fun awaitLiveUserIdOrNull(): String? {
+        repeat(SESSION_RESTORE_ATTEMPTS) {
+            val userId = runCatching { repo.getCurrentUserId() }.getOrNull()
+            if (!userId.isNullOrBlank()) return userId
+            delay(SESSION_RESTORE_DELAY_MS)
+        }
+        return null
+    }
     private fun saveToken() {
         val accessToken = repo.getAccessToken()
         if (!accessToken.isNullOrBlank()) {
