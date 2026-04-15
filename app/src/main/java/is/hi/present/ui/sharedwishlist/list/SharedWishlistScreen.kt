@@ -16,24 +16,21 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -50,8 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.components.AddButton
-import `is`.hi.present.ui.components.Segments
 import `is`.hi.present.ui.components.WishlistCard
+import `is`.hi.present.ui.components.WishlistsHeaderScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +61,8 @@ fun SharedWishlistScreen(
     vm: SharedWishlistViewModel = hiltViewModel(),
     onSelectWishlists: () -> Unit,
     selectedSegmentIndex: Int = 0,
-    onOpenSharedWishlists: () -> Unit
+    onOpenSharedWishlists: () -> Unit,
+    embeddedInHeaderScreen: Boolean = false,
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -72,6 +70,12 @@ fun SharedWishlistScreen(
 
     var isEditMode by remember { mutableStateOf(false) }
     var wishlistToLeave by remember { mutableStateOf<String?>(null) }
+
+    val dismissEditMode = {
+        isEditMode = false
+        wishlistToLeave = null
+    }
+    val dimmedAlpha = if (isEditMode) 0.45f else 1f
 
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -90,60 +94,16 @@ fun SharedWishlistScreen(
 
     LaunchedEffect(state.wishlists) {
         if (state.wishlists.isEmpty() && isEditMode) {
-            isEditMode = false
-            wishlistToLeave = null
+            dismissEditMode()
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Deildir óskalistar") },
-                actions = {
-                    if (state.wishlists.isNotEmpty()) {
-                        IconButton(onClick = { isEditMode = !isEditMode }) {
-                            Icon(
-                                imageVector = if (isEditMode) Icons.Default.Close else Icons.Default.Edit,
-                                contentDescription = if (isEditMode) "Close edit mode" else "Edit shared wishlists"
-                            )
-                        }
-                    }
-
-                    IconButton(onClick = onAccountSettings) {
-                        Icon(Icons.Filled.AccountCircle, contentDescription = "Account Settings")
-                    }
-                    IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            AddButton(
-                onClick = onAddSharedWishlist,
-                contentDescription = "Add shared wishlist"
-            )
-        }
-    ) { padding ->
+    val screenContent: @Composable (PaddingValues) -> Unit = { padding ->
         Column(
             modifier = modifier
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            Segments(
-                selectedIndex = selectedSegmentIndex,
-                onSelectedChange = { index ->
-                    when (index) {
-                        0 -> onSelectWishlists()
-                        1 -> onOpenSharedWishlists()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            )
-
             PullToRefreshBox(
                 isRefreshing = state.isRefreshing,
                 onRefresh = { vm.loadSharedWishlists() },
@@ -211,27 +171,37 @@ fun SharedWishlistScreen(
                         }
 
                         else -> {
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(columns),
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(state.wishlists, key = { it.id }) { w ->
-                                    WishlistCard(
-                                        w = w,
-                                        onClick = {
-                                            if (!isEditMode) {
-                                                onOpenWishlist(w.id)
-                                            }
-                                        },
-                                        isEditMode = isEditMode,
-                                        showLeaveButton = true,
-                                        onLeaveClick = {
-                                            wishlistToLeave = w.id
-                                        }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable(
+                                        enabled = isEditMode,
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = dismissEditMode
                                     )
+                            ) {
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(columns),
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    items(state.wishlists, key = { it.id }) { w ->
+                                        WishlistCard(
+                                            w = w,
+                                            onClick = {
+                                                if (!isEditMode) {
+                                                    onOpenWishlist(w.id)
+                                                }
+                                            },
+                                            isEditMode = isEditMode,
+                                            showLeaveButton = true,
+                                            onLeaveClick = { wishlistToLeave = w.id },
+                                            onLongClick = { isEditMode = true }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -243,13 +213,13 @@ fun SharedWishlistScreen(
                             confirmButton = {
                                 TextButton(onClick = {
                                     vm.leaveSharedWishlist(wishlistToLeave!!)
-                                    wishlistToLeave = null
+                                    dismissEditMode()
                                 }) {
                                     Text("Yfirgefa")
                                 }
                             },
                             dismissButton = {
-                                TextButton(onClick = { wishlistToLeave = null }) {
+                                TextButton(onClick = dismissEditMode) {
                                     Text("Hætta við")
                                 }
                             },
@@ -259,6 +229,46 @@ fun SharedWishlistScreen(
                     }
                 }
             }
+        }
+    }
+
+    if (embeddedInHeaderScreen) {
+        screenContent(PaddingValues())
+    } else {
+        Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+            topBar = {
+                WishlistsHeaderScreen(
+                    selectedSegmentIndex = selectedSegmentIndex,
+                    onSelectedChange = { index ->
+                        when (index) {
+                            0 -> onSelectWishlists()
+                            1 -> onOpenSharedWishlists()
+                        }
+                    },
+                    onAccountSettings = onAccountSettings,
+                    onLogout = onLogout,
+                    title = "Óskalistar",
+                    isEditMode = isEditMode,
+                    onDismissEditMode = dismissEditMode
+                )
+            },
+            floatingActionButton = {
+                Box(modifier = Modifier.alpha(dimmedAlpha)) {
+                    AddButton(
+                        onClick = {
+                            if (isEditMode) {
+                                dismissEditMode()
+                            } else {
+                                onAddSharedWishlist()
+                            }
+                        },
+                        contentDescription = "Add shared wishlist"
+                    )
+                }
+            }
+        ) { padding ->
+            screenContent(padding)
         }
     }
 }

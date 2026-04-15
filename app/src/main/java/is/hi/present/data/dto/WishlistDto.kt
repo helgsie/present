@@ -68,6 +68,8 @@ data class WishlistCardDto(
     val id: String,
     @SerialName("owner_id")
     val ownerId: String,
+    @SerialName("owner_display_name")
+    val ownerDisplayName: String? = null,
     val title: String,
     val description: String? = null,
     @SerialName("icon_key")
@@ -80,5 +82,6 @@ data class WishlistCardDto(
     val itemCount: Int,
     @SerialName("is_shared")
     val isShared: Boolean,
-    @SerialName("preview_image_urls") val previewImageUrls: List<String> = emptyList()
+    @SerialName("preview_image_urls")
+    val previewImageUrls: List<String> = emptyList()
 )

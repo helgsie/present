@@ -18,18 +18,14 @@ class SyncWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            val ownerId = authRepository.getCurrentUserId()
-
-            if (ownerId == null) {
-                return Result.success()
-            }
+            val ownerId = authRepository.getCurrentUserId() ?: return Result.success()
 
             syncManager.syncOwnedData(ownerId)
                 .fold(
                     onSuccess = {
                         Result.success()
                     },
-                    onFailure = { error ->
+                    onFailure = { _ ->
                         Result.retry()
                     }
                 )
