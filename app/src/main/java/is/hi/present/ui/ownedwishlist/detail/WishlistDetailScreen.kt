@@ -20,6 +20,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,7 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import `is`.hi.present.ui.components.AddButton
-import `is`.hi.present.ui.ownedwishlist.components.SharedWithSection
+import `is`.hi.present.ui.ownedwishlist.components.SharedWithDialog
 import `is`.hi.present.ui.components.WishlistItemCard
 import `is`.hi.present.ui.components.WishlistInfoCard
 import `is`.hi.present.ui.ownedwishlist.components.WishlistEditor
@@ -63,6 +67,8 @@ import `is`.hi.present.core.theme.SoftCard
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.filled.AccountBox
+
 @OptIn(ExperimentalMaterial3Api::class)
 
 
@@ -88,6 +94,8 @@ fun WishlistDetailScreen(
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var isEditing by rememberSaveable { mutableStateOf(false) }
     var selectedCategoryFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    var showWishlistActions by remember { mutableStateOf(false) }
+    var showSharedWithDialog by remember { mutableStateOf(false) }
 
     var title by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
@@ -163,6 +171,13 @@ fun WishlistDetailScreen(
         )
     }
 
+    SharedWithDialog(
+        visible = showSharedWithDialog,
+        onDismiss = { showSharedWithDialog = false },
+        wishlistId = wishlistId,
+        isLoading = state.isLoading
+    )
+
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
@@ -208,57 +223,99 @@ fun WishlistDetailScreen(
                 },
                 actions = {
                     if (state.isOwner) {
-                        IconButton(
-                            onClick = {
-                                if (isOffline) {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            message = "Til að deila óskalista þarf netsamband",
-                                            withDismissAction = true,
-                                            duration = SnackbarDuration.Short
-                                        )
-                                    }
-                                } else {
-                                    vm.onShareClicked(wishlistId)
-                                }
-                            },
-                            enabled = !state.isLoading
-                        ) {
-                            Icon(
-                                Icons.Default.Share,
-                                contentDescription = "Deila óskalista"
-                            )
-                        }
-
-                        SharedWithSection(
-                            isLoading = state.isLoading,
-                            wishlistId = wishlistId
-                        )
-
                         if (!isEditing) {
-                            IconButton(
-                                enabled = !state.isLoading,
-                                onClick = {
-                                    title = state.title
-                                    description = state.description.orEmpty()
-                                    selectedWishlistIcon = WishlistIcon.fromKey(state.iconKey)
-                                    isEditing = true
+                            Box {
+                                IconButton(
+                                    enabled = !state.isLoading,
+                                    onClick = { showWishlistActions = true }
+                                ) {
+                                    Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription = "Valmöguleikar óskalista"
+                                    )
                                 }
-                            ) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Breyta óskalista"
-                                )
-                            }
 
-                            IconButton(
-                                enabled = !state.isLoading,
-                                onClick = { confirmDelete = true }
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Eyða óskalista"
-                                )
+                                DropdownMenu(
+                                    expanded = showWishlistActions,
+                                    onDismissRequest = { showWishlistActions = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Deila lista") },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.Share,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        onClick = {
+                                            showWishlistActions = false
+                                            if (isOffline) {
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Til að deila óskalista þarf netsamband",
+                                                        withDismissAction = true,
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                }
+                                            } else {
+                                                vm.onShareClicked(wishlistId)
+                                            }
+                                        }
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = { Text("Þátttakendur") },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.AccountBox,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        onClick = {
+                                            showWishlistActions = false
+                                            showSharedWithDialog = true
+                                        }
+                                    )
+
+                                    HorizontalDivider()
+
+                                    DropdownMenuItem(
+                                        text = { Text("Breyta lista") },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.Edit,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        onClick = {
+                                            showWishlistActions = false
+                                            title = state.title
+                                            description = state.description.orEmpty()
+                                            selectedWishlistIcon = WishlistIcon.fromKey(state.iconKey)
+                                            isEditing = true
+                                        }
+                                    )
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = "Eyða lista",
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        },
+                                        onClick = {
+                                            showWishlistActions = false
+                                            confirmDelete = true
+                                        }
+                                    )
+                                }
                             }
                         } else {
                             TextButton(
