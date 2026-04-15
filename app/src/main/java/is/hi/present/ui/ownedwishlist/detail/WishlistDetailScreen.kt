@@ -273,6 +273,7 @@ fun WishlistDetailScreen(
                                         },
                                         onClick = {
                                             showWishlistActions = false
+                                            vm.onSharedWith(wishlistId)
                                             showSharedWithDialog = true
                                         }
                                     )
