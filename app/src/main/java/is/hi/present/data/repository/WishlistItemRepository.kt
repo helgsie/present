@@ -157,6 +157,7 @@ class WishlistItemRepository @Inject constructor(
         itemId: String,
         name: String,
         notes: String?,
+        url: String?,
         price: Double?,
         imagePath: String?,
         category: String? = null
@@ -166,6 +167,7 @@ class WishlistItemRepository @Inject constructor(
         val updated = existing.copy(
             name = name,
             notes = notes,
+            url = url,
             price = price,
             imagePath = imagePath,
             category = category,
