@@ -14,13 +14,14 @@ import androidx.compose.ui.unit.dp
 import `is`.hi.present.core.theme.SoftCard
 import `is`.hi.present.core.theme.TextPrimary
 import `is`.hi.present.core.theme.TextSecondary
+import `is`.hi.present.ui.ownedwishlist.components.WishlistMetadataRow
 
 @Composable
 fun WishlistInfoCard(
-    description: String?
+    description: String?,
+    isShared: Boolean,
+    itemCount: Int
 ) {
-    if (description.isNullOrBlank()) return
-
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = SoftCard,
@@ -28,19 +29,21 @@ fun WishlistInfoCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = "Lýsing",
-                style = MaterialTheme.typography.labelLarge,
-                color = TextSecondary
+            WishlistMetadataRow(
+                isShared = isShared,
+                itemCount = itemCount
             )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyLarge,
-                color = TextPrimary
-            )
+
+            if (!description.isNullOrBlank()) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextPrimary
+                )
+            }
         }
     }
 }

@@ -83,6 +83,7 @@ class AuthRepository @Inject constructor(
     }
 
     fun getCurrentUserId(): String? {
+        android.util.Log.d("AuthRepository", "getCurrentUserId=${supabase.auth.currentUserOrNull()?.id}")
         return supabase.auth.currentUserOrNull()?.id
     }
 
