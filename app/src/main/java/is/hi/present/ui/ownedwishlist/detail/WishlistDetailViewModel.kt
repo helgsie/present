@@ -229,6 +229,10 @@ class WishlistDetailViewModel @Inject constructor(
             }
     }
 
+    fun consumeSuccessMessage() {
+        _uiState.update { it.copy(successMessage = null) }
+    }
+
     // Býr til nýtt item og hleður mynd upp ef user valdi mynd
     fun createWishlistItem(
         wishlistId: String,
@@ -265,7 +269,8 @@ class WishlistDetailViewModel @Inject constructor(
                 .onSuccess {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = null
+                        errorMessage = null,
+                        successMessage = "Ný gjöf búin til"
                     )
                     onDone?.invoke()
                 }

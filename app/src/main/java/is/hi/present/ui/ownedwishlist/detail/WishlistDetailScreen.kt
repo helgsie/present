@@ -2,12 +2,18 @@ package `is`.hi.present.ui.ownedwishlist.detail
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,21 +22,25 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,26 +66,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import `is`.hi.present.ui.components.AddButton
-import `is`.hi.present.ui.ownedwishlist.components.SharedWithDialog
-import `is`.hi.present.ui.components.WishlistInfoCard
-import `is`.hi.present.ui.ownedwishlist.components.WishlistEditor
-import `is`.hi.present.ui.ownedwishlist.components.IconPickerButton
-import `is`.hi.present.ui.components.WishlistIcon
 import `is`.hi.present.core.theme.SoftCard
+import `is`.hi.present.ui.components.AddButton
+import `is`.hi.present.ui.components.WishlistIcon
+import `is`.hi.present.ui.components.WishlistInfoCard
+import `is`.hi.present.ui.ownedwishlist.components.HeaderMenuActionRow
+import `is`.hi.present.ui.ownedwishlist.components.IconPickerButton
+import `is`.hi.present.ui.ownedwishlist.components.SharedWithDialog
+import `is`.hi.present.ui.ownedwishlist.components.WishlistEditor
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.ui.unit.DpOffset
-import `is`.hi.present.ui.ownedwishlist.components.HeaderMenuActionRow
 
 @OptIn(ExperimentalMaterial3Api::class)
-
-
 @Composable
 fun WishlistDetailScreen(
     wishlistId: String,
@@ -107,6 +116,7 @@ fun WishlistDetailScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     var lastSnackbarMessage by remember { mutableStateOf<String?>(null) }
+    var topSuccessMessage by remember { mutableStateOf<String?>(null) }
 
     val isOffline = remember(state.errorMessage) {
         val msg = state.errorMessage.orEmpty()
@@ -139,6 +149,15 @@ fun WishlistDetailScreen(
                 WishlistDetailEffect.WishlistSaved -> isEditing = false
                 else -> {}
             }
+        }
+    }
+
+    LaunchedEffect(state.successMessage) {
+        state.successMessage?.let { message ->
+            topSuccessMessage = message
+            delay(2200)
+            topSuccessMessage = null
+            vm.consumeSuccessMessage()
         }
     }
 
@@ -254,7 +273,12 @@ fun WishlistDetailScreen(
                                     )
                                 ) {
                                     Column(
-                                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 2.dp)
+                                        modifier = Modifier.padding(
+                                            start = 8.dp,
+                                            end = 8.dp,
+                                            top = 4.dp,
+                                            bottom = 2.dp
+                                        )
                                     ) {
                                         HeaderMenuActionRow(
                                             text = "Deila lista",
@@ -563,14 +587,21 @@ fun WishlistDetailScreen(
                                     .mapNotNull { it.category }
                                     .distinct()
                                     .sorted()
-                                val displayedItems = if (selectedCategoryFilter != null)
+
+                                val displayedItems = if (selectedCategoryFilter != null) {
                                     state.items.filter { it.category == selectedCategoryFilter }
-                                else
+                                } else {
                                     state.items
+                                }
 
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 96.dp),
+                                    contentPadding = PaddingValues(
+                                        start = 16.dp,
+                                        top = 0.dp,
+                                        end = 16.dp,
+                                        bottom = 96.dp
+                                    ),
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     item {
@@ -595,7 +626,9 @@ fun WishlistDetailScreen(
                                                     isShared = state.isShared,
                                                     itemCount = state.items.size
                                                 )
-                                                androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(bottom = 4.dp))
+                                                androidx.compose.foundation.layout.Spacer(
+                                                    modifier = Modifier.padding(bottom = 4.dp)
+                                                )
                                             }
                                         }
                                     }
@@ -657,8 +690,40 @@ fun WishlistDetailScreen(
                         }
                     }
                 }
+
+                AnimatedVisibility(
+                    visible = topSuccessMessage != null,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 16.dp),
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 })
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFF2E7D32)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                            Text(
+                                text = topSuccessMessage ?: "",
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
-
