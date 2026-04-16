@@ -142,6 +142,10 @@ class WishlistsViewModel @Inject constructor(
         _uiState.update { it.copy(offlineDialog = null) }
     }
 
+    fun consumeSuccessMessage() {
+        _uiState.update { it.copy(successMessage = null) }
+    }
+
     fun createWishlist(
         ownerId: String,
         title: String,
@@ -149,16 +153,26 @@ class WishlistsViewModel @Inject constructor(
         onDone: (() -> Unit)? = null,
         icon: WishlistIcon
     ) = viewModelScope.launch {
-        _uiState.update { it.copy(isLoading = true, errorMessage = null, offlineBanner = null) }
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                errorMessage = null,
+                offlineBanner = null
+            )
+        }
 
         repo.createWishlist(ownerId, title, description, icon)
             .onSuccess {
-                println("CREATE SUCCESS")
-                _uiState.update { it.copy(isLoading = false, errorMessage = null) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = null,
+                        successMessage = "Óskalisti búinn til"
+                    )
+                }
                 onDone?.invoke()
             }
             .onFailure { e ->
-                println("CREATE FAILURE: ${e.message}")
                 _uiState.update {
                     it.copy(
                         isLoading = false,
