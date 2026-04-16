@@ -2,6 +2,7 @@ package `is`.hi.present.ui.ownedwishlist.detail
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -67,6 +70,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.ui.unit.DpOffset
+import `is`.hi.present.ui.ownedwishlist.components.HeaderMenuActionRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 
@@ -236,85 +241,114 @@ fun WishlistDetailScreen(
 
                                 DropdownMenu(
                                     expanded = showWishlistActions,
-                                    onDismissRequest = { showWishlistActions = false }
+                                    onDismissRequest = { showWishlistActions = false },
+                                    modifier = Modifier.widthIn(min = 180.dp),
+                                    offset = DpOffset(x = (-10).dp, y = 0.dp),
+                                    shape = RoundedCornerShape(20.dp),
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
+                                    tonalElevation = 2.dp,
+                                    shadowElevation = 14.dp,
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                                    )
                                 ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Deila lista") },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.Share,
-                                                contentDescription = null
-                                            )
-                                        },
-                                        onClick = {
-                                            showWishlistActions = false
-                                            if (isOffline) {
-                                                scope.launch {
-                                                    snackbarHostState.showSnackbar(
-                                                        message = "Til að deila óskalista þarf netsamband",
-                                                        withDismissAction = true,
-                                                        duration = SnackbarDuration.Short
-                                                    )
+                                    Column(
+                                        modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 2.dp)
+                                    ) {
+                                        HeaderMenuActionRow(
+                                            text = "Deila lista",
+                                            icon = {
+                                                Icon(
+                                                    Icons.Default.Share,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            },
+                                            textColor = MaterialTheme.colorScheme.onSurface,
+                                            onClick = {
+                                                showWishlistActions = false
+                                                if (isOffline) {
+                                                    scope.launch {
+                                                        snackbarHostState.showSnackbar(
+                                                            message = "Til að deila óskalista þarf netsamband",
+                                                            withDismissAction = true,
+                                                            duration = SnackbarDuration.Short
+                                                        )
+                                                    }
+                                                } else {
+                                                    vm.onShareClicked(wishlistId)
                                                 }
-                                            } else {
-                                                vm.onShareClicked(wishlistId)
                                             }
-                                        }
-                                    )
+                                        )
 
-                                    DropdownMenuItem(
-                                        text = { Text("Þátttakendur") },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.AccountBox,
-                                                contentDescription = null
-                                            )
-                                        },
-                                        onClick = {
-                                            showWishlistActions = false
-                                            vm.onSharedWith(wishlistId)
-                                            showSharedWithDialog = true
-                                        }
-                                    )
+                                        HeaderMenuActionRow(
+                                            text = "Þátttakendur",
+                                            icon = {
+                                                Icon(
+                                                    Icons.Default.AccountBox,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            },
+                                            textColor = MaterialTheme.colorScheme.onSurface,
+                                            onClick = {
+                                                showWishlistActions = false
+                                                vm.onSharedWith(wishlistId)
+                                                showSharedWithDialog = true
+                                            }
+                                        )
 
-                                    HorizontalDivider()
-
-                                    DropdownMenuItem(
-                                        text = { Text("Breyta lista") },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.Edit,
-                                                contentDescription = null
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 20.dp, vertical = 6.dp)
+                                        ) {
+                                            HorizontalDivider(
+                                                thickness = 0.5.dp,
+                                                color = MaterialTheme.colorScheme.outlineVariant
                                             )
-                                        },
-                                        onClick = {
-                                            showWishlistActions = false
-                                            title = state.title
-                                            description = state.description.orEmpty()
-                                            selectedWishlistIcon = WishlistIcon.fromKey(state.iconKey)
-                                            isEditing = true
                                         }
-                                    )
 
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = "Eyða lista",
-                                                color = MaterialTheme.colorScheme.error
-                                            )
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.Delete,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.error
-                                            )
-                                        },
-                                        onClick = {
-                                            showWishlistActions = false
-                                            confirmDelete = true
-                                        }
-                                    )
+                                        HeaderMenuActionRow(
+                                            text = "Breyta lista",
+                                            icon = {
+                                                Icon(
+                                                    Icons.Default.Edit,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            },
+                                            textColor = MaterialTheme.colorScheme.onSurface,
+                                            onClick = {
+                                                showWishlistActions = false
+                                                title = state.title
+                                                description = state.description.orEmpty()
+                                                selectedWishlistIcon = WishlistIcon.fromKey(state.iconKey)
+                                                isEditing = true
+                                            }
+                                        )
+
+                                        HeaderMenuActionRow(
+                                            text = "Eyða lista",
+                                            icon = {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                    tint = MaterialTheme.colorScheme.error
+                                                )
+                                            },
+                                            textColor = MaterialTheme.colorScheme.error,
+                                            onClick = {
+                                                showWishlistActions = false
+                                                confirmDelete = true
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         } else {
