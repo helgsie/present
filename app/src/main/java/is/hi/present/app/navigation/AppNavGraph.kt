@@ -26,7 +26,6 @@ import `is`.hi.present.ui.sharedwishlist.detail.SharedWishlistDetailScreen
 import `is`.hi.present.ui.sharedwishlist.list.SharedWishlistScreen
 import `is`.hi.present.ui.sharedwishlist.item.SharedItemDetailScreen
 import `is`.hi.present.ui.ownedwishlist.item.ItemDetailScreen
-import `is`.hi.present.ui.ownedwishlist.invite.CreateTokenScreen
 import `is`.hi.present.ui.auth.SetupProfileScreen
 import `is`.hi.present.ui.ownedwishlist.detail.WishlistDetailViewModel
 import `is`.hi.present.ui.ownedwishlist.list.WishlistsViewModel
@@ -41,12 +40,8 @@ import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.components.WishlistsHeaderScreen
 
 @Composable
-fun AppNavGraphNav3(
-    startJoinToken: String? = null,
-) {
+fun AppNavGraphNav3() {
     val authViewModel: AuthViewModel = hiltViewModel()
-
-    var pendingJoinToken by remember { mutableStateOf(startJoinToken) }
     val authStatus by authViewModel.authStatus.collectAsStateWithLifecycle()
 
     when (val status = authStatus) {
@@ -71,8 +66,6 @@ fun AppNavGraphNav3(
                     AppNav(
                         authViewModel = authViewModel,
                         userId = status.userId,
-                        pendingJoinToken = pendingJoinToken,
-                        clearPendingJoinToken = { pendingJoinToken = null }
                     )
                 }
             }
@@ -114,18 +107,11 @@ private fun AuthNav(
 private fun AppNav(
     authViewModel: AuthViewModel,
     userId: String,
-    pendingJoinToken: String?,
-    clearPendingJoinToken: () -> Unit,
 ) {
     val wishlistsViewModel: WishlistsViewModel = hiltViewModel()
     val wishlistDetailViewModel: WishlistDetailViewModel = hiltViewModel()
 
-    val startDestination: AppRoute = remember(userId, pendingJoinToken) {
-        when {
-            !pendingJoinToken.isNullOrBlank() -> AppRoute.JoinWishlist(pendingJoinToken)
-            else -> AppRoute.Wishlists
-        }
-    }
+    val startDestination: AppRoute = AppRoute.Wishlists
 
     val backStack = rememberNavBackStack(startDestination)
 
@@ -206,17 +192,6 @@ private fun AppNav(
                     onBack = { backStack.removeLastOrNull() },
                     onSignedOut = { authViewModel.signOut() },
                     onAccountDeleted = { authViewModel.deleteAccount {} }
-                )
-            }
-
-            entry<AppRoute.JoinWishlist> { key ->
-                CreateTokenScreen(
-                    token = key.token,
-                    onJoined = { wishlistId ->
-                        clearPendingJoinToken()
-                        backStack.removeLastOrNull()
-                        backStack.add(AppRoute.SharedWishlistDetail(wishlistId))
-                    }
                 )
             }
 
