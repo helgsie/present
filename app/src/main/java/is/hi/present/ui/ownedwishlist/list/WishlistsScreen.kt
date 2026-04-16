@@ -1,6 +1,11 @@
 package `is`.hi.present.ui.ownedwishlist.list
 
 import android.content.res.Configuration
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -8,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,17 +23,17 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,12 +50,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.components.WishlistCard
 import `is`.hi.present.ui.components.WishlistsHeaderScreen
 import `is`.hi.present.ui.ownedwishlist.detail.WishlistDetailViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,8 +81,8 @@ fun WishlistsScreen(
 
     val state by wishlistVm.uiState.collectAsStateWithLifecycle()
     val pullState = rememberPullToRefreshState()
-    val snackbarHostState = remember { SnackbarHostState() }
 
+    var topSuccessMessage by remember { mutableStateOf<String?>(null) }
     var isEditMode by remember { mutableStateOf(false) }
     var wishlistToDelete by remember { mutableStateOf<String?>(null) }
 
@@ -82,6 +90,7 @@ fun WishlistsScreen(
         isEditMode = false
         wishlistToDelete = null
     }
+
     val dimmedAlpha = if (isEditMode) 0.45f else 1f
 
     LaunchedEffect(state.wishlists) {
@@ -92,7 +101,9 @@ fun WishlistsScreen(
 
     LaunchedEffect(state.successMessage) {
         state.successMessage?.let { message ->
-            snackbarHostState.showSnackbar(message)
+            topSuccessMessage = message
+            delay(2200)
+            topSuccessMessage = null
             wishlistVm.consumeSuccessMessage()
         }
     }
@@ -113,9 +124,7 @@ fun WishlistsScreen(
             ) {
                 PullToRefreshBox(
                     isRefreshing = state.isRefreshing,
-                    onRefresh = {
-                        wishlistVm.refresh(ownerId)
-                    },
+                    onRefresh = { wishlistVm.refresh(ownerId) },
                     state = pullState,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -274,17 +283,37 @@ fun WishlistsScreen(
                 }
             }
 
-            SnackbarHost(
-                hostState = snackbarHostState,
+            AnimatedVisibility(
+                visible = topSuccessMessage != null,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            ) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = Color(0xFF2E7D32),
-                    contentColor = Color.White
-                )
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp),
+                enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 })
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF2E7D32)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Text(
+                            text = topSuccessMessage ?: "",
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
     }
