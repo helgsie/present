@@ -25,7 +25,8 @@ data class WishlistsUiState(
     val errorMessage: String? = null,
     val offlineBanner: String? = null,
     val offlineDialog: OfflineDialog? = null,
-    val needsAuth: Boolean = false
+    val needsAuth: Boolean = false,
+    val successMessage: String? = null
 ) {
     val isEmpty: Boolean get() = !isLoading && errorMessage == null && wishlists.isEmpty()
 }

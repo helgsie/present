@@ -14,6 +14,7 @@ data class WishlistItemUi(
     val claimedByUserEmail: String? = null,
     val claimedByUserName: String? = null
 )
+
 data class WishlistDetailUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
@@ -27,7 +28,8 @@ data class WishlistDetailUiState(
     val isOwner: Boolean = false,
     val isShared: Boolean = false,
     val iconKey: String = "favorite",
-    val isSavingOrder: Boolean = false
+    val isSavingOrder: Boolean = false,
+    val successMessage: String? = null
 ) {
     val isEmpty: Boolean
         get() = !isLoading && errorMessage == null && items.isEmpty()

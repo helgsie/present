@@ -1,5 +1,11 @@
 package `is`.hi.present.ui.ownedwishlist.list
 
+import android.content.res.Configuration
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -7,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,9 +23,12 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,14 +48,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import `is`.hi.present.ui.components.AddButton
 import `is`.hi.present.ui.components.WishlistCard
-import android.content.res.Configuration
 import `is`.hi.present.ui.components.WishlistsHeaderScreen
 import `is`.hi.present.ui.ownedwishlist.detail.WishlistDetailViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +82,7 @@ fun WishlistsScreen(
     val state by wishlistVm.uiState.collectAsStateWithLifecycle()
     val pullState = rememberPullToRefreshState()
 
+    var topSuccessMessage by remember { mutableStateOf<String?>(null) }
     var isEditMode by remember { mutableStateOf(false) }
     var wishlistToDelete by remember { mutableStateOf<String?>(null) }
 
@@ -77,6 +90,7 @@ fun WishlistsScreen(
         isEditMode = false
         wishlistToDelete = null
     }
+
     val dimmedAlpha = if (isEditMode) 0.45f else 1f
 
     LaunchedEffect(state.wishlists) {
@@ -85,174 +99,219 @@ fun WishlistsScreen(
         }
     }
 
+    LaunchedEffect(state.successMessage) {
+        state.successMessage?.let { message ->
+            topSuccessMessage = message
+            delay(2200)
+            topSuccessMessage = null
+            wishlistVm.consumeSuccessMessage()
+        }
+    }
+
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val columns = if (isLandscape) 4 else 2
 
     val screenContent: @Composable (PaddingValues) -> Unit = { padding ->
-        Column(
+        Box(
             modifier = modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
         ) {
-            PullToRefreshBox(
-                isRefreshing = state.isRefreshing,
-                onRefresh = {
-                    wishlistVm.refresh(ownerId)
-                },
-                state = pullState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(MaterialTheme.colorScheme.background)
+            Column(
+                modifier = Modifier.fillMaxSize()
             ) {
-                Box(
+                PullToRefreshBox(
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = { wishlistVm.refresh(ownerId) },
+                    state = pullState,
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .weight(1f)
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    state.offlineDialog?.let { dialog ->
-                        AlertDialog(
-                            onDismissRequest = { wishlistVm.consumeOfflineDialog() },
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.WifiOff,
-                                    contentDescription = null
-                                )
-                            },
-                            title = { Text(dialog.title) },
-                            text = { Text(dialog.message) },
-                            confirmButton = {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    TextButton(onClick = { wishlistVm.consumeOfflineDialog() }) {
-                                        Text("OK")
-                                    }
-                                }
-                            }
-                        )
-                    }
-
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.background)
                     ) {
-                        state.offlineBanner?.let { msg ->
-                            Surface(
-                                tonalElevation = 1.dp,
-                                color = MaterialTheme.colorScheme.surface,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                            ) {
-                                Text(
-                                    text = msg,
-                                    modifier = Modifier.padding(12.dp),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                            Spacer(Modifier.height(8.dp))
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                        ) {
-                            when {
-                                state.isLoading && state.wishlists.isEmpty() -> {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.align(Alignment.Center)
+                        state.offlineDialog?.let { dialog ->
+                            AlertDialog(
+                                onDismissRequest = { wishlistVm.consumeOfflineDialog() },
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.WifiOff,
+                                        contentDescription = null
                                     )
-                                }
-
-                                state.errorMessage != null && state.wishlists.isEmpty() -> {
-                                    Column(
-                                        modifier = Modifier.align(Alignment.Center),
-                                        horizontalAlignment = Alignment.CenterHorizontally
+                                },
+                                title = { Text(dialog.title) },
+                                text = { Text(dialog.message) },
+                                confirmButton = {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            text = state.errorMessage ?: "Óþekkt villa kom upp.",
-                                            color = MaterialTheme.colorScheme.error,
-                                        )
-                                        Spacer(Modifier.height(12.dp))
-                                        Button(onClick = { wishlistVm.refresh(ownerId) }) {
-                                            Text("Reyna aftur")
+                                        TextButton(onClick = { wishlistVm.consumeOfflineDialog() }) {
+                                            Text("OK")
                                         }
                                     }
                                 }
+                            )
+                        }
 
-                                state.isEmpty -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                        ) {
+                            state.offlineBanner?.let { msg ->
+                                Surface(
+                                    tonalElevation = 1.dp,
+                                    color = MaterialTheme.colorScheme.surface,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                ) {
                                     Text(
-                                        text = "Þú hefur ekki búið til neina óskalista.",
-                                        modifier = Modifier.align(Alignment.Center)
+                                        text = msg,
+                                        modifier = Modifier.padding(12.dp),
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
+                                Spacer(Modifier.height(8.dp))
+                            }
 
-                                else -> {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clickable(
-                                                enabled = isEditMode,
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null,
-                                                onClick = dismissEditMode
-                                            )
-                                    ) {
-                                        LazyVerticalGrid(
-                                            columns = GridCells.Fixed(columns),
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentPadding = PaddingValues(16.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            ) {
+                                when {
+                                    state.isLoading && state.wishlists.isEmpty() -> {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.align(Alignment.Center)
+                                        )
+                                    }
+
+                                    state.errorMessage != null && state.wishlists.isEmpty() -> {
+                                        Column(
+                                            modifier = Modifier.align(Alignment.Center),
+                                            horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            items(
-                                                items = state.wishlists,
-                                                key = { it.id }
-                                            ) { w ->
-                                                WishlistCard(
-                                                    w = w,
-                                                    onClick = {
-                                                        if (!isEditMode) {
-                                                            onOpenWishlist(w.id)
-                                                        }
-                                                    },
-                                                    isEditMode = isEditMode,
-                                                    showLeaveButton = true,
-                                                    onLeaveClick = { wishlistToDelete = w.id },
-                                                    onLongClick = { isEditMode = true }
-                                                )
+                                            Text(
+                                                text = state.errorMessage ?: "Óþekkt villa kom upp.",
+                                                color = MaterialTheme.colorScheme.error,
+                                            )
+                                            Spacer(Modifier.height(12.dp))
+                                            Button(onClick = { wishlistVm.refresh(ownerId) }) {
+                                                Text("Reyna aftur")
                                             }
                                         }
                                     }
-                                    if (wishlistToDelete != null) {
-                                        AlertDialog(
-                                            onDismissRequest = dismissEditMode,
-                                            confirmButton = {
-                                                TextButton(onClick = {
-                                                    detailVm.deleteWishlist(wishlistToDelete!!)
-                                                    dismissEditMode()
-                                                }) {
-                                                    Text("Eyða")
-                                                }
-                                            },
-                                            dismissButton = {
-                                                TextButton(onClick = dismissEditMode) {
-                                                    Text("Hætta við")
-                                                }
-                                            },
-                                            title = { Text("Ertu viss þú viljir eyða?") },
-                                            text = { Text("Óskalistanum verður eytt ef þú heldur áfram.") }
+
+                                    state.isEmpty -> {
+                                        Text(
+                                            text = "Þú hefur ekki búið til neina óskalista.",
+                                            modifier = Modifier.align(Alignment.Center)
                                         )
+                                    }
+
+                                    else -> {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clickable(
+                                                    enabled = isEditMode,
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null,
+                                                    onClick = dismissEditMode
+                                                )
+                                        ) {
+                                            LazyVerticalGrid(
+                                                columns = GridCells.Fixed(columns),
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentPadding = PaddingValues(16.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                            ) {
+                                                items(
+                                                    items = state.wishlists,
+                                                    key = { it.id }
+                                                ) { w ->
+                                                    WishlistCard(
+                                                        w = w,
+                                                        onClick = {
+                                                            if (!isEditMode) {
+                                                                onOpenWishlist(w.id)
+                                                            }
+                                                        },
+                                                        isEditMode = isEditMode,
+                                                        showLeaveButton = true,
+                                                        onLeaveClick = { wishlistToDelete = w.id },
+                                                        onLongClick = { isEditMode = true }
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        if (wishlistToDelete != null) {
+                                            AlertDialog(
+                                                onDismissRequest = dismissEditMode,
+                                                confirmButton = {
+                                                    TextButton(onClick = {
+                                                        detailVm.deleteWishlist(wishlistToDelete!!)
+                                                        dismissEditMode()
+                                                    }) {
+                                                        Text("Eyða")
+                                                    }
+                                                },
+                                                dismissButton = {
+                                                    TextButton(onClick = dismissEditMode) {
+                                                        Text("Hætta við")
+                                                    }
+                                                },
+                                                title = { Text("Ertu viss þú viljir eyða?") },
+                                                text = { Text("Óskalistanum verður eytt ef þú heldur áfram.") }
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = topSuccessMessage != null,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp),
+                enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 2 })
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF2E7D32)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Text(
+                            text = topSuccessMessage ?: "",
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }

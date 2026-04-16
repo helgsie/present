@@ -133,6 +133,7 @@ class ItemDetailViewModel @Inject constructor(
             itemId = itemId,
             name = s.name.trim(),
             notes = s.notes.trim().ifBlank { null },
+            url = s.url.trim().ifBlank { null },
             price = price,
             imagePath = newImagePath,
             category = s.category
